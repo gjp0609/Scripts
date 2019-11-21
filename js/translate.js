@@ -6,6 +6,7 @@
 // @author       OnySakura
 // @include      *
 // @grant        GM_xmlhttpRequest
+// @grant        GM_addStyle
 // ==/UserScript==
 
 (function () {
@@ -27,7 +28,7 @@
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
             let src = SOGO_CONFIG.PID + translateText + salt + SOGO_CONFIG.KEY;
-            let sign = MD5(src);
+            let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
             return "q=" + encodedTranslateText + "&pid=" + SOGO_CONFIG.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
         },
@@ -35,7 +36,16 @@
             if (json.query) {
                 return json.translation;
             } else {
-                return JSON.stringify(json);
+                let parse = '';
+                try {
+                    parse = JSON.parse(json);
+                } catch (e) {
+                }
+                if (parse.query) {
+                    return parse.translation;
+                } else {
+                    return JSON.stringify(json);
+                }
             }
         }
     };
@@ -51,7 +61,7 @@
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
             let src = BAIDU_CONFIG.PID + translateText + salt + BAIDU_CONFIG.KEY;
-            let sign = MD5(src);
+            let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
             return `q=${encodedTranslateText}&appid=${BAIDU_CONFIG.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
         },
@@ -60,6 +70,17 @@
                 if (json.trans_result[0].dst) {
                     let dst = '' + json.trans_result[0].dst;
                     return decodeURI(dst);
+                }
+            } else {
+                try {
+                    let parse = JSON.parse(json);
+                    if (parse.trans_result) {
+                        if (parse.trans_result[0].dst) {
+                            let dst = '' + parse.trans_result[0].dst;
+                            return decodeURI(dst);
+                        }
+                    }
+                } catch (e) {
                 }
             }
             return JSON.stringify(json);
@@ -78,12 +99,12 @@
         },
         parseResult(json) {
             let result = '';
-            console.log(json);
             if (json) {
-                if (json.sentences) {
-                    for (let item of json.sentences) {
-                        result += item.trans;
-                    }
+                if (!json.sentences) {
+                    json = JSON.parse(json);
+                }
+                for (let item of json.sentences) {
+                    result += item.trans;
                 }
                 if (json.dict) {
                     for (let item of json.dict) {
@@ -116,121 +137,6 @@
     showIcon.innerHTML = "译";
     showIcon.style.display = 'none';
     document.body.appendChild(showIcon);
-    // 样式
-    let div_style = document.createElement("style");
-    div_style.innerHTML = `
-            #OnySakuraTranslateShowIcon {
-                background-color: white;
-                border: #fd6848 solid 2px;
-                border-radius: 200px;
-                color: #fd6848;
-                box-sizing: border-box;
-                width: 30px;
-                height: 30px;
-                text-align: center;
-                line-height: 26px;
-                cursor: pointer;
-                position: fixed;
-                z-index: 30000;
-            }
-
-            #OnySakuraTranslateShowIcon:hover {
-                background-color: #fd6848;
-                color: white;
-                animation-duration: 1s;
-            }
-
-            #OnySakuraTranslateShowIcon:active {
-                border-color: white;
-            }
-
-            #OnySakuraTranslateDiv {
-                display: none;
-                background-color: #FFFAF6;
-                border: #fd6848 solid 2px;
-                border-radius: 10px;
-                padding: 5px;
-                margin:auto;
-                position: fixed;
-                z-index: 100000001;
-            }
-            .google_dict {
-                margin-left: 20px;
-                margin-top: 10px;
-            }
-
-            .google_dict .base_form {
-                font-size: 20px !important;
-                font-family: "Sarasa Term SC", mononoki, monospace;
-            }
-
-            .google_dict .term {
-                position: relative;
-                display: inline-block;
-                border-bottom: 1px dotted black;
-            }
-
-            .google_dict .term .tooltiptext {
-                visibility: hidden;
-                background-color: #fdc;
-                color: #555;
-                text-align: left;
-                padding: 5px;
-                border-radius: 5px;
-                position: absolute;
-                z-index: 1;
-                white-space: pre;
-                top: 200%;
-                left: 0%;
-
-            }
-
-            .google_dict .term:hover .tooltiptext {
-                visibility: visible;
-            }
-
-            /*.google_dict .term .tooltiptext::after {
-                content: " ";
-                position: absolute;
-                bottom: 100%;
-
-                left: 50%;
-                margin-left: -5px;
-                border-width: 5px;
-                border-style: solid;
-                border-color: transparent transparent #fdc transparent;
-            }
-            */
-            .google_dict .pos {
-                font-size: 10px;
-                font-style: italic;
-            }
-
-            .google_dict .pos_1 {
-                color: #369;
-            }
-
-            .google_dict .pos_2 {
-                color: #396;
-            }
-
-            .google_dict .pos_3 {
-                color: #639;
-            }
-
-            .google_dict .pos_4 {
-                color: #693;
-            }
-
-            .google_dict .pos_5 {
-                color: #936;
-            }
-
-            .google_dict .pos_6 {
-                color: #963;
-            }
-        `;
-    document.body.appendChild(div_style);
     // 翻译框
     let translateDiv = document.createElement("div");
     translateDiv.id = "OnySakuraTranslateDiv";
@@ -368,17 +274,138 @@
         return salt;
     }
 
+    // 样式
+    let style = `
+            #OnySakuraTranslateShowIcon {
+                background-color: white;
+                border: #fd6848 solid 2px;
+                border-radius: 200px;
+                color: #fd6848;
+                box-sizing: border-box;
+                width: 30px;
+                height: 30px;
+                text-align: center;
+                line-height: 26px;
+                cursor: pointer;
+                position: fixed;
+                z-index: 30000;
+            }
+
+            #OnySakuraTranslateShowIcon:hover {
+                background-color: #fd6848;
+                color: white;
+                animation-duration: 1s;
+            }
+
+            #OnySakuraTranslateShowIcon:active {
+                border-color: white;
+            }
+
+            #OnySakuraTranslateDiv {
+                display: none;
+                background-color: #FFFAF6;
+                border: #fd6848 solid 2px;
+                border-radius: 10px;
+                padding: 5px;
+                margin:auto;
+                position: fixed;
+                z-index: 100000001;
+            }
+            .google_dict {
+                margin-left: 20px;
+                margin-top: 10px;
+            }
+
+            .google_dict .base_form {
+                font-size: 20px !important;
+                font-family: "Sarasa Term SC", mononoki, monospace;
+            }
+
+            .google_dict .term {
+                position: relative;
+                display: inline-block;
+                border-bottom: 1px dotted black;
+            }
+
+            .google_dict .term .tooltiptext {
+                visibility: hidden;
+                background-color: #fdc;
+                color: #555;
+                text-align: left;
+                padding: 5px;
+                border-radius: 5px;
+                position: absolute;
+                z-index: 1;
+                white-space: pre;
+                top: 200%;
+                left: 0%;
+
+            }
+
+            .google_dict .term:hover .tooltiptext {
+                visibility: visible;
+            }
+
+            /*.google_dict .term .tooltiptext::after {
+                content: " ";
+                position: absolute;
+                bottom: 100%;
+
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: transparent transparent #fdc transparent;
+            }
+            */
+            .google_dict .pos {
+                font-size: 10px;
+                font-style: italic;
+            }
+
+            .google_dict .pos_1 {
+                color: #369;
+            }
+
+            .google_dict .pos_2 {
+                color: #396;
+            }
+
+            .google_dict .pos_3 {
+                color: #639;
+            }
+
+            .google_dict .pos_4 {
+                color: #693;
+            }
+
+            .google_dict .pos_5 {
+                color: #936;
+            }
+
+            .google_dict .pos_6 {
+                color: #963;
+            }
+        `;
+    GM_addStyle(style);
+
     /**
      * @return {string}
      */
-    var MD5 = function (string) {
+    function MD5(string) {
 
+        /**
+         * @return {number}
+         */
         function RotateLeft(lValue, iShiftBits) {
             return (lValue << iShiftBits) | (lValue >>> (32 - iShiftBits));
         }
 
+        /**
+         * @return {number}
+         */
         function AddUnsigned(lX, lY) {
-            var lX4, lY4, lX8, lY8, lResult;
+            let lX4, lY4, lX8, lY8, lResult;
             lX8 = (lX & 0x80000000);
             lY8 = (lY & 0x80000000);
             lX4 = (lX & 0x40000000);
@@ -398,55 +425,80 @@
             }
         }
 
+        /**
+         * @return {number}
+         */
         function F(x, y, z) {
             return (x & y) | ((~x) & z);
         }
 
+        /**
+         * @return {number}
+         */
         function G(x, y, z) {
             return (x & z) | (y & (~z));
         }
 
+        /**
+         * @return {number}
+         */
         function H(x, y, z) {
             return (x ^ y ^ z);
         }
 
+        /**
+         * @return {number}
+         */
         function I(x, y, z) {
             return (y ^ (x | (~z)));
         }
 
-        function FF(a, b, c, d, x, s, ac) {
-            a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
+        /**
+         * @return {number}
+         */
+        function FF(a, b, c, d, y, s, ac) {
+            a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), y), ac));
             return AddUnsigned(RotateLeft(a, s), b);
         }
 
-        function GG(a, b, c, d, x, s, ac) {
-            a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
+        /**
+         * @return {number}
+         */
+        function GG(a, b, c, d, y, s, ac) {
+            a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), y), ac));
             return AddUnsigned(RotateLeft(a, s), b);
         }
 
-        function HH(a, b, c, d, x, s, ac) {
-            a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
+        /**
+         * @return {number}
+         */
+        function HH(a, b, c, d, y, s, ac) {
+            a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), y), ac));
             return AddUnsigned(RotateLeft(a, s), b);
         }
 
-        function II(a, b, c, d, x, s, ac) {
-            a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
+        /**
+         * @return {number}
+         */
+        function II(a, b, c, d, y, s, ac) {
+            a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), y), ac));
             return AddUnsigned(RotateLeft(a, s), b);
         }
 
         function ConvertToWordArray(string) {
-            var lWordCount;
-            var lMessageLength = string.length;
-            var lNumberOfWords_temp1 = lMessageLength + 8;
-            var lNumberOfWords_temp2 = (lNumberOfWords_temp1 - (lNumberOfWords_temp1 % 64)) / 64;
-            var lNumberOfWords = (lNumberOfWords_temp2 + 1) * 16;
-            var lWordArray = Array(lNumberOfWords - 1);
-            var lBytePosition = 0;
-            var lByteCount = 0;
+            let lWordCount;
+            let lMessageLength = string.length;
+            let lNumberOfWords_temp1 = lMessageLength + 8;
+            let lNumberOfWords_temp2 = (lNumberOfWords_temp1 - (lNumberOfWords_temp1 % 64)) / 64;
+            let lNumberOfWords = (lNumberOfWords_temp2 + 1) * 16;
+            let lWordArray = Array(lNumberOfWords - 1);
+            let lBytePosition = 0;
+            let lByteCount = 0;
             while (lByteCount < lMessageLength) {
                 lWordCount = (lByteCount - (lByteCount % 4)) / 4;
                 lBytePosition = (lByteCount % 4) * 8;
-                lWordArray[lWordCount] = (lWordArray[lWordCount] | (string.charCodeAt(lByteCount) << lBytePosition));
+
+                lWordArray[lWordCount] = (lWordArray[lWordCount] | ((string + '').charCodeAt(lByteCount) << lBytePosition));
                 lByteCount++;
             }
             lWordCount = (lByteCount - (lByteCount % 4)) / 4;
@@ -457,8 +509,11 @@
             return lWordArray;
         }
 
+        /**
+         * @return {string}
+         */
         function WordToHex(lValue) {
-            var WordToHexValue = "", WordToHexValue_temp = "", lByte, lCount;
+            let WordToHexValue = "", WordToHexValue_temp = "", lByte, lCount;
             for (lCount = 0; lCount <= 3; lCount++) {
                 lByte = (lValue >>> (lCount * 8)) & 255;
                 WordToHexValue_temp = "0" + lByte.toString(16);
@@ -467,29 +522,29 @@
             return WordToHexValue;
         }
 
+        /**
+         * @return {string}
+         */
         function Utf8Encode(string) {
             string = string.replace(/\r\n/g, "\n");
-            let utftext = "";
-            for (var n = 0; n < string.length; n++) {
-
-                var c = string.charCodeAt(n);
-
+            let utfText = "";
+            for (let n = 0; n < string.length; n++) {
+                c = string.charCodeAt(n);
                 if (c < 128) {
-                    utftext += String.fromCharCode(c);
+                    utfText += String.fromCharCode(c);
                 } else if ((c > 127) && (c < 2048)) {
-                    utftext += String.fromCharCode((c >> 6) | 192);
-                    utftext += String.fromCharCode((c & 63) | 128);
+                    utfText += String.fromCharCode((c >> 6) | 192);
+                    utfText += String.fromCharCode((c & 63) | 128);
                 } else {
-                    utftext += String.fromCharCode((c >> 12) | 224);
-                    utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                    utftext += String.fromCharCode((c & 63) | 128);
+                    utfText += String.fromCharCode((c >> 12) | 224);
+                    utfText += String.fromCharCode(((c >> 6) & 63) | 128);
+                    utfText += String.fromCharCode((c & 63) | 128);
                 }
-
             }
-            return utftext;
+            return utfText;
         }
 
-        let x = Array();
+        let y;
         let k, AA, BB, CC, DD, a, b, c, d;
         let S11 = 7, S12 = 12, S13 = 17, S14 = 22;
         let S21 = 5, S22 = 9, S23 = 14, S24 = 20;
@@ -498,88 +553,88 @@
 
         string = Utf8Encode(string);
 
-        x = ConvertToWordArray(string);
+        y = ConvertToWordArray(string);
 
         a = 0x67452301;
         b = 0xEFCDAB89;
         c = 0x98BADCFE;
         d = 0x10325476;
 
-        for (k = 0; k < x.length; k += 16) {
+        for (k = 0; k < y.length; k += 16) {
             AA = a;
             BB = b;
             CC = c;
             DD = d;
-            a = FF(a, b, c, d, x[k + 0], S11, 0xD76AA478);
-            d = FF(d, a, b, c, x[k + 1], S12, 0xE8C7B756);
-            c = FF(c, d, a, b, x[k + 2], S13, 0x242070DB);
-            b = FF(b, c, d, a, x[k + 3], S14, 0xC1BDCEEE);
-            a = FF(a, b, c, d, x[k + 4], S11, 0xF57C0FAF);
-            d = FF(d, a, b, c, x[k + 5], S12, 0x4787C62A);
-            c = FF(c, d, a, b, x[k + 6], S13, 0xA8304613);
-            b = FF(b, c, d, a, x[k + 7], S14, 0xFD469501);
-            a = FF(a, b, c, d, x[k + 8], S11, 0x698098D8);
-            d = FF(d, a, b, c, x[k + 9], S12, 0x8B44F7AF);
-            c = FF(c, d, a, b, x[k + 10], S13, 0xFFFF5BB1);
-            b = FF(b, c, d, a, x[k + 11], S14, 0x895CD7BE);
-            a = FF(a, b, c, d, x[k + 12], S11, 0x6B901122);
-            d = FF(d, a, b, c, x[k + 13], S12, 0xFD987193);
-            c = FF(c, d, a, b, x[k + 14], S13, 0xA679438E);
-            b = FF(b, c, d, a, x[k + 15], S14, 0x49B40821);
-            a = GG(a, b, c, d, x[k + 1], S21, 0xF61E2562);
-            d = GG(d, a, b, c, x[k + 6], S22, 0xC040B340);
-            c = GG(c, d, a, b, x[k + 11], S23, 0x265E5A51);
-            b = GG(b, c, d, a, x[k + 0], S24, 0xE9B6C7AA);
-            a = GG(a, b, c, d, x[k + 5], S21, 0xD62F105D);
-            d = GG(d, a, b, c, x[k + 10], S22, 0x2441453);
-            c = GG(c, d, a, b, x[k + 15], S23, 0xD8A1E681);
-            b = GG(b, c, d, a, x[k + 4], S24, 0xE7D3FBC8);
-            a = GG(a, b, c, d, x[k + 9], S21, 0x21E1CDE6);
-            d = GG(d, a, b, c, x[k + 14], S22, 0xC33707D6);
-            c = GG(c, d, a, b, x[k + 3], S23, 0xF4D50D87);
-            b = GG(b, c, d, a, x[k + 8], S24, 0x455A14ED);
-            a = GG(a, b, c, d, x[k + 13], S21, 0xA9E3E905);
-            d = GG(d, a, b, c, x[k + 2], S22, 0xFCEFA3F8);
-            c = GG(c, d, a, b, x[k + 7], S23, 0x676F02D9);
-            b = GG(b, c, d, a, x[k + 12], S24, 0x8D2A4C8A);
-            a = HH(a, b, c, d, x[k + 5], S31, 0xFFFA3942);
-            d = HH(d, a, b, c, x[k + 8], S32, 0x8771F681);
-            c = HH(c, d, a, b, x[k + 11], S33, 0x6D9D6122);
-            b = HH(b, c, d, a, x[k + 14], S34, 0xFDE5380C);
-            a = HH(a, b, c, d, x[k + 1], S31, 0xA4BEEA44);
-            d = HH(d, a, b, c, x[k + 4], S32, 0x4BDECFA9);
-            c = HH(c, d, a, b, x[k + 7], S33, 0xF6BB4B60);
-            b = HH(b, c, d, a, x[k + 10], S34, 0xBEBFBC70);
-            a = HH(a, b, c, d, x[k + 13], S31, 0x289B7EC6);
-            d = HH(d, a, b, c, x[k + 0], S32, 0xEAA127FA);
-            c = HH(c, d, a, b, x[k + 3], S33, 0xD4EF3085);
-            b = HH(b, c, d, a, x[k + 6], S34, 0x4881D05);
-            a = HH(a, b, c, d, x[k + 9], S31, 0xD9D4D039);
-            d = HH(d, a, b, c, x[k + 12], S32, 0xE6DB99E5);
-            c = HH(c, d, a, b, x[k + 15], S33, 0x1FA27CF8);
-            b = HH(b, c, d, a, x[k + 2], S34, 0xC4AC5665);
-            a = II(a, b, c, d, x[k + 0], S41, 0xF4292244);
-            d = II(d, a, b, c, x[k + 7], S42, 0x432AFF97);
-            c = II(c, d, a, b, x[k + 14], S43, 0xAB9423A7);
-            b = II(b, c, d, a, x[k + 5], S44, 0xFC93A039);
-            a = II(a, b, c, d, x[k + 12], S41, 0x655B59C3);
-            d = II(d, a, b, c, x[k + 3], S42, 0x8F0CCC92);
-            c = II(c, d, a, b, x[k + 10], S43, 0xFFEFF47D);
-            b = II(b, c, d, a, x[k + 1], S44, 0x85845DD1);
-            a = II(a, b, c, d, x[k + 8], S41, 0x6FA87E4F);
-            d = II(d, a, b, c, x[k + 15], S42, 0xFE2CE6E0);
-            c = II(c, d, a, b, x[k + 6], S43, 0xA3014314);
-            b = II(b, c, d, a, x[k + 13], S44, 0x4E0811A1);
-            a = II(a, b, c, d, x[k + 4], S41, 0xF7537E82);
-            d = II(d, a, b, c, x[k + 11], S42, 0xBD3AF235);
-            c = II(c, d, a, b, x[k + 2], S43, 0x2AD7D2BB);
-            b = II(b, c, d, a, x[k + 9], S44, 0xEB86D391);
+            a = FF(a, b, c, d, y[k], S11, 0xD76AA478);
+            d = FF(d, a, b, c, y[k + 1], S12, 0xE8C7B756);
+            c = FF(c, d, a, b, y[k + 2], S13, 0x242070DB);
+            b = FF(b, c, d, a, y[k + 3], S14, 0xC1BDCEEE);
+            a = FF(a, b, c, d, y[k + 4], S11, 0xF57C0FAF);
+            d = FF(d, a, b, c, y[k + 5], S12, 0x4787C62A);
+            c = FF(c, d, a, b, y[k + 6], S13, 0xA8304613);
+            b = FF(b, c, d, a, y[k + 7], S14, 0xFD469501);
+            a = FF(a, b, c, d, y[k + 8], S11, 0x698098D8);
+            d = FF(d, a, b, c, y[k + 9], S12, 0x8B44F7AF);
+            c = FF(c, d, a, b, y[k + 10], S13, 0xFFFF5BB1);
+            b = FF(b, c, d, a, y[k + 11], S14, 0x895CD7BE);
+            a = FF(a, b, c, d, y[k + 12], S11, 0x6B901122);
+            d = FF(d, a, b, c, y[k + 13], S12, 0xFD987193);
+            c = FF(c, d, a, b, y[k + 14], S13, 0xA679438E);
+            b = FF(b, c, d, a, y[k + 15], S14, 0x49B40821);
+            a = GG(a, b, c, d, y[k + 1], S21, 0xF61E2562);
+            d = GG(d, a, b, c, y[k + 6], S22, 0xC040B340);
+            c = GG(c, d, a, b, y[k + 11], S23, 0x265E5A51);
+            b = GG(b, c, d, a, y[k], S24, 0xE9B6C7AA);
+            a = GG(a, b, c, d, y[k + 5], S21, 0xD62F105D);
+            d = GG(d, a, b, c, y[k + 10], S22, 0x2441453);
+            c = GG(c, d, a, b, y[k + 15], S23, 0xD8A1E681);
+            b = GG(b, c, d, a, y[k + 4], S24, 0xE7D3FBC8);
+            a = GG(a, b, c, d, y[k + 9], S21, 0x21E1CDE6);
+            d = GG(d, a, b, c, y[k + 14], S22, 0xC33707D6);
+            c = GG(c, d, a, b, y[k + 3], S23, 0xF4D50D87);
+            b = GG(b, c, d, a, y[k + 8], S24, 0x455A14ED);
+            a = GG(a, b, c, d, y[k + 13], S21, 0xA9E3E905);
+            d = GG(d, a, b, c, y[k + 2], S22, 0xFCEFA3F8);
+            c = GG(c, d, a, b, y[k + 7], S23, 0x676F02D9);
+            b = GG(b, c, d, a, y[k + 12], S24, 0x8D2A4C8A);
+            a = HH(a, b, c, d, y[k + 5], S31, 0xFFFA3942);
+            d = HH(d, a, b, c, y[k + 8], S32, 0x8771F681);
+            c = HH(c, d, a, b, y[k + 11], S33, 0x6D9D6122);
+            b = HH(b, c, d, a, y[k + 14], S34, 0xFDE5380C);
+            a = HH(a, b, c, d, y[k + 1], S31, 0xA4BEEA44);
+            d = HH(d, a, b, c, y[k + 4], S32, 0x4BDECFA9);
+            c = HH(c, d, a, b, y[k + 7], S33, 0xF6BB4B60);
+            b = HH(b, c, d, a, y[k + 10], S34, 0xBEBFBC70);
+            a = HH(a, b, c, d, y[k + 13], S31, 0x289B7EC6);
+            d = HH(d, a, b, c, y[k], S32, 0xEAA127FA);
+            c = HH(c, d, a, b, y[k + 3], S33, 0xD4EF3085);
+            b = HH(b, c, d, a, y[k + 6], S34, 0x4881D05);
+            a = HH(a, b, c, d, y[k + 9], S31, 0xD9D4D039);
+            d = HH(d, a, b, c, y[k + 12], S32, 0xE6DB99E5);
+            c = HH(c, d, a, b, y[k + 15], S33, 0x1FA27CF8);
+            b = HH(b, c, d, a, y[k + 2], S34, 0xC4AC5665);
+            a = II(a, b, c, d, y[k], S41, 0xF4292244);
+            d = II(d, a, b, c, y[k + 7], S42, 0x432AFF97);
+            c = II(c, d, a, b, y[k + 14], S43, 0xAB9423A7);
+            b = II(b, c, d, a, y[k + 5], S44, 0xFC93A039);
+            a = II(a, b, c, d, y[k + 12], S41, 0x655B59C3);
+            d = II(d, a, b, c, y[k + 3], S42, 0x8F0CCC92);
+            c = II(c, d, a, b, y[k + 10], S43, 0xFFEFF47D);
+            b = II(b, c, d, a, y[k + 1], S44, 0x85845DD1);
+            a = II(a, b, c, d, y[k + 8], S41, 0x6FA87E4F);
+            d = II(d, a, b, c, y[k + 15], S42, 0xFE2CE6E0);
+            c = II(c, d, a, b, y[k + 6], S43, 0xA3014314);
+            b = II(b, c, d, a, y[k + 13], S44, 0x4E0811A1);
+            a = II(a, b, c, d, y[k + 4], S41, 0xF7537E82);
+            d = II(d, a, b, c, y[k + 11], S42, 0xBD3AF235);
+            c = II(c, d, a, b, y[k + 2], S43, 0x2AD7D2BB);
+            b = II(b, c, d, a, y[k + 9], S44, 0xEB86D391);
             a = AddUnsigned(a, AA);
             b = AddUnsigned(b, BB);
             c = AddUnsigned(c, CC);
             d = AddUnsigned(d, DD);
         }
         let temp = WordToHex(a) + WordToHex(b) + WordToHex(c) + WordToHex(d);
-        return temp.toLowerCase();
+        return temp.toUpperCase();
     }
 })();

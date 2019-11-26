@@ -2,7 +2,7 @@
 // @name         【Google】结果跳转新标签
 // @namespace    http://tampermonkey.net/
 // @version      0.1
-// @description  try to take over the world!
+// @description  点击谷歌搜索结果时开启一个新的标签页
 // @author       OnySakura
 // @include      *google.*
 // ==/UserScript==

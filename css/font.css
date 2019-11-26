@@ -1,0 +1,45 @@
+/* 全局替换字体 */
+body,
+div,
+p,
+li,
+input,
+select,
+option {
+    font-family: '思源黑体', '微软雅黑', serif !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: '思源宋体', sans-serif !important;
+}
+
+code,
+pre {
+    font-family: 'Iosevka SS07', 'Sarasa Mono T SC', monospace !important;
+}
+
+/* 字体加阴影 */
+body,
+div,
+p,
+li,
+input,
+select,
+option,
+span,
+code,
+h1,
+h2,
+h3,
+h4 {
+    text-shadow: 0 0 0.05em #666 !important;
+}
+
+input::placeholder {
+    text-shadow: 0 0;
+}

@@ -14,23 +14,31 @@
         // iframe直接返回
         return;
     }
-    // 选中的文本
-    let translateText = '';
-    const SOGO_CONFIG = {
-        enable: true,
+    let showAfterDone = true; // 全部翻译完成后再展示
+    let translateText = ''; // 选中的文本
+    const sogouTranslator = {
+        enabled: true,
         status: false,
         COLOR: '#fd6853',
         CODE: 'sougo',
         URL: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
         PID: '-',
         KEY: '-',
+        displayText() {
+            return `
+                        <div style="margin: 3px">
+                            <span style="color: ${sogouTranslator.COLOR}">${sogouTranslator.CODE}: </span>
+                            <span>{{result${sogouTranslator.CODE}}}</span>
+                        </div>
+                    `;
+        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
-            let src = SOGO_CONFIG.PID + translateText + salt + SOGO_CONFIG.KEY;
+            let src = sogouTranslator.PID + translateText + salt + sogouTranslator.KEY;
             let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
-            return "q=" + encodedTranslateText + "&pid=" + SOGO_CONFIG.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
+            return "q=" + encodedTranslateText + "&pid=" + sogouTranslator.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
         },
         parseResult(json) {
             if (json.query) {
@@ -47,23 +55,55 @@
                     return JSON.stringify(json);
                 }
             }
+        },
+        translate() {
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: sogouTranslator.URL,
+                data: sogouTranslator.initParam(),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;",
+                    "Accept": "application/json"
+                },
+                onload: function (xhr) {
+                    let d = strToJson(xhr.responseText);
+                    let innerHTML = translateDiv.innerHTML;
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let result = sogouTranslator.parseResult(d);
+                        innerHTML = innerHTML.replace('{{result' + sogouTranslator.CODE + '}}', result);
+                    } else if (xhr.status !== 200) {
+                        innerHTML = innerHTML.replace('{{result' + sogouTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+                    }
+                    translateDiv.innerHTML = innerHTML;
+                    sogouTranslator.status = true;
+                    showTranslateResult();
+                }
+            });
         }
     };
-    const BAIDU_CONFIG = {
-        enable: true,
+    const baiduTranslator = {
+        enabled: true,
         status: false,
         COLOR: '#398bfb',
         CODE: 'baidu',
         URL: 'https://fanyi-api.baidu.com/api/trans/vip/translate',
         PID: '-',
         KEY: '-',
+        displayText() {
+            return `
+                        <div style="margin: 3px">
+                            <span style="color: ${baiduTranslator.COLOR}">${baiduTranslator.CODE}: </span>
+                            <span>{{result${baiduTranslator.CODE}}}</span>
+                        </div>
+                    `;
+        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
-            let src = BAIDU_CONFIG.PID + translateText + salt + BAIDU_CONFIG.KEY;
+            let src = baiduTranslator.PID + translateText + salt + baiduTranslator.KEY;
             let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
-            return `q=${encodedTranslateText}&appid=${BAIDU_CONFIG.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
+            return `q=${encodedTranslateText}&appid=${baiduTranslator.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
         },
         parseResult(json) {
             if (json.trans_result) {
@@ -84,14 +124,46 @@
                 }
             }
             return JSON.stringify(json);
+        },
+        translate() {
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: baiduTranslator.URL,
+                data: baiduTranslator.initParam(),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;",
+                    "Accept": "application/json"
+                },
+                onload: function (xhr) {
+                    let d = strToJson(xhr.responseText);
+                    let innerHTML = translateDiv.innerHTML;
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let result = baiduTranslator.parseResult(d);
+                        innerHTML = innerHTML.replace('{{result' + baiduTranslator.CODE + '}}', result);
+                    } else if (xhr.status !== 200) {
+                        innerHTML = innerHTML.replace('{{result' + baiduTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+                    }
+                    translateDiv.innerHTML = innerHTML;
+                    baiduTranslator.status = true;
+                    showTranslateResult();
+                }
+            });
         }
     };
-    const GOOGLE_CONFIG = {
-        enable: true,
+    const googleTranslator = {
+        enabled: true,
         status: false,
         COLOR: '#1fa463',
         CODE: 'google',
         URL: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
+        displayText() {
+            return `
+                        <div style="margin: 3px">
+                            <span style="color: ${googleTranslator.COLOR}">${googleTranslator.CODE}: </span>
+                            <span>{{result${googleTranslator.CODE}}}</span>
+                        </div>
+                    `;
+        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let encodedTranslateText = encodeURI(translateText);
@@ -128,9 +200,33 @@
                 }
             }
             return result;
+        },
+        translate() {
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: googleTranslator.URL,
+                data: googleTranslator.initParam(),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded;",
+                    "Accept": "application/json"
+                },
+                onload: function (xhr) {
+                    let d = strToJson(xhr.responseText);
+                    let innerHTML = translateDiv.innerHTML;
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let result = googleTranslator.parseResult(d);
+                        innerHTML = innerHTML.replace('{{result' + googleTranslator.CODE + '}}', result);
+                    } else if (xhr.status !== 200) {
+                        innerHTML = innerHTML.replace('{{result' + googleTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+                    }
+                    translateDiv.innerHTML = innerHTML;
+                    googleTranslator.status = true;
+                    showTranslateResult();
+                }
+            });
         }
     };
-    let transList = [SOGO_CONFIG, BAIDU_CONFIG, GOOGLE_CONFIG];
+    let transList = [sogouTranslator, baiduTranslator, googleTranslator];
     // 选择文本后展示的图标
     let showIcon = document.createElement("div");
     showIcon.id = "OnySakuraTranslateShowIcon";
@@ -173,6 +269,23 @@
         return str;
     }
 
+    function showTranslateResult() {
+        if (showAfterDone) {
+            let allFinish = true;
+            for (let item of transList) {
+                allFinish = allFinish && item.status;
+            }
+            if (allFinish) {
+                translateDiv.style.display = "block";
+                for (let item of transList) {
+                    item.status = false;
+                }
+            }
+        } else {
+            translateDiv.style.display = "block";
+        }
+    }
+
     showIcon.onclick = function (ev) {
         ev = ev || window.event;
         let left = ev.clientX, top = ev.clientY;
@@ -196,60 +309,24 @@
             translateDiv.style.top = top + 'px';
             translateDiv.style.bottom = '';
         }
-        let innerHtml = `
+        let translateSource = `
                 <div style="margin: 3px">
                     <span style="color: blueviolet">src: </span>
                     <span>${translateText}</span>
                 </div>
             `;
+        translateDiv.innerHTML += translateSource;
         for (let item of transList) {
-            if (item.enable) {
-                innerHtml += `
-                        <div style="margin: 3px">
-                            <span style="color: ${item.COLOR}">${item.CODE}: </span>
-                            <span>{{result${item.CODE}}}</span>
-                        </div>
-                    `;
+            if (item.enabled) {
+                translateDiv.innerHTML += item.displayText();
             }
         }
-        translateDiv.innerHTML = innerHtml;
-        translate();
+        for (let item of transList) {
+            if (item.enabled) {
+                item.translate();
+            }
+        }
     };
-
-    function translate() {
-        let innerHTML = translateDiv.innerHTML;
-        for (let item of transList) {
-            if (item.enable) {
-                GM_xmlhttpRequest({
-                    method: "POST",
-                    url: item.URL,
-                    data: item.initParam(),
-                    headers: {
-                        "Content-Type": "application/x-www-form-urlencoded;",
-                        "Accept": "application/json"
-                    },
-                    onload: function (xhr) {
-                        let d = strToJson(xhr.responseText);
-                        if (xhr.readyState === 4 && xhr.status === 200) {
-                            let result = item.parseResult(d);
-                            innerHTML = innerHTML.replace('{{result' + item.CODE + '}}', result);
-                        } else if (xhr.status !== 200) {
-                            innerHTML = innerHTML.replace('{{result' + item.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
-                        }
-                        translateDiv.innerHTML = innerHTML;
-                        item.status = true;
-                        let allFinish = true;
-                        for (let item of transList) {
-                            allFinish = allFinish && item.status;
-                        }
-                        if (allFinish) {
-                            translateDiv.style.display = "block";
-                        }
-                    }
-                });
-            }
-        }
-    }
 
     showIcon.onmouseup = function (ev) {
         ev = ev || window.event;

@@ -14,19 +14,20 @@
         // iframe直接返回
         return;
     }
-    let showAfterDone = true; // 全部翻译完成后再展示
+    let showAfterDone = false; // 全部翻译完成后再展示
     let translateText = ''; // 选中的文本
+    let requestTimeout = 1000; // 请求超时时间
     const sogouTranslator = {
         enabled: true,
         status: false,
         COLOR: '#fd6853',
-        CODE: 'sougo',
+        CODE: 'sogou',
         URL: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
         PID: '-',
         KEY: '-',
         displayText() {
             return `
-                        <div style="margin: 3px">
+                        <div class="translateResult" style="margin: 3px">
                             <span style="color: ${sogouTranslator.COLOR}">${sogouTranslator.CODE}: </span>
                             <span>{{result${sogouTranslator.CODE}}}</span>
                         </div>
@@ -61,6 +62,7 @@
                 method: "POST",
                 url: sogouTranslator.URL,
                 data: sogouTranslator.initParam(),
+                timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
                     "Accept": "application/json"
@@ -91,7 +93,7 @@
         KEY: '-',
         displayText() {
             return `
-                        <div style="margin: 3px">
+                        <div class="translateResult" style="margin: 3px">
                             <span style="color: ${baiduTranslator.COLOR}">${baiduTranslator.CODE}: </span>
                             <span>{{result${baiduTranslator.CODE}}}</span>
                         </div>
@@ -130,6 +132,7 @@
                 method: "POST",
                 url: baiduTranslator.URL,
                 data: baiduTranslator.initParam(),
+                timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
                     "Accept": "application/json"
@@ -150,6 +153,76 @@
             });
         }
     };
+    const caiyunTranslator = {
+        enabled: true,
+        status: false,
+        COLOR: '#ddc35d',
+        CODE: 'caiyun',
+        URL: 'http://api.interpreter.caiyunai.com/v1/translator',
+        TOKEN: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
+        displayText() {
+            return `
+                        <div class="translateResult" style="margin: 3px">
+                            <span style="color: ${caiyunTranslator.COLOR}">${caiyunTranslator.CODE}: </span>
+                            <span>{{result${caiyunTranslator.CODE}}}</span>
+                        </div>
+                    `;
+        },
+        initParam: function () {
+            translateText = translateText.trim().replace(/\n/g, ',');
+            return JSON.stringify({
+                source: translateText,
+                trans_type: 'auto2zh',
+                request_id: getSalt(),
+                detect: true,
+            });
+        },
+        parseResult(json) {
+            let result, confidence = '';
+            if (json.target) {
+                result = json.target;
+                confidence = json.confidence;
+            } else {
+                let parse = {};
+                try {
+                    parse = JSON.parse(json);
+                } catch (e) {
+                }
+                if (parse.target) {
+                    result = parse.target;
+                    confidence = parse.confidence;
+                } else {
+                    result = JSON.stringify(json);
+                }
+            }
+            return `<abbr title="${confidence}">${result}</abbr>`;
+        },
+        translate() {
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: caiyunTranslator.URL,
+                data: caiyunTranslator.initParam(),
+                timeout: requestTimeout,
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-authorization": 'token ' + caiyunTranslator.TOKEN
+                },
+                onload: function (xhr) {
+                    let d = strToJson(xhr.responseText);
+                    let innerHTML = translateDiv.innerHTML;
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        let result = caiyunTranslator.parseResult(d);
+                        innerHTML = innerHTML.replace('{{result' + caiyunTranslator.CODE + '}}', result);
+                    } else if (xhr.status !== 200) {
+                        innerHTML = innerHTML.replace('{{result' + caiyunTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+                    }
+                    translateDiv.innerHTML = innerHTML;
+                    caiyunTranslator.status = true;
+                    showTranslateResult();
+                }
+            });
+        }
+    };
     const googleTranslator = {
         enabled: true,
         status: false,
@@ -158,7 +231,7 @@
         URL: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
         displayText() {
             return `
-                        <div style="margin: 3px">
+                        <div class="translateResult" style="margin: 3px">
                             <span style="color: ${googleTranslator.COLOR}">${googleTranslator.CODE}: </span>
                             <span>{{result${googleTranslator.CODE}}}</span>
                         </div>
@@ -206,6 +279,7 @@
                 method: "POST",
                 url: googleTranslator.URL,
                 data: googleTranslator.initParam(),
+                timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
                     "Accept": "application/json"
@@ -226,7 +300,7 @@
             });
         }
     };
-    let transList = [sogouTranslator, baiduTranslator, googleTranslator];
+    let transList = [sogouTranslator, baiduTranslator, caiyunTranslator, googleTranslator];
     // 选择文本后展示的图标
     let showIcon = document.createElement("div");
     showIcon.id = "OnySakuraTranslateShowIcon";
@@ -316,11 +390,13 @@
                 </div>
             `;
         translateDiv.innerHTML += translateSource;
+        let translateResult = '';
         for (let item of transList) {
             if (item.enabled) {
-                translateDiv.innerHTML += item.displayText();
+                translateResult += item.displayText();
             }
         }
+        translateDiv.innerHTML = translateSource + translateResult;
         for (let item of transList) {
             if (item.enabled) {
                 item.translate();
@@ -387,6 +463,10 @@
                 margin:auto;
                 position: fixed;
                 z-index: 100000001;
+            }
+            
+            #OnySakuraTranslateDiv .translateResult {
+                border-top: #ffc1c1 solid 1px;
             }
             .google_dict {
                 margin-left: 20px;

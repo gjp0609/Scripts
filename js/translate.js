@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         * 搜狗/百度/谷歌翻译
+// @name         * 搜狗/百度/彩云/谷歌翻译
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  try to take over the world!

@@ -16,9 +16,9 @@
     }
     let showAfterDone = false; // 全部翻译完成后再展示
     let translateText = ''; // 选中的文本
-    let requestTimeout = 1000; // 请求超时时间
+    let requestTimeout = 2000; // 请求超时时间
     const sogouTranslator = {
-        enabled: true,
+        enabled: false,
         status: false,
         COLOR: '#fd6853',
         CODE: 'sogou',
@@ -84,7 +84,7 @@
         }
     };
     const baiduTranslator = {
-        enabled: true,
+        enabled: false,
         status: false,
         COLOR: '#398bfb',
         CODE: 'baidu',

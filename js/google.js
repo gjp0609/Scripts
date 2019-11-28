@@ -4,7 +4,8 @@
 // @version      0.1
 // @description  点击谷歌搜索结果时开启一个新的标签页
 // @author       OnySakura
-// @include      *google.*
+// @include      *www.google.com*
+// @include      *www.google.co.jp*
 // ==/UserScript==
 
 (function () {

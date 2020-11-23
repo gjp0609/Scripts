@@ -6,8 +6,9 @@ let domains = [
     "jquery.com",
 ];
 let regexps = [
-    /\.google$/,
-    /\.google\w*.com$/,
+    /\.?google$/,
+    /\.?google.co.jp$/,
+    /\.?google\w*.com$/,
 ];
 
 let proxy = "127.0.0.1:1080";

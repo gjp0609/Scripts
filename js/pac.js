@@ -15,5 +15,5 @@ var Type = {
 };
 
 function FindProxyForURL(url, host) {
-    return Type.socks;
+    return Type.proxy;
 }

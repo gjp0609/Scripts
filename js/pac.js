@@ -3,6 +3,7 @@ let domains = [
     "api.github.com", // github api
     "githubusercontent.com", // github api
     "github.io",
+    "golang.org",
     "jquery.com",
 ];
 let regexps = [

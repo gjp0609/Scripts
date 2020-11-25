@@ -1,6 +1,7 @@
 // SwitchyOmega pac
 let domains = [
     "api.github.com", // github api
+    "gist.github.com",
     "githubusercontent.com", // github api
     "github.io",
     "golang.org",

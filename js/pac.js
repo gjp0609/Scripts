@@ -6,6 +6,7 @@ let domains = [
     "github.io",
     "golang.org",
     "jquery.com",
+    "wikipedia.org",
 ];
 let regexps = [
     /\.?google$/,

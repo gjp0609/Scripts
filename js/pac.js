@@ -7,6 +7,7 @@ let domains = [
     "golang.org",
     "jquery.com",
     "wikipedia.org",
+    "gstatic.com",
     "amazonaws.com",
 ];
 let regexps = [

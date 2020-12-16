@@ -9,13 +9,15 @@ let domains = [
     "wikipedia.org",
     "gstatic.com",
     "amazonaws.com",
-    "reddit.com",
+    "redd.it",
     "blogspot.com",
+
 ];
 let regexps = [
-    /\.?google$/,
+    /\.?google$/, // blog.google
     /\.?google.co.jp$/,
     /\.?google\w*.com$/,
+    /\.?reddit\w*.com$/,
 ];
 
 let proxy = "127.0.0.1:1080";

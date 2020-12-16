@@ -9,6 +9,8 @@ let domains = [
     "wikipedia.org",
     "gstatic.com",
     "amazonaws.com",
+    "reddit.com",
+    "blogspot.com",
 ];
 let regexps = [
     /\.?google$/,

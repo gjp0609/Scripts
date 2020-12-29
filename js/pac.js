@@ -11,6 +11,7 @@ let domains = [
     "amazonaws.com",
     "redd.it",
     "blogspot.com",
+    "imgur.com",
 
 ];
 let regexps = [

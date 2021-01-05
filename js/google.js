@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 (function () {
-    const BLOCK_WORDS = ['csdn'];
+    const BLOCK_WORDS = ['csdn.net'];
     let hidden = true;
     try {
         let searchDiv = document.getElementById('search');

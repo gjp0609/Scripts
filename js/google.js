@@ -4,8 +4,8 @@
 // @version      0.1
 // @description  点击谷歌搜索结果时开启一个新的标签页、屏蔽特定网站
 // @author       OnySakura
-// @include      *www.google.com*
-// @include      *www.google.co.jp*
+// @include      https://www.google.com*
+// @include      https://www.google.co.jp*
 // @grant        GM_addStyle
 // ==/UserScript==
 

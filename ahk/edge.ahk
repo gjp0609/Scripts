@@ -1,6 +1,10 @@
 #NoEnv
 #SingleInstance force
 
+I_Icon = .\img\Edge.ico
+IfExist, %I_Icon%
+Menu, Tray, Icon, %I_Icon%
+
 EmptyMem()
 
 #IfWinActive ahk_class Chrome_WidgetWin_1

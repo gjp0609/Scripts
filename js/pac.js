@@ -12,7 +12,8 @@ let domains = [
     "redd.it",
     "blogspot.com",
     "imgur.com",
-
+    "chrome.com",
+    "dmhy.org"
 ];
 let regexps = [
     /\.?google$/, // blog.google

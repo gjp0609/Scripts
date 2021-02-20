@@ -16,7 +16,18 @@
         let searchDiv = document.getElementById('search');
         let as = searchDiv.getElementsByTagName('a');
         for (const a of as) {
-            a.setAttribute('target', '_blank');
+            // new tab
+            a.addEventListener('click', e => {
+                let href = a.getAttribute('href');
+                let params = href.split('&');
+                for (const param of params) {
+                    if (param.indexOf('url=') === 0) {
+                        let url = decodeURIComponent(param.split('=')[1]);
+                        window.open(url);
+                        e.stopPropagation();
+                    }
+                }
+            });
             // block
             let cites = a.getElementsByTagName('cite');
             if (cites && cites[0]) {

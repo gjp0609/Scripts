@@ -17,19 +17,7 @@
         let as = searchDiv.getElementsByTagName('a');
         for (const a of as) {
             // new tab
-            a.addEventListener('mouseup', e => {
-                if (e.button === 0 || e.button === 1) {
-                    let href = a.getAttribute('href');
-                    let params = href.split('&');
-                    for (const param of params) {
-                        if (param.indexOf('url=') === 0) {
-                            let url = decodeURIComponent(param.split('=')[1]);
-                            window.open(url);
-                            e.stopPropagation();
-                        }
-                    }
-                }
-            });
+            a.removeAttribute('onmousedown',null);
             // block
             let cites = a.getElementsByTagName('cite');
             if (cites && cites[0]) {

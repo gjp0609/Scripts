@@ -1,8 +1,5 @@
 // SwitchyOmega pac
 let domains = [
-    "api.github.com", // github api
-    "gist.github.com",
-    "githubusercontent.com", // github api
     "github.io",
     "golang.org",
     "jquery.com",
@@ -20,6 +17,7 @@ let regexps = [
     /\.?google.co.jp$/,
     /\.?google\w*.com$/,
     /\.?reddit\w*.com$/,
+    /\.?github\w*.com$/,
 ];
 
 let proxy = "127.0.0.1:1080";

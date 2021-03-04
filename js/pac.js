@@ -1,16 +1,17 @@
 // SwitchyOmega pac
 let domains = [
+    "amazonaws.com",
+    "blogspot.com",
+    "chrome.com",
+    "dmhy.org",
     "github.io",
     "golang.org",
-    "jquery.com",
-    "wikipedia.org",
     "gstatic.com",
-    "amazonaws.com",
-    "redd.it",
-    "blogspot.com",
     "imgur.com",
-    "chrome.com",
-    "dmhy.org"
+    "jquery.com",
+    "redd.it",
+    "wikimedia.org",
+    "wikipedia.org",
 ];
 let regexps = [
     /\.?google$/, // blog.google

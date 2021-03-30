@@ -22,7 +22,7 @@ let regexps = [
     /\.?github\w*.com$/,
 ];
 
-let proxy = "127.0.0.1:11089";
+let proxy = "127.0.0.1:1080";
 
 let Type = {
     direct: "DIRECT",

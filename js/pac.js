@@ -10,7 +10,7 @@ let domains = [
     "imgur.com",
     "jquery.com",
     "redd.it",
-    // "v2ex.com",
+    "v2ex.com",
     "wikimedia.org",
     "wikipedia.org",
 ];

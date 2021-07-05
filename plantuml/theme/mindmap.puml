@@ -1,0 +1,25 @@
+!$BACKGROUND = "#FFFFFF"
+!$BORDER = "#66A895"
+!$LINE = "#86C8B5"
+!$TEXT = "#000000"
+
+skinparam default {
+    FontName "TsukuARd"
+}
+
+skinparam roundcorner 5
+skinparam shadowing false
+
+<style>
+    mindmapDiagram{
+        node {
+            BackgroundColor $BACKGROUND
+            LineColor $BORDER
+            FontColor $TEXT
+            LineThickness 1
+        }
+        arrow {
+            LineColor $LINE
+        }
+    }
+</style>

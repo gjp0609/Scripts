@@ -1,0 +1,61 @@
+@startuml
+!include ../theme/uml.puml
+
+autonumber
+
+actor 业务渠道用户 as User
+box "业务平台"
+participant 业务客户端 as BizC
+participant 业务服务端 as BizS
+end box
+box "支付平台"
+participant 支付服务收银台 as PayC
+participant 支付服务端 as PayS
+end box
+participant 通联支付 as TL
+
+User -> BizC: 点击支付
+activate BizC
+BizC -> BizS: 开始支付流程
+activate BizS
+BizS -> BizS: 生成支付所需信息
+BizS -> PayS: 提供支付所需信息（SavePayPlatConsume）
+activate PayS
+PayS -> PayS: 保存支付所需信息
+PayS -> BizS: 返回支付链接
+BizS -> BizC: 返回支付链接
+BizC -> PayC: 跳转收银台页面
+deactivate BizC
+activate PayC
+PayC -> PayS: 获取支付平台参数（getPaymentParameters）
+PayS -> PayC: 返回支付平台参数
+PayC -> PayS: 获取支付方式（obtainPayMethod）
+PayS -> PayC: 返回支付方式
+PayC -> PayC: 选择钱包支付
+PayC -> PayS: 申请支付（ConsumeApply）
+PayS -> PayC: 返回状态
+PayC -> PayS: 确定支付（PayOrder）
+PayS -> PayC: 返回状态
+PayS -> TL: 确定支付（ConsumeApply）
+activate TL
+TL -> PayS: 返回支付状态
+PayS -> PayC: 返回支付状态
+PayC -> PayC: 拉起支付
+PayC -> User: 银行支付页面
+User <-> TL: 支付
+TL -> PayC: 支付完成跳转
+PayC -> BizC: 支付完成跳转
+deactivate PayC
+activate BizC
+TL --> PayS: 支付结果通知 
+deactivate TL
+PayS --> BizS: 支付结果通知 
+BizC -> BizS: 查询支付结果
+BizS -> PayS: 查询支付结果
+PayS -> BizS: 返回支付结果
+deactivate PayS
+BizS -> BizC: 返回支付结果
+deactivate BizS
+BizC -> User: 支付结果页面
+deactivate BizC
+@enduml

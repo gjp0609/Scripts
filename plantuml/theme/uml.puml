@@ -1,0 +1,45 @@
+!$PRIMARY = "#86C8B5"
+!$PRIMARY_LIGHT = "#F8FFFC"
+!$SECOND = "#FFD79C"
+!$SECOND_LIGHT = "#FFFEF0"
+!$THIRD = "#66DDFF"
+!$THIRD_LIGHT = "#E7FCFF"
+!$LINE = "#66A895"
+
+skinparam default {
+    FontName                    "TsukuARd"
+    FontSize                    12
+}
+skinparam shadowing false
+
+skinparam ArrowColor            $LINE
+skinparam ArrowHeadColor        $LINE
+
+skinparam activity {
+    BackgroundColor             $PRIMARY_LIGHT
+    BorderColor                 $PRIMARY
+    BorderThickness             2
+    StartColor                  $PRIMARY
+    EndColor                    $PRIMARY
+    Diamond {
+        BackgroundColor         $SECOND_LIGHT
+        BorderColor             $SECOND
+    }
+}
+
+skinparam sequence {
+    LifeLineBorderColor         $PRIMARY
+    LifeLineBackgroundColor     $PRIMARY_LIGHT
+    ParticipantBorderColor      $SECOND
+    ParticipantBackgroundColor  $SECOND_LIGHT
+    ActorBorderColor            $SECOND
+    ActorBackgroundColor        $SECOND
+    BoxBorderColor              $THIRD
+    BoxBackgroundColor          $THIRD_LIGHT
+}
+
+skinparam class  {
+    BackgroundColor             $PRIMARY_LIGHT
+    ArrowColor                  $LINE
+    BorderColor                 $LINE
+}

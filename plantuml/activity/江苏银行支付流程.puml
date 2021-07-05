@@ -1,0 +1,15 @@
+@startuml
+!include ../theme/uml.puml
+start
+:点击支付;
+if (用户是否已绑定) then (已绑定)
+else (未绑定)
+    repeat :跳转信息收集页面;
+        :用户输入信息;
+    repeat while (身份证鉴权)
+endif
+:获取支付参数;
+:拉起支付;
+stop
+@enduml
+

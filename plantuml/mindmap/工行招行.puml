@@ -1,0 +1,57 @@
+@startmindmap
+!include ../theme/mindmap.puml
+<style>
+mindmapDiagram {
+    .common {
+        LineColor #b5000f
+    }
+    .icbc {
+        LineColor #c7000b
+    }
+    .cmb {
+        LineColor #a30030
+    }
+}
+
+</style>
++ 支付<<common>>
+++ 工行聚合支付<<icbc>>
+
++++ 接口<<icbc>>
+++++ 支付<<icbc>>
++++++ APP<<icbc>>
+++++++ 文档：手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<icbc>>
+++++++ 接口：IcbcPayService.pay<<icbc>>
++++++ HTML<<icbc>>
+++++++ 文档：B2CPayTransferV2.pdf<<icbc>>
+++++++ 接口：IcbcPayService.htmlPay<<icbc>>
+++++ 通知<<icbc>>
++++++ APP: 手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<icbc>>
++++++ HTML: B2CPayTransferV2.pdf<<icbc>>
+++++ 查询<<icbc>>
++++++ 查询接口_20190423.pdf<<icbc>>
+++++ 退款<<icbc>>
++++++ 退款接口_20190423.doc<<icbc>>
+++++ 对账<<icbc>>
+
++++ 平台<<icbc>>
+++++ Android<<icbc>>
+++++ IOS<<icbc>>
+++++ HTML<<icbc>>
+
+++ 招行一网通<<cmb>>
+
++++ 文档地址<<cmb>>
+++++ [[https://openhome.cmbchina.com/PayNew/pay/home]]<<cmb>>
+
++++ 接口<<cmb>>
+++++ 支付<<cmb>>
+++++ 通知<<cmb>>
+++++ 退款<<cmb>>
+
++++ 平台<<cmb>>
+++++ Android<<cmb>>
+++++ IOS<<cmb>>
+++++ HTML<<cmb>>
+++++ 招行小程序<<cmb>>
+@endmindmap

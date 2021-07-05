@@ -1,0 +1,60 @@
+@startuml
+!include ../theme/uml.puml
+
+autonumber
+
+actor 业务渠道用户 as User
+box "业务平台"
+participant 业务客户端 as BC
+participant 业务服务端 as BS
+end box
+box "支付平台"
+participant 支付服务收银台 as PC
+participant 支付服务端 as PS
+end box
+participant 工商银行 as ICBC
+
+User -> BC: 点击支付
+activate BC
+BC -> BS: 开始支付流程
+activate BS
+BS -> BS: 生成支付所需信息
+BS -> PS: 提供支付所需信息（SavePayPlatConsume）
+activate PS
+PS -> PS: 保存支付所需信息
+PS -> BS: 返回支付链接
+BS -> BC: 返回支付链接
+BC -> PC: 跳转收银台页面
+deactivate BC
+
+activate PC
+PC -> PS: 获取支付平台参数（getPaymentParameters）
+PS -> PC: 返回支付平台参数
+PC -> PS: 获取支付方式（obtainPayMethod）
+PS -> PC: 返回支付方式
+PC -> PC: 选择工行
+PC -> PS: 获取支付参数（IcbcPay）
+PS -> PS: 根据订单商户查询银行配置信息
+PS -> ICBC: 获取支付参数
+activate ICBC
+ICBC -> PS: 返回支付参数
+PS -> PC: 返回支付参数
+PC -> PC: 拉起支付
+PC -> User: 银行支付页面
+User <-> ICBC: 支付
+ICBC -> PC: 支付完成跳转
+PC -> BC: 支付完成跳转
+deactivate PC
+activate BC
+ICBC --> PS: 支付结果通知 
+deactivate ICBC
+PS --> BS: 支付结果通知 
+BC -> BS: 查询支付结果
+BS -> PS: 查询支付结果
+PS -> BS: 返回支付结果
+deactivate PS
+BS -> BC: 返回支付结果
+deactivate BS
+BC -> User: 支付结果页面
+deactivate BC
+@enduml

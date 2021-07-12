@@ -9,14 +9,20 @@ let domains = [
     "gstatic.com",
     "imgur.com",
     "jquery.com",
+    "pixiv.net",
     "redd.it",
+    "twitch.tv",
+    "twitter.com",
     "v2ex.com",
     "wikimedia.org",
     "wikipedia.org",
+    "youtu.be",
+    "youtube.com",
 ];
 let regexps = [
     /\.?google$/, // blog.google
     /\.?google.co.jp$/,
+    /\.?google.com.hk$/,
     /\.?google\w*.com$/,
     /\.?reddit\w*.com$/,
     /\.?github\w*.com$/,

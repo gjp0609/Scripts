@@ -1,9 +1,10 @@
 // ==UserScript==
-// @name         * 搜狗/百度/彩云/谷歌翻译
-// @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  try to take over the world!
+// @name         * 多源翻译
+// @namespace    https://github.com/gjp0609/Scripts/
+// @version      0.2
+// @description  搜狗/百度/彩云/谷歌/必应翻译
 // @author       OnySakura
+// @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
 // @include      *
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -17,22 +18,15 @@
     let showAfterDone = false; // 全部翻译完成后再展示
     let translateText = ''; // 选中的文本
     let requestTimeout = 2000; // 请求超时时间
+
     const sogouTranslator = {
         enabled: false,
         status: false,
         COLOR: '#fd6853',
-        CODE: 'sogou',
+        CODE: '搜狗',
         URL: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
         PID: '-',
         KEY: '-',
-        displayText() {
-            return `
-                        <div class="translateResult" style="margin: 3px">
-                            <span style="color: ${sogouTranslator.COLOR}">${sogouTranslator.CODE}: </span>
-                            <span>{{result${sogouTranslator.CODE}}}</span>
-                        </div>
-                    `;
-        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
@@ -57,7 +51,7 @@
                 }
             }
         },
-        translate() {
+        startTranslate() {
             GM_xmlhttpRequest({
                 method: "POST",
                 url: sogouTranslator.URL,
@@ -69,16 +63,7 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    let innerHTML = translateDiv.innerHTML;
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        let result = sogouTranslator.parseResult(d);
-                        innerHTML = innerHTML.replace('{{result' + sogouTranslator.CODE + '}}', result);
-                    } else if (xhr.status !== 200) {
-                        innerHTML = innerHTML.replace('{{result' + sogouTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
-                    }
-                    translateDiv.innerHTML = innerHTML;
-                    sogouTranslator.status = true;
-                    showTranslateResult();
+                   showResult(sogouTranslator, xhr, d);
                 }
             });
         }
@@ -87,18 +72,10 @@
         enabled: false,
         status: false,
         COLOR: '#398bfb',
-        CODE: 'baidu',
+        CODE: '百度',
         URL: 'https://fanyi-api.baidu.com/api/trans/vip/translate',
         PID: '-',
         KEY: '-',
-        displayText() {
-            return `
-                        <div class="translateResult" style="margin: 3px">
-                            <span style="color: ${baiduTranslator.COLOR}">${baiduTranslator.CODE}: </span>
-                            <span>{{result${baiduTranslator.CODE}}}</span>
-                        </div>
-                    `;
-        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
@@ -127,7 +104,7 @@
             }
             return JSON.stringify(json);
         },
-        translate() {
+        startTranslate() {
             GM_xmlhttpRequest({
                 method: "POST",
                 url: baiduTranslator.URL,
@@ -139,16 +116,7 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    let innerHTML = translateDiv.innerHTML;
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        let result = baiduTranslator.parseResult(d);
-                        innerHTML = innerHTML.replace('{{result' + baiduTranslator.CODE + '}}', result);
-                    } else if (xhr.status !== 200) {
-                        innerHTML = innerHTML.replace('{{result' + baiduTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
-                    }
-                    translateDiv.innerHTML = innerHTML;
-                    baiduTranslator.status = true;
-                    showTranslateResult();
+                    showResult(baiduTranslator, xhr, d);
                 }
             });
         }
@@ -157,17 +125,9 @@
         enabled: true,
         status: false,
         COLOR: '#ddc35d',
-        CODE: 'caiyun',
+        CODE: '彩云',
         URL: 'http://api.interpreter.caiyunai.com/v1/translator',
         TOKEN: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
-        displayText() {
-            return `
-                        <div class="translateResult" style="margin: 3px">
-                            <span style="color: ${caiyunTranslator.COLOR}">${caiyunTranslator.CODE}: </span>
-                            <span>{{result${caiyunTranslator.CODE}}}</span>
-                        </div>
-                    `;
-        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             return JSON.stringify({
@@ -197,7 +157,7 @@
             }
             return `<abbr title="${confidence}">${result}</abbr>`;
         },
-        translate() {
+        startTranslate() {
             GM_xmlhttpRequest({
                 method: "POST",
                 url: caiyunTranslator.URL,
@@ -209,16 +169,73 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    let innerHTML = translateDiv.innerHTML;
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        let result = caiyunTranslator.parseResult(d);
-                        innerHTML = innerHTML.replace('{{result' + caiyunTranslator.CODE + '}}', result);
-                    } else if (xhr.status !== 200) {
-                        innerHTML = innerHTML.replace('{{result' + caiyunTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
-                    }
-                    translateDiv.innerHTML = innerHTML;
-                    caiyunTranslator.status = true;
-                    showTranslateResult();
+                    showResult(caiyunTranslator, xhr, d);
+                }
+            });
+        }
+    };
+    const bingTranslator = {
+        enabled: true,
+        status: false,
+        COLOR: '#008474',
+        CODE: '必应',
+        URL: 'https://cn.bing.com/dict/search',
+        initParam: function () {
+            translateText = translateText.trim().replace(/\n/g, ',');
+            let encodedTranslateText = encodeURI(translateText);
+            return "?q=" + encodedTranslateText;
+        },
+        parseResult(html) {
+            let result = '';
+            let dom = $.parseHTML(html);
+            let lis = $(dom).find('.lf_area>div>ul>li');
+            if (lis.length > 0) {
+                for (const li of lis) {
+                    let pos = $(li).find('.pos').text();
+                    let index = bingTranslator.getPosIndex(pos);
+                    let def = $(li).find('.def>span').text();
+                    result += `
+                        <div class="OnySakuraTranslate_dict">
+                            <span class="pos pos_${index}">${pos}</span>
+                            <span class="terms">${def}</span>
+                        </div>
+                        `;
+                }
+            } else {
+                let div = $(dom).find('.lf_area>div');
+                if (div.length > 0) {
+                    result += div.children().eq(2).text();
+                }
+            }
+            return result;
+        },
+        getPosIndex(pos) {
+            switch (pos) {
+                case "n.":
+                    return 1;
+                case "v.":
+                    return 2;
+                case "pron.":
+                    return 3;
+                case "adj.":
+                    return 4;
+                case "adv.":
+                    return 5;
+                default:
+                    return 6;
+            }
+        },
+        startTranslate() {
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: bingTranslator.URL + bingTranslator.initParam(),
+                timeout: requestTimeout,
+                headers: {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+                },
+                onload: function (xhr) {
+                    let d = xhr.responseText;
+                    showResult(bingTranslator, xhr, d);
                 }
             });
         }
@@ -227,16 +244,8 @@
         enabled: true,
         status: false,
         COLOR: '#1fa463',
-        CODE: 'google',
+        CODE: '谷歌',
         URL: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
-        displayText() {
-            return `
-                        <div class="translateResult" style="margin: 3px">
-                            <span style="color: ${googleTranslator.COLOR}">${googleTranslator.CODE}: </span>
-                            <span>{{result${googleTranslator.CODE}}}</span>
-                        </div>
-                    `;
-        },
         initParam: function () {
             translateText = translateText.trim().replace(/\n/g, ',');
             let encodedTranslateText = encodeURI(translateText);
@@ -262,11 +271,10 @@
                             `;
                         }
                         result += `
-                            <div class="google_dict">
-                                <span class="base_form">${item.base_form}</span>
-                                    <span class="pos pos_${item.pos_enum}">: ${item.pos}</span>
-                                    <span class="terms">${terms}
-                                </span>
+                            <div class="OnySakuraTranslate_dict">
+                                <span class="pos pos_${item.pos_enum}">${item.pos}</span>
+                                <span class="base_form">${translateText === item.base_form ? '' : (' [' + item.base_form + '] ')}</span>
+                                <span class="terms">${terms}</span>
                             </div>
                         `;
                     }
@@ -274,7 +282,7 @@
             }
             return result;
         },
-        translate() {
+        startTranslate() {
             GM_xmlhttpRequest({
                 method: "POST",
                 url: googleTranslator.URL,
@@ -286,21 +294,13 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    let innerHTML = translateDiv.innerHTML;
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        let result = googleTranslator.parseResult(d);
-                        innerHTML = innerHTML.replace('{{result' + googleTranslator.CODE + '}}', result);
-                    } else if (xhr.status !== 200) {
-                        innerHTML = innerHTML.replace('{{result' + googleTranslator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
-                    }
-                    translateDiv.innerHTML = innerHTML;
-                    googleTranslator.status = true;
-                    showTranslateResult();
+                    showResult(googleTranslator, xhr, d);
                 }
             });
         }
     };
-    let transList = [sogouTranslator, baiduTranslator, caiyunTranslator, googleTranslator];
+
+    let transList = [sogouTranslator, baiduTranslator, caiyunTranslator, googleTranslator, bingTranslator];
     // 选择文本后展示的图标
     let showIcon = document.createElement("div");
     showIcon.id = "OnySakuraTranslateShowIcon";
@@ -312,19 +312,12 @@
     translateDiv.id = "OnySakuraTranslateDiv";
     document.body.appendChild(translateDiv);
 
-    function selectText() {
-        if (document.selection) {//For ie
-            return document.selection.createRange().text;
-        } else {
-            return window.getSelection().toString();
-        }
-    }
-
     document.onmouseup = function (ev) {
         ev = ev || window.event;
         let left = ev.clientX, top = ev.clientY;
         setTimeout(function () {
             translateText = selectText();
+            translateText = translateText ? translateText.trim() : '';
             if (translateText.length > 0) {
                 setTimeout(function () {
                     showIcon.style.display = 'block';
@@ -334,31 +327,6 @@
             }
         }, 200);
     };
-
-    function strToJson(str) {
-        try {
-            return (new Function("return " + str))();
-        } catch (e) {
-        }
-        return str;
-    }
-
-    function showTranslateResult() {
-        if (showAfterDone) {
-            let allFinish = true;
-            for (let item of transList) {
-                allFinish = allFinish && item.status;
-            }
-            if (allFinish) {
-                translateDiv.style.display = "block";
-                for (let item of transList) {
-                    item.status = false;
-                }
-            }
-        } else {
-            translateDiv.style.display = "block";
-        }
-    }
 
     showIcon.onclick = function (ev) {
         ev = ev || window.event;
@@ -385,7 +353,7 @@
         }
         let translateSource = `
                 <div style="margin: 3px">
-                    <span style="color: blueviolet">src: </span>
+                    <span style="color: blueviolet">原句：</span>
                     <span>${translateText}</span>
                 </div>
             `;
@@ -393,13 +361,13 @@
         let translateResult = '';
         for (let item of transList) {
             if (item.enabled) {
-                translateResult += item.displayText();
+                translateResult += displayText(item);
             }
         }
         translateDiv.innerHTML = translateSource + translateResult;
         for (let item of transList) {
             if (item.enabled) {
-                item.translate();
+                item.startTranslate();
             }
         }
     };
@@ -420,131 +388,67 @@
         event.stopPropagation();
     };
 
+    // 样式
+    let style = '#OnySakuraTranslateShowIcon{background-color:white;border:#fd6848 solid 2px;border-radius:200px;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;cursor:pointer;position:fixed;z-index:30000}#OnySakuraTranslateShowIcon:hover{background-color:#fd6848;color:white;animation-duration:1s}#OnySakuraTranslateShowIcon:active{border-color:white}#OnySakuraTranslateDiv{display:none;background-color:#fffaf6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslateDiv .translateResult{border-top:#ffc1c1 solid 1px}.OnySakuraTranslate_dict{margin-top:10px}.OnySakuraTranslate_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslate_dict .terms{margin-left:10px}.OnySakuraTranslate_dict .term{position:relative;display:inline-block;border-bottom:1px dotted black}.OnySakuraTranslate_dict .term{position:relative;display:inline-block;border-bottom:1px dotted black}.OnySakuraTranslate_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslate_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslate_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslate_dict .pos_1{color:#369}.OnySakuraTranslate_dict .pos_2{color:#396}.OnySakuraTranslate_dict .pos_3{color:#639}.OnySakuraTranslate_dict .pos_4{color:#693}.OnySakuraTranslate_dict .pos_5{color:#936}.OnySakuraTranslate_dict .pos_6{color:#963}';
+    GM_addStyle(style);
+
+    function selectText() {
+        if (document.selection) {//For ie
+            return document.selection.createRange().text;
+        } else {
+            return window.getSelection().toString();
+        }
+    }
+
+    function strToJson(str) {
+        try {
+            return (new Function("return " + str))();
+        } catch (e) {
+        }
+        return str;
+    }
+
+    function showResult(translator, xhr, d) {
+        let innerHTML = translateDiv.innerHTML;
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            let result = translator.parseResult(d);
+            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', result);
+        } else if (xhr.status !== 200) {
+            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+        }
+        translateDiv.innerHTML = innerHTML;
+        translator.status = true;
+        if (showAfterDone) {
+            let allFinish = true;
+            for (let item of transList) {
+                allFinish = allFinish && item.status;
+            }
+            if (allFinish) {
+                translateDiv.style.display = "block";
+                for (let item of transList) {
+                    item.status = false;
+                }
+            }
+        } else {
+            translateDiv.style.display = "block";
+        }
+    }
+
+    function displayText(translator) {
+        return `
+            <div class="translateResult" style="margin: 3px">
+                <span style="color: ${translator.COLOR}">${translator.CODE}：</span>
+                <span>{{result${translator.CODE}}}</span>
+            </div>
+        `;
+    }
+
     // 获取随机数字字符串
     function getSalt() {
         let salt = "";
         for (let i = 0; i < 5; i++) salt += parseInt(Math.random() * 8);
         return salt;
     }
-
-    // 样式
-    let style = `
-            #OnySakuraTranslateShowIcon {
-                background-color: white;
-                border: #fd6848 solid 2px;
-                border-radius: 200px;
-                color: #fd6848;
-                box-sizing: border-box;
-                width: 30px;
-                height: 30px;
-                text-align: center;
-                line-height: 26px;
-                cursor: pointer;
-                position: fixed;
-                z-index: 30000;
-            }
-
-            #OnySakuraTranslateShowIcon:hover {
-                background-color: #fd6848;
-                color: white;
-                animation-duration: 1s;
-            }
-
-            #OnySakuraTranslateShowIcon:active {
-                border-color: white;
-            }
-
-            #OnySakuraTranslateDiv {
-                display: none;
-                background-color: #FFFAF6;
-                border: #fd6848 solid 2px;
-                border-radius: 10px;
-                padding: 5px;
-                margin:auto;
-                position: fixed;
-                z-index: 100000001;
-            }
-            
-            #OnySakuraTranslateDiv .translateResult {
-                border-top: #ffc1c1 solid 1px;
-            }
-            .google_dict {
-                margin-left: 20px;
-                margin-top: 10px;
-            }
-
-            .google_dict .base_form {
-                font-size: 20px !important;
-                font-family: "Sarasa Term SC", mononoki, monospace;
-            }
-
-            .google_dict .term {
-                position: relative;
-                display: inline-block;
-                border-bottom: 1px dotted black;
-            }
-
-            .google_dict .term .tooltiptext {
-                visibility: hidden;
-                background-color: #fdc;
-                color: #555;
-                text-align: left;
-                padding: 5px;
-                border-radius: 5px;
-                position: absolute;
-                z-index: 1;
-                white-space: pre;
-                top: 200%;
-                left: 0%;
-
-            }
-
-            .google_dict .term:hover .tooltiptext {
-                visibility: visible;
-            }
-
-            /*.google_dict .term .tooltiptext::after {
-                content: " ";
-                position: absolute;
-                bottom: 100%;
-
-                left: 50%;
-                margin-left: -5px;
-                border-width: 5px;
-                border-style: solid;
-                border-color: transparent transparent #fdc transparent;
-            }
-            */
-            .google_dict .pos {
-                font-size: 10px;
-                font-style: italic;
-            }
-
-            .google_dict .pos_1 {
-                color: #369;
-            }
-
-            .google_dict .pos_2 {
-                color: #396;
-            }
-
-            .google_dict .pos_3 {
-                color: #639;
-            }
-
-            .google_dict .pos_4 {
-                color: #693;
-            }
-
-            .google_dict .pos_5 {
-                color: #936;
-            }
-
-            .google_dict .pos_6 {
-                color: #963;
-            }
-        `;
-    GM_addStyle(style);
 
     /**
      * @return {string}

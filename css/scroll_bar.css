@@ -1,12 +1,19 @@
-/* 滚动条 */
+/* 滚动条美化 */
+i {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-    background-color: rgba(127, 127, 127, 0.3);
+    width: 6px;
+    height: 6px;
+    background-color: rgba(214, 214, 214, 0.2);
 }
 *::-webkit-scrollbar-thumb {
-    background-color: rgba(50, 150, 200, 1);
-    border-radius: 8px;
+    background-color: rgba(59, 178, 237, 0.22);
+    border-radius: 6px;
     transition: background-color 0.3s;
 }
 *::-webkit-scrollbar-thumb:hover {

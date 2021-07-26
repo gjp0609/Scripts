@@ -1,0 +1,128 @@
+#OnySakuraTranslateShowIcon {
+    background-color: white;
+    border: #fd6848 solid 2px;
+    border-radius: 200px;
+    color: #fd6848;
+    box-sizing: border-box;
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    line-height: 26px;
+    cursor: pointer;
+    position: fixed;
+    z-index: 30000;
+}
+
+#OnySakuraTranslateShowIcon:hover {
+    background-color: #fd6848;
+    color: white;
+    animation-duration: 1s;
+}
+
+#OnySakuraTranslateShowIcon:active {
+    border-color: white;
+}
+
+#OnySakuraTranslateDiv {
+    display: none;
+    background-color: #FFFAF6;
+    border: #fd6848 solid 2px;
+    border-radius: 10px;
+    padding: 5px;
+    margin: auto;
+    position: fixed;
+    z-index: 100000001;
+}
+
+#OnySakuraTranslateDiv .translateResult {
+    border-top: #ffc1c1 solid 1px;
+}
+
+.OnySakuraTranslate_dict {
+    margin-top: 10px;
+}
+
+.OnySakuraTranslate_dict .base_form {
+    font-size: 14px !important;
+    font-family: "Sarasa Term SC", mononoki, monospace;
+}
+
+.OnySakuraTranslate_dict .terms {
+    margin-left: 10px;
+}
+
+.OnySakuraTranslate_dict .term {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.OnySakuraTranslate_dict .term {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.OnySakuraTranslate_dict .term .tooltiptext {
+    visibility: hidden;
+    background-color: #fdc;
+    color: #555;
+    text-align: left;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 1;
+    white-space: pre;
+    top: 200%;
+    left: 0%;
+
+}
+
+.OnySakuraTranslate_dict .term:hover .tooltiptext {
+    visibility: visible;
+}
+
+/*.google_dict .term .tooltiptext::after {
+    content: " ";
+    position: absolute;
+    bottom: 100%;
+
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #fdc transparent;
+}
+*/
+
+.OnySakuraTranslate_dict .pos {
+    width: 50px;
+    font-size: 10px;
+    font-style: italic;
+    display: inline-block;
+    text-align: right;
+}
+
+.OnySakuraTranslate_dict .pos_1 {
+    color: #369;
+}
+
+.OnySakuraTranslate_dict .pos_2 {
+    color: #396;
+}
+
+.OnySakuraTranslate_dict .pos_3 {
+    color: #639;
+}
+
+.OnySakuraTranslate_dict .pos_4 {
+    color: #693;
+}
+
+.OnySakuraTranslate_dict .pos_5 {
+    color: #936;
+}
+
+.OnySakuraTranslate_dict .pos_6 {
+    color: #963;
+}

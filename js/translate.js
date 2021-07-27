@@ -144,7 +144,12 @@
             // ************* 步骤 1：拼接规范请求串 *************
             const signedHeaders = "content-type;host";
 
-            const payload = `{"SourceText":"${translateText}","Source":"auto","Target":"zh","ProjectId":0}`;
+            const payload = JSON.stringify({
+                SourceText: translateText,
+                Source: 'auto',
+                Target: 'zh',
+                ProjectId: 0
+            });
 
             const hashedRequestPayload = getHash(payload);
             const httpRequestMethod = "POST";
@@ -570,7 +575,7 @@
         const day = ('0' + date.getUTCDate()).slice(-2)
         return `${year}-${month}-${day}`
     }
-    
+
     /**
      * @return {string}
      */

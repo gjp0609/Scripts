@@ -5,6 +5,7 @@
 // @description  搜狗/百度/彩云/谷歌/必应翻译
 // @author       OnySakura
 // @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
+// @require      https://cdn.staticfile.org/crypto-js/3.1.2/rollups/hmac-sha256.js
 // @include      *
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
@@ -28,12 +29,11 @@
         PID: '-',
         KEY: '-',
         initParam: function () {
-            translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
-            let src = sogouTranslator.PID + translateText + salt + sogouTranslator.KEY;
+            let src = this.PID + translateText + salt + this.KEY;
             let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
-            return "q=" + encodedTranslateText + "&pid=" + sogouTranslator.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
+            return "q=" + encodedTranslateText + "&pid=" + this.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
         },
         parseResult(json) {
             if (json.query) {
@@ -52,10 +52,11 @@
             }
         },
         startTranslate() {
+            let that = this;
             GM_xmlhttpRequest({
                 method: "POST",
-                url: sogouTranslator.URL,
-                data: sogouTranslator.initParam(),
+                url: this.URL,
+                data: this.initParam(),
                 timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
@@ -63,7 +64,7 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                   showResult(sogouTranslator, xhr, d);
+                    showResult(that, xhr, d);
                 }
             });
         }
@@ -77,12 +78,11 @@
         PID: '-',
         KEY: '-',
         initParam: function () {
-            translateText = translateText.trim().replace(/\n/g, ',');
             let salt = getSalt();
-            let src = baiduTranslator.PID + translateText + salt + baiduTranslator.KEY;
+            let src = this.PID + translateText + salt + this.KEY;
             let sign = MD5(src).toLowerCase();
             let encodedTranslateText = encodeURI(translateText);
-            return `q=${encodedTranslateText}&appid=${baiduTranslator.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
+            return `q=${encodedTranslateText}&appid=${this.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
         },
         parseResult(json) {
             if (json.trans_result) {
@@ -105,10 +105,11 @@
             return JSON.stringify(json);
         },
         startTranslate() {
+            let that = this;
             GM_xmlhttpRequest({
                 method: "POST",
-                url: baiduTranslator.URL,
-                data: baiduTranslator.initParam(),
+                url: this.URL,
+                data: this.initParam(),
                 timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
@@ -116,7 +117,109 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    showResult(baiduTranslator, xhr, d);
+                    showResult(that, xhr, d);
+                }
+            });
+        }
+    };
+    const tencentTranslator = {
+        enabled: false,
+        status: false,
+        COLOR: '#00a4ff',
+        CODE: '腾讯',
+        URL: 'https://tmt.tencentcloudapi.com',
+        PID: '-',
+        KEY: '-',
+        initParam: function () {
+            const endpoint = "tmt.tencentcloudapi.com";
+            const service = "tmt";
+            const region = "ap-beijing";
+            const action = "TextTranslate";
+            const version = "2018-03-21";
+            const timestamp = parseInt(new Date().getTime() / 1000);
+            // const timestamp = 1551113065
+            //时间处理, 获取世界时间日期
+            const date = getDate(timestamp);
+
+            // ************* 步骤 1：拼接规范请求串 *************
+            const signedHeaders = "content-type;host";
+
+            const payload = `{"SourceText":"${translateText}","Source":"auto","Target":"zh","ProjectId":0}`;
+
+            const hashedRequestPayload = getHash(payload);
+            const httpRequestMethod = "POST";
+            const canonicalUri = "/";
+            const canonicalQueryString = "";
+            const canonicalHeaders = "content-type:application/json; charset=utf-8\n" + "host:" + endpoint + "\n";
+
+            const canonicalRequest = httpRequestMethod + "\n"
+                + canonicalUri + "\n"
+                + canonicalQueryString + "\n"
+                + canonicalHeaders + "\n"
+                + signedHeaders + "\n"
+                + hashedRequestPayload;
+
+            // ************* 步骤 2：拼接待签名字符串 *************
+            const algorithm = "TC3-HMAC-SHA256";
+            const hashedCanonicalRequest = getHash(canonicalRequest);
+            const credentialScope = date + "/" + service + "/" + "tc3_request";
+            const stringToSign = algorithm + "\n" +
+                timestamp + "\n" +
+                credentialScope + "\n" +
+                hashedCanonicalRequest;
+
+            // ************* 步骤 3：计算签名 *************
+            const kDate = sha256(date, 'TC3' + this.KEY);
+            const kService = sha256(service, kDate);
+            const kSigning = sha256('tc3_request', kService);
+            const signature = sha256(stringToSign, kSigning, 'hex');
+
+            // ************* 步骤 4：拼接 Authorization *************
+            const authorization = algorithm + " " +
+                "Credential=" + this.PID + "/" + credentialScope + ", " +
+                "SignedHeaders=" + signedHeaders + ", " +
+                "Signature=" + signature;
+
+            return {
+                authorization: authorization,
+                contentType: 'application/json; charset=utf-8',
+                host: endpoint,
+                tcAction: action,
+                tcTimestamp: timestamp.toString(),
+                tcVersion: version,
+                tcRegion: region,
+                data: payload
+            };
+        },
+        parseResult(json) {
+            if (json.Response) {
+                if (json.Response.TargetText) {
+                    return decodeURIComponent(json.Response.TargetText);
+                }
+            }
+            return JSON.stringify(json);
+        },
+        startTranslate() {
+            let that = this;
+            let params = this.initParam();
+            GM_xmlhttpRequest({
+                method: "POST",
+                url: this.URL,
+                data: params.data,
+                timeout: requestTimeout,
+                headers: {
+                    "Content-Type": params.contentType,
+                    "Host": params.host,
+                    "X-TC-Action": params.tcAction,
+                    "X-TC-Region": params.tcRegion,
+                    "X-TC-Timestamp": params.tcTimestamp,
+                    "X-TC-Version": params.tcVersion,
+                    "Authorization": params.authorization,
+                    "Accept": "application/json"
+                },
+                onload: function (xhr) {
+                    let d = strToJson(xhr.responseText);
+                    showResult(that, xhr, d);
                 }
             });
         }
@@ -129,7 +232,6 @@
         URL: 'http://api.interpreter.caiyunai.com/v1/translator',
         TOKEN: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
         initParam: function () {
-            translateText = translateText.trim().replace(/\n/g, ',');
             return JSON.stringify({
                 source: translateText,
                 trans_type: 'auto2zh',
@@ -158,84 +260,19 @@
             return `<abbr title="${confidence}">${result}</abbr>`;
         },
         startTranslate() {
+            let that = this;
             GM_xmlhttpRequest({
                 method: "POST",
-                url: caiyunTranslator.URL,
-                data: caiyunTranslator.initParam(),
+                url: this.URL,
+                data: this.initParam(),
                 timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/json",
-                    "x-authorization": 'token ' + caiyunTranslator.TOKEN
+                    "x-authorization": 'token ' + this.TOKEN
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    showResult(caiyunTranslator, xhr, d);
-                }
-            });
-        }
-    };
-    const bingTranslator = {
-        enabled: true,
-        status: false,
-        COLOR: '#008474',
-        CODE: '必应',
-        URL: 'https://cn.bing.com/dict/search',
-        initParam: function () {
-            translateText = translateText.trim().replace(/\n/g, ',');
-            let encodedTranslateText = encodeURI(translateText);
-            return "?q=" + encodedTranslateText;
-        },
-        parseResult(html) {
-            let result = '';
-            let dom = $.parseHTML(html);
-            let lis = $(dom).find('.lf_area>div>ul>li');
-            if (lis.length > 0) {
-                for (const li of lis) {
-                    let pos = $(li).find('.pos').text();
-                    let index = bingTranslator.getPosIndex(pos);
-                    let def = $(li).find('.def>span').text();
-                    result += `
-                        <div class="OnySakuraTranslate_dict">
-                            <span class="pos pos_${index}">${pos}</span>
-                            <span class="terms">${def}</span>
-                        </div>
-                        `;
-                }
-            } else {
-                let div = $(dom).find('.lf_area>div');
-                if (div.length > 0) {
-                    result += div.children().eq(2).text();
-                }
-            }
-            return result;
-        },
-        getPosIndex(pos) {
-            switch (pos) {
-                case "n.":
-                    return 1;
-                case "v.":
-                    return 2;
-                case "pron.":
-                    return 3;
-                case "adj.":
-                    return 4;
-                case "adv.":
-                    return 5;
-                default:
-                    return 6;
-            }
-        },
-        startTranslate() {
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: bingTranslator.URL + bingTranslator.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
-                },
-                onload: function (xhr) {
-                    let d = xhr.responseText;
-                    showResult(bingTranslator, xhr, d);
+                    showResult(that, xhr, d);
                 }
             });
         }
@@ -247,7 +284,6 @@
         CODE: '谷歌',
         URL: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
         initParam: function () {
-            translateText = translateText.trim().replace(/\n/g, ',');
             let encodedTranslateText = encodeURI(translateText);
             return "q=" + encodedTranslateText;
         },
@@ -283,10 +319,11 @@
             return result;
         },
         startTranslate() {
+            let that = this;
             GM_xmlhttpRequest({
                 method: "POST",
-                url: googleTranslator.URL,
-                data: googleTranslator.initParam(),
+                url: this.URL,
+                data: this.initParam(),
                 timeout: requestTimeout,
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded;",
@@ -294,13 +331,79 @@
                 },
                 onload: function (xhr) {
                     let d = strToJson(xhr.responseText);
-                    showResult(googleTranslator, xhr, d);
+                    showResult(that, xhr, d);
+                }
+            });
+        }
+    };
+    const bingTranslator = {
+        enabled: true,
+        status: false,
+        COLOR: '#008474',
+        CODE: '必应',
+        URL: 'https://cn.bing.com/dict/search',
+        initParam: function () {
+            let encodedTranslateText = encodeURI(translateText);
+            return "?q=" + encodedTranslateText;
+        },
+        parseResult(html) {
+            let result = '';
+            let dom = $.parseHTML(html);
+            let lis = $(dom).find('.lf_area>div>ul>li');
+            if (lis.length > 0) {
+                for (const li of lis) {
+                    let pos = $(li).find('.pos').text();
+                    let index = this.getPosIndex(pos);
+                    let def = $(li).find('.def>span').text();
+                    result += `
+                        <div class="OnySakuraTranslate_dict">
+                            <span class="pos pos_${index}">${pos}</span>
+                            <span class="terms">${def}</span>
+                        </div>
+                        `;
+                }
+            } else {
+                let div = $(dom).find('.lf_area>div');
+                if (div.length > 0) {
+                    result += div.children().eq(2).text();
+                }
+            }
+            return result;
+        },
+        getPosIndex(pos) {
+            switch (pos) {
+                case "n.":
+                    return 1;
+                case "v.":
+                    return 2;
+                case "pron.":
+                    return 3;
+                case "adj.":
+                    return 4;
+                case "adv.":
+                    return 5;
+                default:
+                    return 6;
+            }
+        },
+        startTranslate() {
+            let that = this;
+            GM_xmlhttpRequest({
+                method: "GET",
+                url: this.URL + this.initParam(),
+                timeout: requestTimeout,
+                headers: {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+                },
+                onload: function (xhr) {
+                    let d = xhr.responseText;
+                    showResult(that, xhr, d);
                 }
             });
         }
     };
 
-    let transList = [sogouTranslator, baiduTranslator, caiyunTranslator, googleTranslator, bingTranslator];
+    let transList = [sogouTranslator, baiduTranslator, tencentTranslator, caiyunTranslator, googleTranslator, bingTranslator];
     // 选择文本后展示的图标
     let showIcon = document.createElement("div");
     showIcon.id = "OnySakuraTranslateShowIcon";
@@ -318,6 +421,7 @@
         setTimeout(function () {
             translateText = selectText();
             translateText = translateText ? translateText.trim() : '';
+            translateText = translateText.replace(/\n/g, ',');
             if (translateText.length > 0) {
                 setTimeout(function () {
                     showIcon.style.display = 'block';
@@ -414,7 +518,8 @@
             let result = translator.parseResult(d);
             innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', result);
         } else if (xhr.status !== 200) {
-            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', 'ERROR: ' + JSON.stringify(xhr));
+            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', 'ERROR!');
+            console.log(JSON.stringify(xhr));
         }
         translateDiv.innerHTML = innerHTML;
         translator.status = true;
@@ -450,6 +555,22 @@
         return salt;
     }
 
+    function sha256(message, secret = '', encoding) {
+        return CryptoJS.HmacSHA256(message, secret);
+    }
+
+    function getHash(message, encoding = 'hex') {
+        return CryptoJS.SHA256(message);
+    }
+
+    function getDate(timestamp) {
+        const date = new Date(timestamp * 1000)
+        const year = date.getUTCFullYear()
+        const month = ('0' + (date.getUTCMonth() + 1)).slice(-2)
+        const day = ('0' + date.getUTCDate()).slice(-2)
+        return `${year}-${month}-${day}`
+    }
+    
     /**
      * @return {string}
      */

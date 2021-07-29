@@ -6,558 +6,719 @@
 // @author       OnySakura
 // @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
 // @require      https://cdn.staticfile.org/crypto-js/3.1.2/rollups/hmac-sha256.js
+// @require      https://cdn.staticfile.org/vue/2.6.9/vue.min.js
 // @include      *
 // @grant        GM_xmlhttpRequest
 // @grant        GM_addStyle
+// @grant        GM_getValue
+// @grant        GM_setValue
 // ==/UserScript==
 
 (function () {
-    if (window.top !== window.self) {
+    if (isIframe()) {
         // iframe直接返回
         return;
     }
-    let showAfterDone = false; // 全部翻译完成后再展示
-    let translateText = ''; // 选中的文本
-    let requestTimeout = 2000; // 请求超时时间
 
-    const sogouTranslator = {
-        enabled: false,
-        status: false,
-        COLOR: '#fd6853',
-        CODE: '搜狗',
-        URL: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
-        PID: '-',
-        KEY: '-',
-        initParam: function () {
-            let salt = getSalt();
-            let src = this.PID + translateText + salt + this.KEY;
-            let sign = MD5(src).toLowerCase();
-            let encodedTranslateText = encodeURI(translateText);
-            return "q=" + encodedTranslateText + "&pid=" + this.PID + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
-        },
-        parseResult(json) {
-            if (json.query) {
-                return json.translation;
-            } else {
-                let parse = '';
-                try {
-                    parse = JSON.parse(json);
-                } catch (e) {
-                }
-                if (parse.query) {
-                    return parse.translation;
-                } else {
-                    return JSON.stringify(json);
-                }
-            }
-        },
-        startTranslate() {
-            let that = this;
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: this.URL,
-                data: this.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded;",
-                    "Accept": "application/json"
-                },
-                onload: function (xhr) {
-                    let d = strToJson(xhr.responseText);
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-    const baiduTranslator = {
-        enabled: false,
-        status: false,
-        COLOR: '#398bfb',
-        CODE: '百度',
-        URL: 'https://fanyi-api.baidu.com/api/trans/vip/translate',
-        PID: '-',
-        KEY: '-',
-        initParam: function () {
-            let salt = getSalt();
-            let src = this.PID + translateText + salt + this.KEY;
-            let sign = MD5(src).toLowerCase();
-            let encodedTranslateText = encodeURI(translateText);
-            return `q=${encodedTranslateText}&appid=${this.PID}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
-        },
-        parseResult(json) {
-            if (json.trans_result) {
-                if (json.trans_result[0].dst) {
-                    let dst = '' + json.trans_result[0].dst;
-                    return decodeURI(dst);
-                }
-            } else {
-                try {
-                    let parse = JSON.parse(json);
-                    if (parse.trans_result) {
-                        if (parse.trans_result[0].dst) {
-                            let dst = '' + parse.trans_result[0].dst;
-                            return decodeURI(dst);
-                        }
-                    }
-                } catch (e) {
-                }
-            }
-            return JSON.stringify(json);
-        },
-        startTranslate() {
-            let that = this;
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: this.URL,
-                data: this.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded;",
-                    "Accept": "application/json"
-                },
-                onload: function (xhr) {
-                    let d = strToJson(xhr.responseText);
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-    const tencentTranslator = {
-        enabled: false,
-        status: false,
-        COLOR: '#00a4ff',
-        CODE: '腾讯',
-        URL: 'https://tmt.tencentcloudapi.com',
-        PID: '-',
-        KEY: '-',
-        initParam: function () {
-            const endpoint = "tmt.tencentcloudapi.com";
-            const service = "tmt";
-            const region = "ap-beijing";
-            const action = "TextTranslate";
-            const version = "2018-03-21";
-            const timestamp = parseInt(new Date().getTime() / 1000);
-            // const timestamp = 1551113065
-            //时间处理, 获取世界时间日期
-            const date = getDate(timestamp);
+    const REQUEST_TIMEOUT = 2000; // 请求超时时间
 
-            // ************* 步骤 1：拼接规范请求串 *************
-            const signedHeaders = "content-type;host";
-
-            const payload = JSON.stringify({
-                SourceText: translateText,
-                Source: 'auto',
-                Target: 'zh',
-                ProjectId: 0
-            });
-
-            const hashedRequestPayload = getHash(payload);
-            const httpRequestMethod = "POST";
-            const canonicalUri = "/";
-            const canonicalQueryString = "";
-            const canonicalHeaders = "content-type:application/json; charset=utf-8\n" + "host:" + endpoint + "\n";
-
-            const canonicalRequest = httpRequestMethod + "\n"
-                + canonicalUri + "\n"
-                + canonicalQueryString + "\n"
-                + canonicalHeaders + "\n"
-                + signedHeaders + "\n"
-                + hashedRequestPayload;
-
-            // ************* 步骤 2：拼接待签名字符串 *************
-            const algorithm = "TC3-HMAC-SHA256";
-            const hashedCanonicalRequest = getHash(canonicalRequest);
-            const credentialScope = date + "/" + service + "/" + "tc3_request";
-            const stringToSign = algorithm + "\n" +
-                timestamp + "\n" +
-                credentialScope + "\n" +
-                hashedCanonicalRequest;
-
-            // ************* 步骤 3：计算签名 *************
-            const kDate = sha256(date, 'TC3' + this.KEY);
-            const kService = sha256(service, kDate);
-            const kSigning = sha256('tc3_request', kService);
-            const signature = sha256(stringToSign, kSigning, 'hex');
-
-            // ************* 步骤 4：拼接 Authorization *************
-            const authorization = algorithm + " " +
-                "Credential=" + this.PID + "/" + credentialScope + ", " +
-                "SignedHeaders=" + signedHeaders + ", " +
-                "Signature=" + signature;
-
-            return {
-                authorization: authorization,
-                contentType: 'application/json; charset=utf-8',
-                host: endpoint,
-                tcAction: action,
-                tcTimestamp: timestamp.toString(),
-                tcVersion: version,
-                tcRegion: region,
-                data: payload
-            };
-        },
-        parseResult(json) {
-            if (json.Response) {
-                if (json.Response.TargetText) {
-                    return decodeURIComponent(json.Response.TargetText);
-                }
-            }
-            return JSON.stringify(json);
-        },
-        startTranslate() {
-            let that = this;
-            let params = this.initParam();
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: this.URL,
-                data: params.data,
-                timeout: requestTimeout,
-                headers: {
-                    "Content-Type": params.contentType,
-                    "Host": params.host,
-                    "X-TC-Action": params.tcAction,
-                    "X-TC-Region": params.tcRegion,
-                    "X-TC-Timestamp": params.tcTimestamp,
-                    "X-TC-Version": params.tcVersion,
-                    "Authorization": params.authorization,
-                    "Accept": "application/json"
-                },
-                onload: function (xhr) {
-                    let d = strToJson(xhr.responseText);
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-    const caiyunTranslator = {
-        enabled: true,
-        status: false,
-        COLOR: '#ddc35d',
-        CODE: '彩云',
-        URL: 'http://api.interpreter.caiyunai.com/v1/translator',
-        TOKEN: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
-        initParam: function () {
-            return JSON.stringify({
-                source: translateText,
-                trans_type: 'auto2zh',
-                request_id: getSalt(),
-                detect: true,
-            });
-        },
-        parseResult(json) {
-            let result, confidence = '';
-            if (json.target) {
-                result = json.target;
-                confidence = json.confidence;
-            } else {
-                let parse = {};
-                try {
-                    parse = JSON.parse(json);
-                } catch (e) {
-                }
-                if (parse.target) {
-                    result = parse.target;
-                    confidence = parse.confidence;
-                } else {
-                    result = JSON.stringify(json);
-                }
-            }
-            return `<abbr title="${confidence}">${result}</abbr>`;
-        },
-        startTranslate() {
-            let that = this;
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: this.URL,
-                data: this.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Content-Type": "application/json",
-                    "x-authorization": 'token ' + this.TOKEN
-                },
-                onload: function (xhr) {
-                    let d = strToJson(xhr.responseText);
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-    const googleTranslator = {
-        enabled: true,
-        status: false,
-        COLOR: '#1fa463',
-        CODE: '谷歌',
-        URL: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
-        initParam: function () {
-            let encodedTranslateText = encodeURI(translateText);
-            return "q=" + encodedTranslateText;
-        },
-        parseResult(json) {
-            let result = '';
-            if (json) {
-                if (!json.sentences) {
-                    json = JSON.parse(json);
-                }
-                for (let item of json.sentences) {
-                    result += item.trans;
-                }
-                if (json.dict) {
-                    for (let item of json.dict) {
-                        let terms = '';
-                        for (let term of item.entry) {
-                            terms += `
-                                <span class="term">${term.word}
-                                    <span class="tooltiptext">score: ${term.score}<br/>reverse: ${term.reverse_translation}</span>
-                                </span>&nbsp;
-                            `;
-                        }
-                        result += `
-                            <div class="OnySakuraTranslate_dict">
-                                <span class="pos pos_${item.pos_enum}">${item.pos}</span>
-                                <span class="base_form">${translateText === item.base_form ? '' : (' [' + item.base_form + '] ')}</span>
-                                <span class="terms">${terms}</span>
-                            </div>
-                        `;
-                    }
-                }
-            }
-            return result;
-        },
-        startTranslate() {
-            let that = this;
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: this.URL,
-                data: this.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded;",
-                    "Accept": "application/json"
-                },
-                onload: function (xhr) {
-                    let d = strToJson(xhr.responseText);
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-    const bingTranslator = {
-        enabled: true,
-        status: false,
-        COLOR: '#008474',
-        CODE: '必应',
-        URL: 'https://cn.bing.com/dict/search',
-        initParam: function () {
-            let encodedTranslateText = encodeURI(translateText);
-            return "?q=" + encodedTranslateText;
-        },
-        parseResult(html) {
-            let result = '';
-            let dom = $.parseHTML(html);
-            let lis = $(dom).find('.lf_area>div>ul>li');
-            if (lis.length > 0) {
-                for (const li of lis) {
-                    let pos = $(li).find('.pos').text();
-                    let index = this.getPosIndex(pos);
-                    let def = $(li).find('.def>span').text();
-                    result += `
-                        <div class="OnySakuraTranslate_dict">
-                            <span class="pos pos_${index}">${pos}</span>
-                            <span class="terms">${def}</span>
-                        </div>
-                        `;
-                }
-            } else {
-                let div = $(dom).find('.lf_area>div');
-                if (div.length > 0) {
-                    result += div.children().eq(2).text();
-                }
-            }
-            return result;
-        },
-        getPosIndex(pos) {
-            switch (pos) {
-                case "n.":
-                    return 1;
-                case "v.":
-                    return 2;
-                case "pron.":
-                    return 3;
-                case "adj.":
-                    return 4;
-                case "adv.":
-                    return 5;
-                default:
-                    return 6;
-            }
-        },
-        startTranslate() {
-            let that = this;
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: this.URL + this.initParam(),
-                timeout: requestTimeout,
-                headers: {
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
-                },
-                onload: function (xhr) {
-                    let d = xhr.responseText;
-                    showResult(that, xhr, d);
-                }
-            });
-        }
-    };
-
-    let transList = [sogouTranslator, baiduTranslator, tencentTranslator, caiyunTranslator, googleTranslator, bingTranslator];
-    // 选择文本后展示的图标
-    let showIcon = document.createElement("div");
-    showIcon.id = "OnySakuraTranslateShowIcon";
-    showIcon.innerHTML = "译";
-    showIcon.style.display = 'none';
-    document.body.appendChild(showIcon);
-    // 翻译框
-    let translateDiv = document.createElement("div");
-    translateDiv.id = "OnySakuraTranslateDiv";
-    document.body.appendChild(translateDiv);
-
-    document.onmouseup = function (ev) {
-        ev = ev || window.event;
-        let left = ev.clientX, top = ev.clientY;
-        setTimeout(function () {
-            translateText = selectText();
-            translateText = translateText ? translateText.trim() : '';
-            translateText = translateText.replace(/\n/g, ',');
-            if (translateText.length > 0) {
-                setTimeout(function () {
-                    showIcon.style.display = 'block';
-                    showIcon.style.left = left + 'px';
-                    showIcon.style.top = top + 'px';
-                }, 100);
-            }
-        }, 200);
-    };
-
-    showIcon.onclick = function (ev) {
-        ev = ev || window.event;
-        let left = ev.clientX, top = ev.clientY;
-        let height = document.body.clientHeight, width = document.body.clientWidth;
-        translateDiv.style.display = "block";
-        if (left > parseInt(width) / 2) {
-            // 右
-            translateDiv.style.right = width - left + 'px';
-            translateDiv.style.left = '';
-        } else {
-            // 左
-            translateDiv.style.left = left + 'px';
-            translateDiv.style.right = '';
-        }
-        if (top > parseInt(height) / 2) {
-            // 下
-            translateDiv.style.bottom = height - top + 'px';
-            translateDiv.style.top = '';
-        } else {
-            // 上
-            translateDiv.style.top = top + 'px';
-            translateDiv.style.bottom = '';
-        }
-        let translateSource = `
-                <div style="margin: 3px">
-                    <span style="color: blueviolet">原句：</span>
-                    <span>${translateText}</span>
+    let resultDiv = document.createElement('div');
+    resultDiv.innerHTML = `
+        <div id="OnySakuraTranslatorParent">
+            <transition name="icon">
+                <div id="OnySakuraTranslatorShowIcon" v-if="showIcon" :style="'top: ' + mouseY + 'px; left: ' + (mouseX + 10) + 'px;'"
+                     @mousedown="stopPropagation" @mouseup="stopPropagation" @click="showResultModal">译
                 </div>
-            `;
-        translateDiv.innerHTML += translateSource;
-        let translateResult = '';
-        for (let item of transList) {
-            if (item.enabled) {
-                translateResult += displayText(item);
+            </transition>
+            <transition name="result">
+                <div id="OnySakuraTranslatorResult"
+                     v-if="showResult"
+                     :style="(resultPos.top ? 'top: ' + resultPos.top : '') + ';' + (resultPos.right ? 'right: ' + resultPos.right : '') + ';' + (resultPos.bottom ? 'bottom: ' + resultPos.bottom : '') + ';' + (resultPos.left ? 'left: ' + resultPos.left : '') + ';'"
+                     @mousedown="stopPropagation">
+                    <template v-for="translator in translatorList" v-if="translator.enabled">
+                        <div class="translateResult">
+                            <span :style="{color: translator.color}" class="translatorName" @click="showConfigModal">{{translator.name}}</span>：
+                            <template v-if="translator.result.confidence">
+                                <abbr title="{{translator.result.confidence}}">{{translator.result.text}}</abbr>
+                            </template>
+                            <template v-else>
+                                <span>{{translator.result.text}}</span>
+                            </template>
+                            <template v-if="translator.code === 'google'" v-for="item in translator.result.dict">
+                                <div class="OnySakuraTranslator_dict">
+                                    <span :class="'pos pos_'+item.pos_enum">{{item.pos}}</span>
+                                    <span class="base_form">{{translatorList[0].result === item.base_form ? '' : (' [' + item.base_form + '] ')}}</span>
+                                    <span class="terms">
+                                <template v-for="term in item.entry">
+                                     <span class="term">
+                                         {{term.word}}
+                                         <span class="tooltiptext">score: {{term.score}}<br/>reverse: {{term.reverse_translation}}</span>
+                                     </span>&nbsp;
+                                </template>
+                            </span>
+                                </div>
+                            </template>
+                            <template v-if="translator.code === 'bing'" v-for="item in translator.result.dict">
+                                <div class="OnySakuraTranslator_dict">
+                                    <span :class="'pos pos_'+item.index">{{item.pos}}</span>
+                                    <span class="terms">{{item.def}}</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </transition>
+            <transition>
+                <div id="OnySakuraTranslatorConfig" v-if="showConfig" @mousedown="stopPropagation" @mouseup="stopPropagation">
+                    <form action="javascript:void(0);">
+                        <div class="configItem title">
+                            <span>修改配置</span>
+                        </div>
+                        <div class="configItem translator">
+                            <span>开关：</span>
+                            <template v-for="translator in translatorList">
+                                <label><input type="checkbox" name="{{translator.code}}" v-model="translator.enabled" :disabled="translator.code === 'source'"/>{{translator.name}}</label>
+                            </template>
+                        </div>
+                        <div class="configItem pos">
+                            <span>固定位置：</span>
+                            <label><input type="checkbox" name="followMouse" v-model="fixPos"/></label>
+                            <div class="posValue"><label><span>Top: </span><input type="text" name="top" v-model="resultPos.top" :readonly="!fixPos"/></label></div>
+                            <div class="posValue"><label><span>Right: </span><input type="text" name="right" v-model="resultPos.right" :readonly="!fixPos"/></label></div>
+                            <div class="posValue"><label><span>Bottom: </span><input type="text" name="bottom" v-model="resultPos.bottom" :readonly="!fixPos"/></label></div>
+                            <div class="posValue"><label><span>Left: </span><input type="text" name="left" v-model="resultPos.left" :readonly="!fixPos"/></label></div>
+                        </div>
+                    </form>
+                </div>
+            </transition>
+        </div>
+    `;
+    document.body.appendChild(resultDiv);
+    GM_addStyle(`#OnySakuraTranslatorShowIcon{background-color:#fff;border:#fd6848 solid 2px;border-radius:200px;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorShowIcon.icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorShowIcon.icon-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorShowIcon.icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorShowIcon.icon-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorResult.result-enter{transform:scale(1,0)}#OnySakuraTranslatorResult.result-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorResult.result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorResult.result-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorResult{background-color:#FFFAF6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:#ffc1c1 solid 1px}#OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorResult .translateResult .translatorName{cursor:pointer}.OnySakuraTranslator_dict{margin-top:10px}.OnySakuraTranslator_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslator_dict .terms{margin-left:10px}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslator_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslator_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslator_dict .pos_1{color:#369}.OnySakuraTranslator_dict .pos_2{color:#396}.OnySakuraTranslator_dict .pos_3{color:#639}.OnySakuraTranslator_dict .pos_4{color:#693}.OnySakuraTranslator_dict .pos_5{color:#936}.OnySakuraTranslator_dict .pos_6{color:#963}#OnySakuraTranslatorConfig{background-color:#fff;border:#fd6848 solid 2px;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;cursor:pointer;position:fixed;top:50%;left:50%;z-index:100000005}#OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorConfig .configItem.translator label,#OnySakuraTranslatorConfig .configItem.pos label{padding:10px 30px 10px 0}#OnySakuraTranslatorConfig .configItem.translator>span,#OnySakuraTranslatorConfig .configItem.pos>span,#OnySakuraTranslatorConfig .configItem.pos>div>label>span{display:inline-block;width:100px;padding:3px 30px 3px 0}#OnySakuraTranslatorConfig .configItem.pos .posValue{margin-left:34px}#OnySakuraTranslatorConfig .configItem.pos .posValue>label>span{width:75px}#OnySakuraTranslatorConfig .configItem.pos .posValue input{width:50px}`);
+    new Vue({
+        el: '#OnySakuraTranslatorParent',
+        data() {
+            return {
+                translateText: '', // 选中的文本
+                showIcon: false,
+                showResult: false,
+                showConfig: false,
+                fixPos: true,
+                resultPos: {
+                    top: '30%',
+                    right: '30%',
+                    bottom: '',
+                    left: '',
+                },
+                mouseX: 0,
+                mouseY: 0,
+                translatorList: [
+                    {
+                        enabled: true,
+                        color: '#8A2BE2FF',
+                        code: 'source',
+                        name: '原句',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: '',
+                        appid: '',
+                        secret: ''
+                    },
+                    {
+                        enabled: true,
+                        color: '#fd6853',
+                        code: 'sogou',
+                        name: '搜狗',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
+                        appid: '-',
+                        secret: '-'
+                    },
+                    {
+                        enabled: true,
+                        color: '#398bfb',
+                        code: 'baidu',
+                        name: '百度',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://fanyi-api.baidu.com/api/trans/vip/translate',
+                        appid: '-',
+                        secret: '-'
+                    },
+                    {
+                        enabled: true,
+                        color: '#00a4ff',
+                        code: 'tencent',
+                        name: '腾讯',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://tmt.tencentcloudapi.com',
+                        appid: '-',
+                        secret: '-'
+                    },
+                    {
+                        enabled: true,
+                        color: '#ddc35d',
+                        code: 'caiyun',
+                        name: '彩云',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'http://api.interpreter.caiyunai.com/v1/translator',
+                        appid: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
+                        secret: ''
+                    },
+                    {
+                        enabled: true,
+                        color: '#1fa463',
+                        code: 'google',
+                        name: '谷歌',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
+                        appid: '',
+                        secret: ''
+                    },
+                    {
+                        enabled: true,
+                        color: '#008474',
+                        code: 'bing',
+                        name: '必应',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://cn.bing.com/dict/search',
+                        appid: '',
+                        secret: ''
+                    }
+                ]
             }
-        }
-        translateDiv.innerHTML = translateSource + translateResult;
-        for (let item of transList) {
-            if (item.enabled) {
-                item.startTranslate();
+        },
+        mounted() {
+            let vue = this;
+            { // source
+                vue.translatorList[0].parseResult = function (data) {
+                    let translator = vue.translatorList[0];
+                    translator.result.text = vue.translateText;
+                };
+                vue.translatorList[0].startTranslate = function () {
+                    let translator = vue.translatorList[0];
+                    let xhr = {
+                        readyState: 4,
+                        status: 200
+                    };
+                    vue.getResult(translator, xhr, null);
+                };
             }
-        }
-    };
-
-    showIcon.onmouseup = function (ev) {
-        ev = ev || window.event;
-        ev.cancelBubble = true;
-    };
-
-    // 点击页面隐藏弹出框
-    document.onclick = function (ev) {
-        showIcon.style.display = 'none';
-        translateDiv.style.display = 'none';
-    };
-
-    // 阻止事件冒泡，防止点击翻译框后隐藏
-    translateDiv.onclick = function (ev) {
-        event.stopPropagation();
-    };
-
-    // 样式
-    let style = '#OnySakuraTranslateShowIcon{background-color:white;border:#fd6848 solid 2px;border-radius:200px;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;cursor:pointer;position:fixed;z-index:30000}#OnySakuraTranslateShowIcon:hover{background-color:#fd6848;color:white;animation-duration:1s}#OnySakuraTranslateShowIcon:active{border-color:white}#OnySakuraTranslateDiv{display:none;background-color:#fffaf6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslateDiv .translateResult{border-top:#ffc1c1 solid 1px}.OnySakuraTranslate_dict{margin-top:10px}.OnySakuraTranslate_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslate_dict .terms{margin-left:10px}.OnySakuraTranslate_dict .term{position:relative;display:inline-block;border-bottom:1px dotted black}.OnySakuraTranslate_dict .term{position:relative;display:inline-block;border-bottom:1px dotted black}.OnySakuraTranslate_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslate_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslate_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslate_dict .pos_1{color:#369}.OnySakuraTranslate_dict .pos_2{color:#396}.OnySakuraTranslate_dict .pos_3{color:#639}.OnySakuraTranslate_dict .pos_4{color:#693}.OnySakuraTranslate_dict .pos_5{color:#936}.OnySakuraTranslate_dict .pos_6{color:#963}';
-    GM_addStyle(style);
-
-    function selectText() {
-        if (document.selection) {//For ie
-            return document.selection.createRange().text;
-        } else {
-            return window.getSelection().toString();
-        }
-    }
-
-    function strToJson(str) {
-        try {
-            return (new Function("return " + str))();
-        } catch (e) {
-        }
-        return str;
-    }
-
-    function showResult(translator, xhr, d) {
-        let innerHTML = translateDiv.innerHTML;
-        if (xhr.readyState === 4 && xhr.status === 200) {
-            let result = translator.parseResult(d);
-            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', result);
-        } else if (xhr.status !== 200) {
-            innerHTML = innerHTML.replace('{{result' + translator.CODE + '}}', 'ERROR!');
-            console.log(JSON.stringify(xhr));
-        }
-        translateDiv.innerHTML = innerHTML;
-        translator.status = true;
-        if (showAfterDone) {
-            let allFinish = true;
-            for (let item of transList) {
-                allFinish = allFinish && item.status;
+            { // sogou
+                vue.translatorList[1].initParam = function () {
+                    let translator = vue.translatorList[1];
+                    let translateText = vue.translateText;
+                    let salt = vue.getSalt();
+                    let src = translator.appid + translateText + salt + translator.secret;
+                    let sign = MD5(src).toLowerCase();
+                    let encodedTranslateText = encodeURI(translateText);
+                    return "q=" + encodedTranslateText + "&pid=" + translator.appid + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
+                };
+                vue.translatorList[1].parseResult = function (json) {
+                    let translator = vue.translatorList[1];
+                    if (json.query) {
+                        translator.result.text = json.translation;
+                    } else {
+                        let parse = '';
+                        try {
+                            parse = JSON.parse(json);
+                        } catch (e) {
+                        }
+                        if (parse.query) {
+                            translator.result.text = parse.translation;
+                        } else {
+                            translator.result.text = JSON.stringify(json);
+                        }
+                    }
+                };
+                vue.translatorList[1].startTranslate = function () {
+                    let translator = vue.translatorList[1];
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: translator.url,
+                        data: translator.initParam(),
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded;",
+                            "Accept": "application/json"
+                        },
+                        onload: function (xhr) {
+                            vue.getResult(translator, xhr, vue.strToJson(xhr.responseText));
+                        }
+                    });
+                };
             }
-            if (allFinish) {
-                translateDiv.style.display = "block";
-                for (let item of transList) {
-                    item.status = false;
+            { // baidu
+                vue.translatorList[2].initParam = function () {
+                    let translator = vue.translatorList[2];
+                    let translateText = vue.translateText;
+                    let salt = vue.getSalt();
+                    let src = translator.appid + translateText + salt + translator.secret;
+                    let sign = MD5(src).toLowerCase();
+                    let encodedTranslateText = encodeURI(translateText);
+                    return `q=${encodedTranslateText}&appid=${translator.appid}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
+                };
+                vue.translatorList[2].parseResult = function (json) {
+                    let translator = vue.translatorList[2];
+                    if (json.trans_result) {
+                        if (json.trans_result[0].dst) {
+                            let dst = '' + json.trans_result[0].dst;
+                            translator.result.text = decodeURI(dst);
+                            return;
+                        }
+                    } else {
+                        try {
+                            let parse = JSON.parse(json);
+                            if (parse.trans_result) {
+                                if (parse.trans_result[0].dst) {
+                                    let dst = '' + parse.trans_result[0].dst;
+                                    translator.result.text = decodeURI(dst);
+                                    return;
+                                }
+                            }
+                        } catch (e) {
+                        }
+                    }
+                    translator.result.text = JSON.stringify(json);
+                };
+                vue.translatorList[2].startTranslate = function () {
+                    let translator = vue.translatorList[2];
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: translator.url,
+                        data: translator.initParam(),
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded;",
+                            "Accept": "application/json"
+                        },
+                        onload: function (xhr) {
+                            let d = vue.strToJson(xhr.responseText);
+                            vue.getResult(translator, xhr, d);
+                        }
+                    });
+                };
+            }
+            { // tencent
+                vue.translatorList[3].initParam = function () {
+                    let translator = vue.translatorList[3];
+                    let translateText = vue.translateText;
+                    const endpoint = "tmt.tencentcloudapi.com";
+                    const service = "tmt";
+                    const region = "ap-beijing";
+                    const action = "TextTranslate";
+                    const version = "2018-03-21";
+                    const timestamp = parseInt(new Date().getTime() / 1000);
+                    // const timestamp = 1551113065
+                    //时间处理, 获取世界时间日期
+                    const date = vue.getDate(timestamp);
+
+                    // ************* 步骤 1：拼接规范请求串 *************
+                    const signedHeaders = "content-type;host";
+
+                    const payload = JSON.stringify({
+                        SourceText: translateText,
+                        Source: 'auto',
+                        Target: 'zh',
+                        ProjectId: 0
+                    });
+
+                    const hashedRequestPayload = getHash(payload);
+                    const httpRequestMethod = "POST";
+                    const canonicalUri = "/";
+                    const canonicalQueryString = "";
+                    const canonicalHeaders = "content-type:application/json; charset=utf-8\n" + "host:" + endpoint + "\n";
+
+                    const canonicalRequest = httpRequestMethod + "\n"
+                        + canonicalUri + "\n"
+                        + canonicalQueryString + "\n"
+                        + canonicalHeaders + "\n"
+                        + signedHeaders + "\n"
+                        + hashedRequestPayload;
+
+                    // ************* 步骤 2：拼接待签名字符串 *************
+                    const algorithm = "TC3-HMAC-SHA256";
+                    const hashedCanonicalRequest = getHash(canonicalRequest);
+                    const credentialScope = date + "/" + service + "/" + "tc3_request";
+                    const stringToSign = algorithm + "\n" +
+                        timestamp + "\n" +
+                        credentialScope + "\n" +
+                        hashedCanonicalRequest;
+
+                    // ************* 步骤 3：计算签名 *************
+                    const kDate = sha256(date, 'TC3' + translator.secret);
+                    const kService = sha256(service, kDate);
+                    const kSigning = sha256('tc3_request', kService);
+                    const signature = sha256(stringToSign, kSigning, 'hex');
+
+                    // ************* 步骤 4：拼接 Authorization *************
+                    const authorization = algorithm + " " +
+                        "Credential=" + translator.appid + "/" + credentialScope + ", " +
+                        "SignedHeaders=" + signedHeaders + ", " +
+                        "Signature=" + signature;
+
+                    return {
+                        authorization: authorization,
+                        contentType: 'application/json; charset=utf-8',
+                        host: endpoint,
+                        tcAction: action,
+                        tcTimestamp: timestamp.toString(),
+                        tcVersion: version,
+                        tcRegion: region,
+                        data: payload
+                    };
+                };
+                vue.translatorList[3].parseResult = function (json) {
+                    let translator = vue.translatorList[3];
+                    if (json.Response) {
+                        if (json.Response.TargetText) {
+                            translator.result.text = decodeURIComponent(json.Response.TargetText);
+                            return;
+                        }
+                    }
+                    translator.result.text = JSON.stringify(json);
+                };
+                vue.translatorList[3].startTranslate = function () {
+                    let translator = vue.translatorList[3];
+                    let params = translator.initParam();
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: translator.url,
+                        data: params.data,
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Content-Type": params.contentType,
+                            "Host": params.host,
+                            "X-TC-Action": params.tcAction,
+                            "X-TC-Region": params.tcRegion,
+                            "X-TC-Timestamp": params.tcTimestamp,
+                            "X-TC-Version": params.tcVersion,
+                            "Authorization": params.authorization,
+                            "Accept": "application/json"
+                        },
+                        onload: function (xhr) {
+                            let d = vue.strToJson(xhr.responseText);
+                            vue.getResult(translator, xhr, d);
+                        }
+                    });
+                };
+            }
+            { // caiyun
+                vue.translatorList[4].initParam = function () {
+                    let translateText = vue.translateText;
+                    return JSON.stringify({
+                        source: translateText,
+                        trans_type: 'auto2zh',
+                        request_id: vue.getSalt(),
+                        detect: true,
+                    });
+                };
+                vue.translatorList[4].parseResult = function (json) {
+                    let translator = vue.translatorList[4];
+                    let result, confidence = '';
+                    if (json.target) {
+                        result = json.target;
+                        confidence = json.confidence;
+                    } else {
+                        let parse = {};
+                        try {
+                            parse = JSON.parse(json);
+                        } catch (e) {
+                        }
+                        if (parse.target) {
+                            result = parse.target;
+                            confidence = parse.confidence;
+                        } else {
+                            result = JSON.stringify(json);
+                        }
+                    }
+                    translator.result.text = result;
+                    translator.result.confidence = confidence;
+                };
+                vue.translatorList[4].startTranslate = function () {
+                    let translator = vue.translatorList[4];
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: translator.url,
+                        data: translator.initParam(),
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-authorization": 'token ' + translator.appid
+                        },
+                        onload: function (xhr) {
+                            let d = vue.strToJson(xhr.responseText);
+                            vue.getResult(translator, xhr, d);
+                        }
+                    });
+                };
+            }
+            { // google
+                vue.translatorList[5].initParam = function () {
+                    let translateText = vue.translateText;
+                    let encodedTranslateText = encodeURI(translateText);
+                    return "q=" + encodedTranslateText;
+                };
+                vue.translatorList[5].parseResult = function (json) {
+                    let translator = vue.translatorList[5];
+                    if (json) {
+                        if (!json.sentences) {
+                            json = JSON.parse(json);
+                        }
+                        for (let item of json.sentences) {
+                            translator.result.text = item.trans;
+                        }
+                        if (json.dict) {
+                            for (let item of json.dict) {
+                                translator.result.dict.push({
+                                    pos_enum: item.pos_enum,
+                                    pos: item.pos,
+                                    base_form: item.base_form,
+                                    entry: item.entry
+                                });
+                            }
+                        }
+                    }
+                };
+                vue.translatorList[5].startTranslate = function () {
+                    let translator = vue.translatorList[5];
+                    GM_xmlhttpRequest({
+                        method: "POST",
+                        url: translator.url,
+                        data: translator.initParam(),
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Content-Type": "application/x-www-form-urlencoded;",
+                            "Accept": "application/json"
+                        },
+                        onload: function (xhr) {
+                            let d = vue.strToJson(xhr.responseText);
+                            vue.getResult(translator, xhr, d);
+                        }
+                    });
+                };
+            }
+            { // bing
+                vue.translatorList[6].getPosIndex = function (pos) {
+                    switch (pos) {
+                        case "n.":
+                            return 1;
+                        case "v.":
+                            return 2;
+                        case "pron.":
+                            return 3;
+                        case "adj.":
+                            return 4;
+                        case "adv.":
+                            return 5;
+                        default:
+                            return 6;
+                    }
+                };
+                vue.translatorList[6].initParam = function () {
+                    let translateText = vue.translateText;
+                    let encodedTranslateText = encodeURI(translateText);
+                    return "?q=" + encodedTranslateText;
+                };
+                vue.translatorList[6].parseResult = function (html) {
+                    let translator = vue.translatorList[6];
+                    let dom = $.parseHTML(html);
+                    let lis = $(dom).find('.lf_area>div>ul>li');
+                    if (lis.length > 0) {
+                        for (const li of lis) {
+                            let pos = $(li).find('.pos').text();
+                            let index = translator.getPosIndex(pos);
+                            let def = $(li).find('.def>span').text();
+                            translator.result.dict.push({
+                                index: index,
+                                pos: pos,
+                                def: def
+                            });
+                        }
+                    } else {
+                        let div = $(dom).find('.lf_area>div');
+                        if (div.length > 0) {
+                            translator.result.text = div.children().eq(2).text();
+                        }
+                    }
+                };
+                vue.translatorList[6].startTranslate = function () {
+                    let translator = vue.translatorList[6];
+                    GM_xmlhttpRequest({
+                        method: "GET",
+                        url: translator.url + translator.initParam(),
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+                        },
+                        onload: function (xhr) {
+                            let d = xhr.responseText;
+                            vue.getResult(translator, xhr, d);
+                        }
+                    });
+                };
+            }
+
+            // 点击页面隐藏弹出框
+            document.onmousedown = function (ev) {
+                vue.showIcon = false;
+                vue.showResult = false;
+                vue.showConfig = false;
+                let enabled = {};
+                for (const translator of vue.translatorList) {
+                    enabled[translator.code] = translator.enabled;
+                    translator.result.text = '';
+                    translator.result.dict = [];
                 }
+                console.log(vue.resultPos);
+                // save config
+                GM_setValue('OnySakuraTranslatorConfig', JSON.stringify({
+                    enabled: enabled,
+                    followMouse: vue.followMouse,
+                    resultPos: {
+                        top: vue.resultPos.top,
+                        right: vue.resultPos.right,
+                        bottom: vue.resultPos.bottom,
+                        left: vue.resultPos.left
+                    }
+                }));
+            };
+
+            document.onmouseup = function (ev) {
+                ev = ev || window.event;
+                vue.translateText = vue.getSelection();
+                if (vue.translateText.length > 0) {
+                    console.log('onysakuraTranslator', '显示按钮', vue.translateText);
+                    vue.mouseX = ev.clientX;
+                    vue.mouseY = ev.clientY;
+                    vue.showIcon = true;
+                }
+            };
+
+            // 恢复配置
+            let config = GM_getValue('OnySakuraTranslatorConfig', false);
+            console.log(config);
+            if (config) {
+                config = JSON.parse(config);
+                vue.followMouse = config.followMouse;
+                for (const translator of vue.translatorList) {
+                    translator.enabled = config.enabled[translator.code];
+                }
+                vue.resultPos.top = config.resultPos.top || '';
+                vue.resultPos.right = config.resultPos.right || '';
+                vue.resultPos.bottom = config.resultPos.bottom || '';
+                vue.resultPos.left = config.resultPos.left || '';
             }
-        } else {
-            translateDiv.style.display = "block";
+        },
+        methods: {
+            stopPropagation(ev) {
+                // 阻止事件冒泡，防止点击翻译框后隐藏
+                ev.stopPropagation();
+            },
+            showResultModal() {
+                console.log('onysakuraTranslator', '显示翻译', this.translateText);
+                this.showIcon = false;
+                if (this.translateText) {
+                    if (!this.fixPos) {
+                        let height = document.body.clientHeight
+                        let width = document.body.clientWidth;
+                        let left = this.mouseX;
+                        let top = this.mouseY;
+                        this.resultPos.top = '';
+                        this.resultPos.right = '';
+                        this.resultPos.bottom = '';
+                        this.resultPos.left = '';
+                        if (left > parseInt(width) / 2) {
+                            // 右
+                            this.resultPos.right = width - left + 'px';
+                        } else {
+                            // 左
+                            this.resultPos.left = left + 10 + 'px';
+                        }
+                        if (top > parseInt(height) / 2) {
+                            // 下
+                            this.resultPos.bottom = height - top + 'px';
+                        } else {
+                            // 上
+                            this.resultPos.top = top + 'px';
+                        }
+                    }
+                    this.showResult = true;
+                    for (const translator of this.translatorList) {
+                        if (translator.enabled) {
+                            try {
+                                translator.startTranslate();
+                            } catch (e) {
+                                console.warn(e);
+                                translator.result = 'Error';
+                            }
+                        }
+                    }
+                }
+            },
+            showConfigModal() {
+                this.showConfig = true;
+            },
+            saveConfig() {
+                console.log(this.translatorList);
+            },
+            getResult(translator, xhr, data) {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    translator.parseResult(data);
+                } else if (xhr.status !== 200) {
+                    translator.result = 'ERROR!';
+                    console.log('onysakuraTranslator', 'error', JSON.stringify(data));
+                }
+            },
+            getSelection() {
+                let selection = window.getSelection();
+                let selectionText = selection ? selection.toString() : '';
+                selectionText = selectionText.trim().replace(/\n/g, '');
+                return selectionText;
+            },
+            strToJson(str) {
+                try {
+                    return (new Function("return " + str))();
+                } catch (e) {
+                }
+                return str;
+            },
+            getSalt() {
+                let salt = "";
+                for (let i = 0; i < 5; i++) salt += parseInt(Math.random() * 8);
+                return salt;
+            },
+            getDate(timestamp) {
+                const date = new Date(timestamp * 1000)
+                const year = date.getUTCFullYear()
+                const month = ('0' + (date.getUTCMonth() + 1)).slice(-2)
+                const day = ('0' + date.getUTCDate()).slice(-2)
+                return `${year}-${month}-${day}`
+            }
         }
-    }
+    });
 
-    function displayText(translator) {
-        return `
-            <div class="translateResult" style="margin: 3px">
-                <span style="color: ${translator.COLOR}">${translator.CODE}：</span>
-                <span>{{result${translator.CODE}}}</span>
-            </div>
-        `;
-    }
-
-    // 获取随机数字字符串
-    function getSalt() {
-        let salt = "";
-        for (let i = 0; i < 5; i++) salt += parseInt(Math.random() * 8);
-        return salt;
+    function isIframe() {
+        return window.top !== window.self;
     }
 
     function sha256(message, secret = '', encoding) {
@@ -566,14 +727,6 @@
 
     function getHash(message, encoding = 'hex') {
         return CryptoJS.SHA256(message);
-    }
-
-    function getDate(timestamp) {
-        const date = new Date(timestamp * 1000)
-        const year = date.getUTCFullYear()
-        const month = ('0' + (date.getUTCMonth() + 1)).slice(-2)
-        const day = ('0' + date.getUTCDate()).slice(-2)
-        return `${year}-${month}-${day}`
     }
 
     /**

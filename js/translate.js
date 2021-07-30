@@ -612,7 +612,7 @@
                 ev = ev || window.event;
                 vue.translateText = vue.getSelection();
                 if (vue.translateText.length > 0) {
-                    console.log('onysakuraTranslator', '显示按钮', vue.translateText);
+                    // console.log('onysakuraTranslator', '显示按钮', vue.translateText);
                     vue.mouseX = ev.clientX;
                     vue.mouseY = ev.clientY;
                     vue.showIcon = true;
@@ -623,7 +623,7 @@
             let config = GM_getValue('OnySakuraTranslatorConfig', false);
             if (config) {
                 config = JSON.parse(config);
-                console.log(config);
+                // console.log(config);
                 vue.fixPos = config.fixPos || false;
                 for (const translator of vue.translatorList) {
                     translator.enabled = config.enabled[translator.code];
@@ -640,7 +640,7 @@
                 ev.stopPropagation();
             },
             showResultModal() {
-                console.log('onysakuraTranslator', '显示翻译', this.translateText);
+                // console.log('onysakuraTranslator', '显示翻译', this.translateText);
                 this.showIcon = false;
                 if (this.translateText) {
                     if (!this.fixPos) {
@@ -682,9 +682,6 @@
             },
             showConfigModal() {
                 this.showConfig = true;
-            },
-            saveConfig() {
-                console.log(this.translatorList);
             },
             getResult(translator, xhr, data) {
                 if (xhr.readyState === 4 && xhr.status === 200) {

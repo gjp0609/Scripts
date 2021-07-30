@@ -38,7 +38,7 @@
                         <div class="translateResult">
                             <span :style="{color: translator.color}" class="translatorName" @click="showConfigModal">{{translator.name}}</span>：
                             <template v-if="translator.result.confidence">
-                                <abbr title="{{translator.result.confidence}}">{{translator.result.text}}</abbr>
+                                <abbr :title="translator.result.confidence">{{translator.result.text}}</abbr>
                             </template>
                             <template v-else>
                                 <span>{{translator.result.text}}</span>

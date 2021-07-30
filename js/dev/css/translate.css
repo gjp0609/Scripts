@@ -1,7 +1,8 @@
-#OnySakuraTranslateShowIcon {
+#OnySakuraTranslatorShowIcon {
     background-color: white;
     border: #fd6848 solid 2px;
     border-radius: 200px;
+    box-shadow: 3px 3px 5px gray;
     color: #fd6848;
     box-sizing: border-box;
     width: 30px;
@@ -10,21 +11,56 @@
     line-height: 26px;
     cursor: pointer;
     position: fixed;
+    opacity: 1;
     z-index: 30000;
 }
 
-#OnySakuraTranslateShowIcon:hover {
+/* ---------- 图标渐入 ---------- */
+#OnySakuraTranslatorShowIcon.icon-enter {
+    transform: scale(0.3, 0.3);
+}
+
+#OnySakuraTranslatorShowIcon.icon-enter-active {
+    transition: all 0.1s ease-in;
+}
+
+/* ---------- 图标渐出 ---------- */
+#OnySakuraTranslatorShowIcon.icon-leave-to {
+    transform: scale(0, 0);
+}
+
+#OnySakuraTranslatorShowIcon.icon-leave-active {
+    transition: all 0.1s ease-out;
+}
+
+/* ---------- 结果渐入 ---------- */
+#OnySakuraTranslatorResult.result-enter {
+    transform: scale(1, 0);
+}
+
+#OnySakuraTranslatorResult.result-enter-active {
+    transition: all 0.1s ease-in;
+}
+
+/* ---------- 结果渐出 ---------- */
+#OnySakuraTranslatorResult.result-leave-to {
+    transform: scale(1, 0);
+}
+
+#OnySakuraTranslatorResult.result-leave-active {
+    transition: all 0.1s ease-out;
+}
+
+#OnySakuraTranslatorShowIcon:hover {
     background-color: #fd6848;
     color: white;
-    animation-duration: 1s;
 }
 
-#OnySakuraTranslateShowIcon:active {
-    border-color: white;
+#OnySakuraTranslatorShowIcon:active {
+    margin-top: 2px;
 }
 
-#OnySakuraTranslateDiv {
-    display: none;
+#OnySakuraTranslatorResult {
     background-color: #FFFAF6;
     border: #fd6848 solid 2px;
     border-radius: 10px;
@@ -34,36 +70,47 @@
     z-index: 100000001;
 }
 
-#OnySakuraTranslateDiv .translateResult {
+
+#OnySakuraTranslatorResult .translateResult {
+    margin: 8px;
+    padding-top: 8px;
     border-top: #ffc1c1 solid 1px;
 }
 
-.OnySakuraTranslate_dict {
+#OnySakuraTranslatorResult .translateResult:first-of-type {
+    border-top: 0;
+}
+
+#OnySakuraTranslatorResult .translateResult .translatorName {
+    cursor: pointer;
+}
+
+.OnySakuraTranslator_dict {
     margin-top: 10px;
 }
 
-.OnySakuraTranslate_dict .base_form {
+.OnySakuraTranslator_dict .base_form {
     font-size: 14px !important;
     font-family: "Sarasa Term SC", mononoki, monospace;
 }
 
-.OnySakuraTranslate_dict .terms {
+.OnySakuraTranslator_dict .terms {
     margin-left: 10px;
 }
 
-.OnySakuraTranslate_dict .term {
+.OnySakuraTranslator_dict .term {
     position: relative;
     display: inline-block;
     border-bottom: 1px dotted black;
 }
 
-.OnySakuraTranslate_dict .term {
+.OnySakuraTranslator_dict .term {
     position: relative;
     display: inline-block;
     border-bottom: 1px dotted black;
 }
 
-.OnySakuraTranslate_dict .term .tooltiptext {
+.OnySakuraTranslator_dict .term .tooltiptext {
     visibility: hidden;
     background-color: #fdc;
     color: #555;
@@ -74,28 +121,15 @@
     z-index: 1;
     white-space: pre;
     top: 200%;
-    left: 0%;
-
+    left: 0;
 }
 
-.OnySakuraTranslate_dict .term:hover .tooltiptext {
+.OnySakuraTranslator_dict .term:hover .tooltiptext {
     visibility: visible;
 }
 
-/*.google_dict .term .tooltiptext::after {
-    content: " ";
-    position: absolute;
-    bottom: 100%;
 
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent #fdc transparent;
-}
-*/
-
-.OnySakuraTranslate_dict .pos {
+.OnySakuraTranslator_dict .pos {
     width: 50px;
     font-size: 10px;
     font-style: italic;
@@ -103,26 +137,83 @@
     text-align: right;
 }
 
-.OnySakuraTranslate_dict .pos_1 {
+.OnySakuraTranslator_dict .pos_1 {
     color: #369;
 }
 
-.OnySakuraTranslate_dict .pos_2 {
+.OnySakuraTranslator_dict .pos_2 {
     color: #396;
 }
 
-.OnySakuraTranslate_dict .pos_3 {
+.OnySakuraTranslator_dict .pos_3 {
     color: #639;
 }
 
-.OnySakuraTranslate_dict .pos_4 {
+.OnySakuraTranslator_dict .pos_4 {
     color: #693;
 }
 
-.OnySakuraTranslate_dict .pos_5 {
+.OnySakuraTranslator_dict .pos_5 {
     color: #936;
 }
 
-.OnySakuraTranslate_dict .pos_6 {
+.OnySakuraTranslator_dict .pos_6 {
     color: #963;
+}
+
+#OnySakuraTranslatorConfig {
+    background-color: white;
+    border: #fd6848 solid 2px;
+    border-radius: 5px;
+    box-shadow: 5px 5px 10px gray;
+    color: #fd6848;
+    box-sizing: border-box;
+    width: 800px;
+    height: 360px;
+    padding: 30px;
+    text-align: left;
+    line-height: 30px;
+    cursor: pointer;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100000005;
+}
+
+#OnySakuraTranslatorConfig .configItem.title {
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+
+#OnySakuraTranslatorConfig .configItem {
+    margin-bottom: 20px;
+    margin-left: 20px;
+}
+
+#OnySakuraTranslatorConfig .configItem.translator label,
+#OnySakuraTranslatorConfig .configItem.pos label {
+    padding: 10px 30px 10px 0;
+}
+
+#OnySakuraTranslatorConfig .configItem.translator > span,
+#OnySakuraTranslatorConfig .configItem.pos > span,
+#OnySakuraTranslatorConfig .configItem.pos > div > label > span {
+    display: inline-block;
+    width: 100px;
+    padding: 3px 30px 3px 0;
+}
+
+#OnySakuraTranslatorConfig .configItem.pos .posValue {
+    margin-left: 34px;
+}
+
+
+#OnySakuraTranslatorConfig .configItem.pos .posValue > label > span {
+    width: 75px;
+}
+
+#OnySakuraTranslatorConfig .configItem.pos .posValue input {
+    width: 50px;
 }

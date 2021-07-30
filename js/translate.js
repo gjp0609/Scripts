@@ -1,15 +1,14 @@
 // ==UserScript==
 // @name         * 多源翻译
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      0.2
-// @description  搜狗/百度/彩云/谷歌/必应翻译
+// @version      1.0
+// @description  搜狗/百度/腾讯/彩云/谷歌/必应翻译
 // @author       OnySakura
 // @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
 // @require      https://cdn.staticfile.org/crypto-js/3.1.2/rollups/hmac-sha256.js
 // @require      https://cdn.staticfile.org/vue/2.6.9/vue.min.js
 // @include      *
 // @grant        GM_xmlhttpRequest
-// @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue
 // ==/UserScript==
@@ -82,7 +81,7 @@
                         </div>
                         <div class="configItem pos">
                             <span>固定位置：</span>
-                            <label><input type="checkbox" name="followMouse" v-model="fixPos"/></label>
+                            <label><input type="checkbox" name="fixPos" v-model="fixPos"/></label>
                             <div class="posValue"><label><span>Top: </span><input type="text" name="top" v-model="resultPos.top" :readonly="!fixPos"/></label></div>
                             <div class="posValue"><label><span>Right: </span><input type="text" name="right" v-model="resultPos.right" :readonly="!fixPos"/></label></div>
                             <div class="posValue"><label><span>Bottom: </span><input type="text" name="bottom" v-model="resultPos.bottom" :readonly="!fixPos"/></label></div>
@@ -93,10 +92,17 @@
             </transition>
         </div>
     `;
-    document.body.appendChild(resultDiv);
-    GM_addStyle(`#OnySakuraTranslatorShowIcon{background-color:#fff;border:#fd6848 solid 2px;border-radius:200px;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorShowIcon.icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorShowIcon.icon-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorShowIcon.icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorShowIcon.icon-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorResult.result-enter{transform:scale(1,0)}#OnySakuraTranslatorResult.result-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorResult.result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorResult.result-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorResult{background-color:#FFFAF6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:#ffc1c1 solid 1px}#OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorResult .translateResult .translatorName{cursor:pointer}.OnySakuraTranslator_dict{margin-top:10px}.OnySakuraTranslator_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslator_dict .terms{margin-left:10px}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslator_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslator_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslator_dict .pos_1{color:#369}.OnySakuraTranslator_dict .pos_2{color:#396}.OnySakuraTranslator_dict .pos_3{color:#639}.OnySakuraTranslator_dict .pos_4{color:#693}.OnySakuraTranslator_dict .pos_5{color:#936}.OnySakuraTranslator_dict .pos_6{color:#963}#OnySakuraTranslatorConfig{background-color:#fff;border:#fd6848 solid 2px;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;cursor:pointer;position:fixed;top:50%;left:50%;z-index:100000005}#OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorConfig .configItem.translator label,#OnySakuraTranslatorConfig .configItem.pos label{padding:10px 30px 10px 0}#OnySakuraTranslatorConfig .configItem.translator>span,#OnySakuraTranslatorConfig .configItem.pos>span,#OnySakuraTranslatorConfig .configItem.pos>div>label>span{display:inline-block;width:100px;padding:3px 30px 3px 0}#OnySakuraTranslatorConfig .configItem.pos .posValue{margin-left:34px}#OnySakuraTranslatorConfig .configItem.pos .posValue>label>span{width:75px}#OnySakuraTranslatorConfig .configItem.pos .posValue input{width:50px}`);
+    let style = document.createElement('style');
+    style.textContent = `#OnySakuraTranslatorShowIcon{background-color:#fff;border:#fd6848 solid 2px;border-radius:200px;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorShowIcon.icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorShowIcon.icon-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorShowIcon.icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorShowIcon.icon-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorResult.result-enter{transform:scale(1,0)}#OnySakuraTranslatorResult.result-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorResult.result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorResult.result-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorResult{background-color:#FFFAF6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:#ffc1c1 solid 1px}#OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorResult .translateResult .translatorName{cursor:pointer}.OnySakuraTranslator_dict{margin-top:10px}.OnySakuraTranslator_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslator_dict .terms{margin-left:10px}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslator_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslator_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslator_dict .pos_1{color:#369}.OnySakuraTranslator_dict .pos_2{color:#396}.OnySakuraTranslator_dict .pos_3{color:#639}.OnySakuraTranslator_dict .pos_4{color:#693}.OnySakuraTranslator_dict .pos_5{color:#936}.OnySakuraTranslator_dict .pos_6{color:#963}#OnySakuraTranslatorConfig{background-color:#fff;border:#fd6848 solid 2px;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;cursor:pointer;position:fixed;top:50%;left:50%;z-index:100000005}#OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorConfig .configItem.translator label,#OnySakuraTranslatorConfig .configItem.pos label{padding:10px 30px 10px 0}#OnySakuraTranslatorConfig .configItem.translator>span,#OnySakuraTranslatorConfig .configItem.pos>span,#OnySakuraTranslatorConfig .configItem.pos>div>label>span{display:inline-block;width:100px;padding:3px 30px 3px 0}#OnySakuraTranslatorConfig .configItem.pos .posValue{margin-left:34px}#OnySakuraTranslatorConfig .configItem.pos .posValue>label>span{width:75px}#OnySakuraTranslatorConfig .configItem.pos .posValue input{width:50px}`;
+    let shadowRoot = document.createElement('div');
+    shadowRoot.id = 'OnySakuraTranslatorShadow';
+    document.body.appendChild(shadowRoot);
+    let shadow = shadowRoot.attachShadow({mode: 'open'});
+    shadow.appendChild(resultDiv);
+    shadow.appendChild(style);
+    let translatorParent = document.querySelector('#OnySakuraTranslatorShadow').shadowRoot.querySelector('#OnySakuraTranslatorParent')
     new Vue({
-        el: '#OnySakuraTranslatorParent',
+        el: translatorParent,
         data() {
             return {
                 translateText: '', // 选中的文本
@@ -589,11 +595,10 @@
                     translator.result.text = '';
                     translator.result.dict = [];
                 }
-                console.log(vue.resultPos);
                 // save config
                 GM_setValue('OnySakuraTranslatorConfig', JSON.stringify({
                     enabled: enabled,
-                    followMouse: vue.followMouse,
+                    fixPos: vue.fixPos,
                     resultPos: {
                         top: vue.resultPos.top,
                         right: vue.resultPos.right,
@@ -616,10 +621,10 @@
 
             // 恢复配置
             let config = GM_getValue('OnySakuraTranslatorConfig', false);
-            console.log(config);
             if (config) {
                 config = JSON.parse(config);
-                vue.followMouse = config.followMouse;
+                console.log(config);
+                vue.fixPos = config.fixPos || false;
                 for (const translator of vue.translatorList) {
                     translator.enabled = config.enabled[translator.code];
                 }
@@ -649,17 +654,17 @@
                         this.resultPos.left = '';
                         if (left > parseInt(width) / 2) {
                             // 右
-                            this.resultPos.right = width - left + 'px';
+                            this.resultPos.right = (width - left + 10) + 'px';
                         } else {
                             // 左
-                            this.resultPos.left = left + 10 + 'px';
+                            this.resultPos.left = (left + 10) + 'px';
                         }
                         if (top > parseInt(height) / 2) {
                             // 下
-                            this.resultPos.bottom = height - top + 'px';
+                            this.resultPos.bottom = (height - top + 15) + 'px';
                         } else {
                             // 上
-                            this.resultPos.top = top + 'px';
+                            this.resultPos.top = (top + 15) + 'px';
                         }
                     }
                     this.showResult = true;

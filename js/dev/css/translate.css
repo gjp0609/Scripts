@@ -1,7 +1,7 @@
 #OnySakuraTranslatorShowIcon {
     background-color: white;
     border: #fd6848 solid 2px;
-    border-radius: 200px;
+    border-radius: 100%;
     box-shadow: 3px 3px 5px gray;
     color: #fd6848;
     box-sizing: border-box;
@@ -9,6 +9,7 @@
     height: 30px;
     text-align: center;
     line-height: 26px;
+    font-size: 17px;
     cursor: pointer;
     position: fixed;
     opacity: 1;
@@ -61,6 +62,9 @@
 }
 
 #OnySakuraTranslatorResult {
+    font-size: 15px;
+    color: black;
+    line-height: 25px;
     background-color: #FFFAF6;
     border: #fd6848 solid 2px;
     border-radius: 10px;
@@ -173,6 +177,7 @@
     padding: 30px;
     text-align: left;
     line-height: 30px;
+    font-size: 15px;
     cursor: pointer;
     position: fixed;
     top: 50%;

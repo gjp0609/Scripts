@@ -120,10 +120,14 @@
 @-moz-document url-prefix("https://www.google.com/search") {
     #center_col,
     .g {
-        width: 1600px
+        width: 1300px
     }
     .g .IsZvec {
         max-width: 10000px;
-        width: 1600px
+        width: 1300px
+    }
+    /* 补充搜索结果 悬浮靠右 */
+    #rhs {
+        margin-left: 1500px;
     }
 }

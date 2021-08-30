@@ -35,13 +35,13 @@ let socksPort = "11080";
 
 let Type = {
     direct: "DIRECT",
-    proxy: "PROXY " + ip + ':' + httpPort,
+    http: "PROXY " + ip + ':' + httpPort,
     socks: "SOCKS " + ip + ':' + socksPort
 };
 
 function FindProxyForURL(url, host) {
     if (check(url, host)) {
-        return Type.socks;
+        return Type.socks + '; ' + Type.http;
     } else {
         return Type.direct;
     }

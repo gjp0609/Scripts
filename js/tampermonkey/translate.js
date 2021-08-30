@@ -3,11 +3,13 @@
 // @namespace    https://github.com/gjp0609/Scripts/
 // @version      1.0
 // @description  搜狗/百度/腾讯/彩云/谷歌/必应翻译
-// @author       OnySakura
+// @author       onysakura
 // @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
 // @require      https://cdn.staticfile.org/crypto-js/3.1.2/rollups/hmac-sha256.js
 // @require      https://cdn.staticfile.org/vue/2.6.9/vue.min.js
 // @include      *
+// @exclude      localhost
+// @exclude      127.0.0.1
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue

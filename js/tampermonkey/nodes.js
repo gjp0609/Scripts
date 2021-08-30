@@ -3,8 +3,8 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  网页背景node连线
-// @include      *
 // @author       onysakura
+// @include      *
 // @grant        none
 // ==/UserScript==
 

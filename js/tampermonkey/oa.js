@@ -1,10 +1,11 @@
 // ==UserScript==
-// @name         工时填报
+// @name         * 工时填报
 // @namespace    https://github.com/gjp0609/Scripts/
 // @version      0.1
 // @description  try to take over the world!
-// @author       Onysakura
+// @author       onysakura
 // @match        https://oa.tydic.com/jsp/index.jsp
+// @icon         https://www.google.com/s2/favicons?domain=oa.tydic.com
 // @grant        GM_addStyle
 // ==/UserScript==
 
@@ -13,9 +14,9 @@
     const INTERVAL_TIMEOUT = 300;
 
     let button = document.createElement('div');
-    button.innerHTML = `<button class="oa__button">click</button>`;
+    button.innerHTML = `<button class="oa__button">工时</button>`;
     document.body.append(button);
-    button.addEventListener('工时', e => {
+    button.addEventListener('click', e => {
         workingHour();
     });
 

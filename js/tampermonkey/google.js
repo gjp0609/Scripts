@@ -1,16 +1,17 @@
 // ==UserScript==
-// @name         【Google】结果跳转新标签 | 屏蔽特定网站
+// @name         * Google结果跳转新标签 | 屏蔽特定网站
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  点击谷歌搜索结果时开启一个新的标签页、屏蔽特定网站
-// @author       OnySakura
-// @include      https://www.google.com*
-// @include      https://www.google.co.jp*
+// @author       onysakura
+// @include      https://www.google.com/search*
+// @include      https://www.google.co.jp/search*
+// @icon         https://www.google.com/s2/favicons?domain=google.com
 // @grant        GM_addStyle
 // ==/UserScript==
 
 (function () {
-    const BLOCK_WORDS = ['csdn.net'];
+    const BLOCK_WORDS = ['csdn.net', 'cmsblogs.com'];
     let hidden = true;
     try {
         let searchDiv = document.getElementById('search');
@@ -36,6 +37,7 @@
                             }
                             parent = parent.parentNode;
                         }
+                        break;
                     }
                 }
             }

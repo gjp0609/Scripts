@@ -3,8 +3,9 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  点击正文展开吐槽
-// @author       You
+// @author       onysakura
 // @match        http://jandan.net/*
+// @icon         https://www.google.com/s2/favicons?domain=jandan.net
 // @grant        none
 // ==/UserScript==
 

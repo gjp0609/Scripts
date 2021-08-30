@@ -41,7 +41,7 @@ let Type = {
 
 function FindProxyForURL(url, host) {
     if (check(url, host)) {
-        return Type.socks + '; ' + Type.http;
+        return Type.http;
     } else {
         return Type.direct;
     }

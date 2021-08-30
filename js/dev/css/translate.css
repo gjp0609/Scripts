@@ -79,6 +79,7 @@
     margin: 8px;
     padding-top: 8px;
     border-top: #ffc1c1 solid 1px;
+    text-align: left;
 }
 
 #OnySakuraTranslatorResult .translateResult:first-of-type {

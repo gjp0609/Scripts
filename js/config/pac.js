@@ -9,6 +9,7 @@ let domains = [
     "gstatic.com",
     "imgur.com",
     "jquery.com",
+    "medium.com",
     "pixiv.net",
     "redd.it",
     "twitch.tv",

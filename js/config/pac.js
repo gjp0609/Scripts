@@ -29,17 +29,19 @@ let regexps = [
     /\.?github\w*.com$/,
 ];
 
-let proxy = "127.0.0.1:11081";
+let ip = "127.0.0.1";
+let httpPort = "11081";
+let socksPort = "11080";
 
 let Type = {
     direct: "DIRECT",
-    proxy: "PROXY " + proxy,
-    socks: "SOCKS " + proxy
+    proxy: "PROXY " + ip + ':' + httpPort,
+    socks: "SOCKS " + ip + ':' + socksPort
 };
 
 function FindProxyForURL(url, host) {
     if (check(url, host)) {
-        return Type.proxy;
+        return Type.socks;
     } else {
         return Type.direct;
     }

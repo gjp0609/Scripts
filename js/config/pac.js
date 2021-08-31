@@ -4,6 +4,7 @@ let domains = [
     "blogspot.com",
     "chrome.com",
     "dmhy.org",
+    "ggpht.com", // youtube
     "github.io",
     "golang.org",
     "gstatic.com",
@@ -18,6 +19,7 @@ let domains = [
     "wikimedia.org",
     "wikipedia.org",
     "youtu.be",
+    "ytimg.com", // youtube
     "youtube.com",
 ];
 let regexps = [

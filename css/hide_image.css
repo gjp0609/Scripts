@@ -12,27 +12,26 @@ img:hover {
 }
 
 h1 {
-    font-size: 17px !important;
+    font-size: 16px !important;
     color: #ff669640 !important;
 }
 
 h2 {
-    font-size: 16px !important;
+    font-size: 15px !important;
     color: #6ac !important;
 }
 
 h3 {
-    font-size: 15px !important;
+    font-size: 14px !important;
     color: #86a !important;
 }
 
 h4 {
-    font-size: 14px !important;
+    font-size: 13px !important;
     color: #668 !important;
 }
 
 @-moz-document domain("appinn.com") {
-    /* appin */
     .main-container {
         width: 100%;
         margin: 0 0 0 0;
@@ -58,7 +57,6 @@ h4 {
 }
 
 @-moz-document domain("jandan.net") {
-    /* 煎蛋 */
     #box,
     #wrapper > #header {
         opacity: 0.1;
@@ -105,20 +103,27 @@ h4 {
 }
 
 @-moz-document domain("v2ex.com") {
-    /* V2EX */
+    /* 淡化 logo 和广告 */
     .adsbygoogle,
     #Logo {
         opacity: 0.05;
         transition: 0.5s;
     }
-
+    /* 缩小标题 */
     h1 {
-        font-size: 15px;
+        font-size: 13px;
+        /* 保证鼠标滚动一次到正文 */
+        line-height: 50px;
+        height: 50px;
+    }
+    /* 隐藏背景 */
+    #Wrapper {
+        background-color: white;
+        background-image: none;
     }
 }
 
 @-moz-document domain("cnbeta.com") {
-    /* cnbeta */
     iframe,
     .cnbeta-side-sponsor,
     .topContent,

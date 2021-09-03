@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\VLC]
+"URL Protocol"=""
+@="VLC scheme 配置"
+
+[HKEY_CLASSES_ROOT\VLC\shell\Open\command]
+@="\"C:\\Program Files\\VideoLAN\\VLC\\vlc.cmd\" \"%1\""

@@ -18,6 +18,7 @@ let domains = [
     "v2ex.com",
     "wikimedia.org",
     "wikipedia.org",
+    "xda-developers.com",
     "youtu.be",
     "ytimg.com", // youtube
     "youtube.com",

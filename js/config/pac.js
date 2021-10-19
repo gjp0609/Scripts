@@ -4,6 +4,7 @@ let domains = [
     "blogspot.com",
     "chrome.com",
     "dmhy.org",
+    "duckduckgo.com",
     "ggpht.com", // youtube
     "github.io",
     "golang.org",

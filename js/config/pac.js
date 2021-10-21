@@ -1,28 +1,31 @@
 // SwitchyOmega pac
 let domains = [
-    "amazonaws.com",
-    "blogspot.com",
-    "chrome.com",
-    "dmhy.org",
-    "duckduckgo.com",
-    "ggpht.com", // youtube
-    "github.io",
-    "golang.org",
-    "gstatic.com",
-    "imgur.com",
-    "jquery.com",
-    "medium.com",
-    "pixiv.net",
-    "redd.it",
-    "twitch.tv",
-    "twitter.com",
-    "v2ex.com",
-    "wikimedia.org",
-    "wikipedia.org",
-    "xda-developers.com",
-    "youtu.be",
-    "ytimg.com", // youtube
-    "youtube.com",
+    'amazonaws.com',
+    'blogspot.com',
+    'bootstrapcdn.com',
+    'chrome.com',
+    'dmhy.org',
+    'duckduckgo.com',
+    'ggpht.com', // youtube
+    'github.io',
+    'golang.org',
+    'gstatic.com',
+    'imgur.com',
+    'jquery.com',
+    'jsdelivr.net',
+    'live.com', // microsoft
+    'medium.com',
+    'pixiv.net',
+    'redd.it',
+    'twitch.tv',
+    'twitter.com',
+    'v2ex.com',
+    'wikimedia.org',
+    'wikipedia.org',
+    'xda-developers.com',
+    'youtu.be',
+    'youtube.com',
+    'ytimg.com' // youtube
 ];
 let regexps = [
     /\.?google$/, // blog.google
@@ -30,17 +33,17 @@ let regexps = [
     /\.?google.com.hk$/,
     /\.?google\w*.com$/,
     /\.?reddit\w*.com$/,
-    /\.?github\w*.com$/,
+    /\.?github\w*.com$/
 ];
 
-let ip = "127.0.0.1";
-let httpPort = "11081";
-let socksPort = "11080";
+let ip = '127.0.0.1';
+let httpPort = '11081';
+let socksPort = '11080';
 
 let Type = {
-    direct: "DIRECT",
-    http: "PROXY " + ip + ':' + httpPort,
-    socks: "SOCKS " + ip + ':' + socksPort
+    direct: 'DIRECT',
+    http: 'PROXY ' + ip + ':' + httpPort,
+    socks: 'SOCKS ' + ip + ':' + socksPort
 };
 
 function FindProxyForURL(url, host) {

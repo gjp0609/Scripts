@@ -1,5 +1,5 @@
 // SwitchyOmega pac
-let domains = [
+let gfwDomains = [
     'amazonaws.com',
     'blogspot.com',
     'bootstrapcdn.com',
@@ -27,7 +27,7 @@ let domains = [
     'youtube.com',
     'ytimg.com' // youtube
 ];
-let regexps = [
+let gfwRegexps = [
     /\.?google$/, // blog.google
     /\.?google.co.jp$/,
     /\.?google.com.hk$/,
@@ -36,34 +36,58 @@ let regexps = [
     /\.?github\w*.com$/
 ];
 
-let ip = '127.0.0.1';
-let httpPort = '11081';
-let socksPort = '11080';
-
-let Type = {
-    direct: 'DIRECT',
-    http: 'PROXY ' + ip + ':' + httpPort,
-    socks: 'SOCKS ' + ip + ':' + socksPort
-};
+let proxies = [
+    {
+        name: 'gfw',
+        host: '127.0.0.1',
+        httpPort: '40080',
+        socksPort: '40081',
+        domains: gfwDomains,
+        regexps: gfwRegexps
+    },
+    {
+        name: 'qcloud',
+        host: '127.0.0.1',
+        socksPort: '40101',
+        domains: []
+    },
+    {
+        name: 'vmware',
+        host: '127.0.0.1',
+        httpPort: '40102',
+        domains: []
+    }
+];
 
 function FindProxyForURL(url, host) {
-    if (check(url, host)) {
-        return Type.http;
-    } else {
-        return Type.direct;
+    let proxy = check(url, host);
+    if (proxy) {
+        if (proxy.httpPort) {
+            return 'PROXY ' + proxy.host + ':' + proxy.httpPort;
+        }
+        if (proxy.socksPort) {
+            return 'SOCKS ' + proxy.host + ':' + proxy.socksPort;
+        }
     }
+    return 'DIRECT';
 }
 
 function check(url, host) {
-    for (let domain of domains) {
-        if (host.endsWith(domain)) {
-            return true;
+    for (const proxy of proxies) {
+        if (proxy.domains) {
+            for (let domain of proxy.domains) {
+                if (host.endsWith(domain)) {
+                    return proxy;
+                }
+            }
+        }
+        if (proxy.regexps) {
+            for (let regexp of proxy.regexps) {
+                if (regexp.test(host)) {
+                    return proxy;
+                }
+            }
         }
     }
-    for (let regexp of regexps) {
-        if (regexp.test(host)) {
-            return true;
-        }
-    }
-    return false;
+    return undefined;
 }

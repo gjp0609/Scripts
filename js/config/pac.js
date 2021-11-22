@@ -17,6 +17,7 @@ let gfwDomains = [
     'medium.com',
     'pixiv.net',
     'redd.it',
+    'stackoverflow.com',
     'twitch.tv',
     'twitter.com',
     'v2ex.com',

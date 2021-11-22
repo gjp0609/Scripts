@@ -1,12 +1,69 @@
 /* 高分屏适应（2160p、150%缩放） */
+@-moz-document domain("cloud.allinpay.com") {
+    .mgmt-content {
+        max-width: 2000px;
+    }
 
-@-moz-document domain("stackoverflow.com") {
-    body > .container,
-    #content {
-        max-width: 2160px !important;
+    .mgmt-content .mgmt-content-right {
+        width: 1600px;
+    }
+
+    .mgmt-content .mgmt-content-right .container {
+        width: 1600px;
+    }
+
+    #root > div > div > div > div.baseContent > div > div > div > div > ul {
+        width: 400px !important;
     }
 }
+@-moz-document domain("developers.weixin.qq.com") {
+    .footer,
+    .page-inner {
+        width: 100%;
+        padding: 0 0 0 200px !important;
+    }
+}
+@-moz-document domain("jianshu.com") {
+    .post {
+        width: 1600px !important;
+    }
 
+    #note-fixed-ad-container {
+        display: none;
+    }
+}
+@-moz-document domain("juejin.cn") {
+    .container {
+        max-width: 1600px;
+    }
+    .timeline-entry-list,
+    .main-area {
+        width: 1350px !important;
+    }
+    .recommend-box {
+        display: none;
+    }
+}
+@-moz-document domain("open.icbc.com.cn") {
+    .header-nav {
+        width: 99%;
+        margin-left: 0;
+    }
+
+    #markdown > table:nth-child(21) > thead > tr > th {
+        width: 150px !important;
+    }
+}
+@-moz-document domain("open.unionpay.com") {
+    #divModalDialogPubtest {
+        top: 5%;
+        height: 90%;
+    }
+
+    .closeButton span {
+        font-size: 50px !important;
+    }
+}
 @-moz-document domain("oschina.net") {
     .ui.container {
         width: 100% !important;
@@ -26,105 +83,39 @@
         display: none !important;
     }
 }
-
-@-moz-document url-prefix("https://juejin.cn/") {
+@-moz-document domain("ruanyifeng.com") {
+    body,
+    #container {
+        background-color: white;
+    }
+}
+@-moz-document domain("segmentfault.com") {
     .container {
-        max-width: 1600px;
+        max-width: 1800px;
     }
-    .timeline-entry-list,
-    .main-area {
-        width: 1350px !important;
-    }
-    .recommend-box {
-        display: none;
+}
+@-moz-document domain("stackoverflow.com") {
+    body > .container,
+    #content {
+        max-width: 2160px !important;
     }
 }
 
-@-moz-document url-prefix("https://cloud.tencent.com/developer/article") {
+@-moz-document url-prefix("https://cloud.tencent.com/developer/article")
+{
     .col-body {
         max-width: 1800px;
     }
 }
-
-@-moz-document url-prefix("https://segmentfault.com/") {
-    .container {
-        max-width: 1800px;
-    }
-}
-
-@-moz-document url-prefix("https://www.jianshu.com/p/") {
-    .post {
-        width: 1600px !important;
-    }
-
-    #note-fixed-ad-container {
-        display: none;
-    }
-}
-
-@-moz-document url-prefix("https://cloud.allinpay.com/") {
-    .mgmt-content {
-        max-width: 2000px
-    }
-
-    .mgmt-content .mgmt-content-right {
-        width: 1600px;
-    }
-
-    .mgmt-content .mgmt-content-right .container {
-        width: 1600px;
-    }
-
-    #root > div > div > div > div.baseContent > div > div > div > div > ul {
-        width: 400px !important;
-    }
-}
-
-@-moz-document url-prefix("http://www.ruanyifeng.com/") {
-    body,
-    #container {
-        background-color: white
-    }
-}
-
-@-moz-document domain("developers.weixin.qq.com") {
-    .footer,
-    .page-inner {
-        width: 100%;
-        padding: 0 0 0 200px !important;
-    }
-}
-
-@-moz-document domain("open.icbc.com.cn") {
-    .header-nav {
-        width: 99%;
-        margin-left: 0;
-    }
-
-    #markdown > table:nth-child(21) > thead > tr > th {
-        width: 150px !important;
-    }
-}
-
-@-moz-document url-prefix("open.unionpay.com") {
-    #divModalDialogPubtest {
-        top: 5%;
-        height: 90%;
-    }
-
-    .closeButton span {
-        font-size: 50px !important;
-    }
-}
-
-@-moz-document url-prefix("https://www.google.com/search") {
+@-moz-document url-prefix("https://www.google.com/search")
+{
     #center_col,
     .g {
-        width: 1300px
+        width: 1300px;
     }
     .g .IsZvec {
         max-width: 10000px;
-        width: 1300px
+        width: 1300px;
     }
     /* 补充搜索结果 悬浮靠右 */
     #rhs {

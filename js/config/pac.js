@@ -16,6 +16,7 @@ let gfwDomains = [
     'live.com', // microsoft
     'medium.com',
     'pixiv.net',
+    'qiita.com',
     'redd.it',
     'stackoverflow.com',
     'twitch.tv',

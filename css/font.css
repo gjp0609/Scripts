@@ -18,8 +18,9 @@ h6 {
 }
 
 code,
-pre {
+pre,
+code *,
+pre * {
     font-family: 'MPlus', 'Sarasa Mono T SC', monospace !important;
-    text-shadow: 0 0 0.05em #666 !important;
     color: #0089d8;
 }

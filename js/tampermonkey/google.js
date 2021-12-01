@@ -18,7 +18,8 @@
         let as = searchDiv.getElementsByTagName('a');
         for (const a of as) {
             // new tab
-            a.removeAttribute('onmousedown',null);
+            a.removeAttribute('onmousedown', null);
+            a.target = '_blank';
             // block
             let cites = a.getElementsByTagName('cite');
             if (cites && cites[0]) {
@@ -123,8 +124,7 @@
 `;
     GM_addStyle(style);
     let div = document.createElement('div');
-    div.innerHTML =
-        `<div class="hide_block_div">
+    div.innerHTML = `<div class="hide_block_div">
             <div class="hide_block_label">Hide:</div>
             <label class="hide_block_switch">
                 <input id="hide_block_input" type="checkbox" checked>
@@ -133,9 +133,9 @@
         </div>`;
     document.body.append(div);
     let hideInput = document.getElementById('hide_block_input');
-    hideInput.addEventListener('change', _ => {
+    hideInput.addEventListener('change', (e) => {
         hide();
-    })
+    });
 
     hide();
 
@@ -145,11 +145,5 @@
         for (let hideElement of hideElements) {
             hideElement.style.display = hidden ? 'block' : 'none';
         }
-    }
-
-    function GM_addStyle(style) {
-        let styleElement = document.createElement('style');
-        styleElement.innerText = style;
-        document.getElementsByTagName('head').item(0).appendChild(styleElement);
     }
 })();

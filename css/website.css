@@ -113,9 +113,9 @@
     }
 }
 @-moz-document domain("v2ex.com") {
-    /* 淡化 logo 和广告 */
     .adsbygoogle,
     #Logo {
+    /* 淡化 logo 和广告 */
         opacity: 0.05;
         transition: 0.5s;
     }
@@ -139,7 +139,6 @@
     }
 }
 @-moz-document domain("zhihu.com") {
-    /* 知乎 */
     .AppHeader,
     .AppHeader-inner,
     .ContentItem-actions,

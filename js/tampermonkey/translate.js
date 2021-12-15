@@ -8,8 +8,8 @@
 // @require      https://cdn.staticfile.org/crypto-js/3.1.2/rollups/hmac-sha256.js
 // @require      https://cdn.staticfile.org/vue/2.6.9/vue.min.js
 // @include      *
-// @exclude      localhost
-// @exclude      127.0.0.1
+// @exclude      http://localhost*
+// @exclude      http://127.0.0.1*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -38,7 +38,7 @@
                      v-if="showResult"
                      :style="(resultPos.top ? 'top: ' + resultPos.top : '') + ';' + (resultPos.right ? 'right: ' + resultPos.right : '') + ';' + (resultPos.bottom ? 'bottom: ' + resultPos.bottom : '') + ';' + (resultPos.left ? 'left: ' + resultPos.left : '') + ';'"
                      @mousedown="stopPropagation">
-                    <template v-for="translator in translatorList" v-if="translator.enabled">
+                    <template v-for="(translator, key) in translatorList" v-if="translator.enabled">
                         <div class="translateResult">
                             <span :style="{color: translator.color}" class="translatorName" @click="showConfigModal">{{translator.name}}</span>：
                             <template v-if="translator.result.confidence">
@@ -47,10 +47,10 @@
                             <template v-else>
                                 <span>{{translator.result.text}}</span>
                             </template>
-                            <template v-if="translator.code === 'google'" v-for="item in translator.result.dict">
+                            <template v-if="key === 'google'" v-for="item in translator.result.dict">
                                 <div class="OnySakuraTranslator_dict">
                                     <span :class="'pos pos_'+item.pos_enum">{{item.pos}}</span>
-                                    <span class="base_form">{{translatorList[0].result === item.base_form ? '' : (' [' + item.base_form + '] ')}}</span>
+                                    <span class="base_form">{{translatorList.source.result === item.base_form ? '' : (' [' + item.base_form + '] ')}}</span>
                                     <span class="terms">
                                 <template v-for="term in item.entry">
                                      <span class="term">
@@ -61,7 +61,7 @@
                             </span>
                                 </div>
                             </template>
-                            <template v-if="translator.code === 'bing'" v-for="item in translator.result.dict">
+                            <template v-if="key === 'bing'" v-for="item in translator.result.dict">
                                 <div class="OnySakuraTranslator_dict">
                                     <span :class="'pos pos_'+item.index">{{item.pos}}</span>
                                     <span class="terms">{{item.def}}</span>
@@ -79,8 +79,8 @@
                         </div>
                         <div class="configItem translator">
                             <span>开关：</span>
-                            <template v-for="translator in translatorList">
-                                <label><input type="checkbox" name="{{translator.code}}" v-model="translator.enabled" :disabled="translator.code === 'source'"/>{{translator.name}}</label>
+                            <template v-for="(translator, key) in translatorList">
+                                <label><input type="checkbox" name="{{key}}" v-model="translator.enabled" :disabled="key === 'source'"/>{{translator.name}}</label>
                             </template>
                         </div>
                         <div class="configItem pos">
@@ -101,7 +101,7 @@
     let shadowRoot = document.createElement('div');
     shadowRoot.id = 'OnySakuraTranslatorShadow';
     document.body.appendChild(shadowRoot);
-    let shadow = shadowRoot.attachShadow({mode: 'open'});
+    let shadow = shadowRoot.attachShadow({ mode: 'open' });
     shadow.appendChild(resultDiv);
     // for develop
     if (isDevelopEnv) {
@@ -115,7 +115,7 @@
     } else {
         shadow.appendChild(style);
     }
-    let translatorParent = document.querySelector('#OnySakuraTranslatorShadow').shadowRoot.querySelector('#OnySakuraTranslatorParent')
+    let translatorParent = document.querySelector('#OnySakuraTranslatorShadow').shadowRoot.querySelector('#OnySakuraTranslatorParent');
     new Vue({
         el: translatorParent,
         data() {
@@ -129,12 +129,12 @@
                     top: '30%',
                     right: '30%',
                     bottom: '',
-                    left: '',
+                    left: ''
                 },
                 mouseX: 0,
                 mouseY: 0,
-                translatorList: [
-                    {
+                translatorList: {
+                    source: {
                         enabled: true,
                         color: '#8A2BE2FF',
                         code: 'source',
@@ -147,7 +147,7 @@
                         appid: '',
                         secret: ''
                     },
-                    {
+                    sogou: {
                         enabled: true,
                         color: '#fd6853',
                         code: 'sogou',
@@ -160,7 +160,7 @@
                         appid: '-',
                         secret: '-'
                     },
-                    {
+                    baidu: {
                         enabled: true,
                         color: '#398bfb',
                         code: 'baidu',
@@ -173,7 +173,7 @@
                         appid: '-',
                         secret: '-'
                     },
-                    {
+                    tencent: {
                         enabled: true,
                         color: '#00a4ff',
                         code: 'tencent',
@@ -186,7 +186,7 @@
                         appid: '-',
                         secret: '-'
                     },
-                    {
+                    caiyun: {
                         enabled: true,
                         color: '#ddc35d',
                         code: 'caiyun',
@@ -199,7 +199,7 @@
                         appid: '3975l6lr5pcbvidl6jl2', // 官方提供测试 token，不稳定
                         secret: ''
                     },
-                    {
+                    google: {
                         enabled: true,
                         color: '#1fa463',
                         code: 'google',
@@ -212,7 +212,7 @@
                         appid: '',
                         secret: ''
                     },
-                    {
+                    bing: {
                         enabled: true,
                         color: '#008474',
                         code: 'bing',
@@ -225,18 +225,19 @@
                         appid: '',
                         secret: ''
                     }
-                ]
-            }
+                }
+            };
         },
         mounted() {
             let vue = this;
-            { // source
-                vue.translatorList[0].parseResult = function (data) {
-                    let translator = vue.translatorList[0];
+            {
+                // source
+                vue.translatorList.source.parseResult = function (data) {
+                    let translator = vue.translatorList.source;
                     translator.result.text = vue.translateText;
                 };
-                vue.translatorList[0].startTranslate = function () {
-                    let translator = vue.translatorList[0];
+                vue.translatorList.source.startTranslate = function () {
+                    let translator = vue.translatorList.source;
                     let xhr = {
                         readyState: 4,
                         status: 200
@@ -244,26 +245,26 @@
                     vue.getResult(translator, xhr, null);
                 };
             }
-            { // sogou
-                vue.translatorList[1].initParam = function () {
-                    let translator = vue.translatorList[1];
+            {
+                // sogou
+                vue.translatorList.sogou.initParam = function () {
+                    let translator = vue.translatorList.sogou;
                     let translateText = vue.translateText;
                     let salt = vue.getSalt();
                     let src = translator.appid + translateText + salt + translator.secret;
                     let sign = MD5(src).toLowerCase();
                     let encodedTranslateText = encodeURI(translateText);
-                    return "q=" + encodedTranslateText + "&pid=" + translator.appid + "&to=zh-CHS&from=auto&salt=" + salt + "&sign=" + sign;
+                    return 'q=' + encodedTranslateText + '&pid=' + translator.appid + '&to=zh-CHS&from=auto&salt=' + salt + '&sign=' + sign;
                 };
-                vue.translatorList[1].parseResult = function (json) {
-                    let translator = vue.translatorList[1];
+                vue.translatorList.sogou.parseResult = function (json) {
+                    let translator = vue.translatorList.sogou;
                     if (json.query) {
                         translator.result.text = json.translation;
                     } else {
                         let parse = '';
                         try {
                             parse = JSON.parse(json);
-                        } catch (e) {
-                        }
+                        } catch (e) {}
                         if (parse.query) {
                             translator.result.text = parse.translation;
                         } else {
@@ -271,16 +272,16 @@
                         }
                     }
                 };
-                vue.translatorList[1].startTranslate = function () {
-                    let translator = vue.translatorList[1];
+                vue.translatorList.sogou.startTranslate = function () {
+                    let translator = vue.translatorList.sogou;
                     GM_xmlhttpRequest({
-                        method: "POST",
+                        method: 'POST',
                         url: translator.url,
                         data: translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded;",
-                            "Accept": "application/json"
+                            'Content-Type': 'application/x-www-form-urlencoded;',
+                            'Accept': 'application/json'
                         },
                         onload: function (xhr) {
                             vue.getResult(translator, xhr, vue.strToJson(xhr.responseText));
@@ -288,9 +289,10 @@
                     });
                 };
             }
-            { // baidu
-                vue.translatorList[2].initParam = function () {
-                    let translator = vue.translatorList[2];
+            {
+                // baidu
+                vue.translatorList.baidu.initParam = function () {
+                    let translator = vue.translatorList.baidu;
                     let translateText = vue.translateText;
                     let salt = vue.getSalt();
                     let src = translator.appid + translateText + salt + translator.secret;
@@ -298,8 +300,8 @@
                     let encodedTranslateText = encodeURI(translateText);
                     return `q=${encodedTranslateText}&appid=${translator.appid}&to=zh&from=auto&salt=${salt}&sign=${sign}`;
                 };
-                vue.translatorList[2].parseResult = function (json) {
-                    let translator = vue.translatorList[2];
+                vue.translatorList.baidu.parseResult = function (json) {
+                    let translator = vue.translatorList.baidu;
                     if (json.trans_result) {
                         if (json.trans_result[0].dst) {
                             let dst = '' + json.trans_result[0].dst;
@@ -316,21 +318,20 @@
                                     return;
                                 }
                             }
-                        } catch (e) {
-                        }
+                        } catch (e) {}
                     }
                     translator.result.text = JSON.stringify(json);
                 };
-                vue.translatorList[2].startTranslate = function () {
-                    let translator = vue.translatorList[2];
+                vue.translatorList.baidu.startTranslate = function () {
+                    let translator = vue.translatorList.baidu;
                     GM_xmlhttpRequest({
-                        method: "POST",
+                        method: 'POST',
                         url: translator.url,
                         data: translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded;",
-                            "Accept": "application/json"
+                            'Content-Type': 'application/x-www-form-urlencoded;',
+                            'Accept': 'application/json'
                         },
                         onload: function (xhr) {
                             let d = vue.strToJson(xhr.responseText);
@@ -339,22 +340,23 @@
                     });
                 };
             }
-            { // tencent
-                vue.translatorList[3].initParam = function () {
-                    let translator = vue.translatorList[3];
+            {
+                // tencent
+                vue.translatorList.tencent.initParam = function () {
+                    let translator = vue.translatorList.tencent;
                     let translateText = vue.translateText;
-                    const endpoint = "tmt.tencentcloudapi.com";
-                    const service = "tmt";
-                    const region = "ap-beijing";
-                    const action = "TextTranslate";
-                    const version = "2018-03-21";
+                    const endpoint = 'tmt.tencentcloudapi.com';
+                    const service = 'tmt';
+                    const region = 'ap-beijing';
+                    const action = 'TextTranslate';
+                    const version = '2018-03-21';
                     const timestamp = parseInt(new Date().getTime() / 1000);
                     // const timestamp = 1551113065
                     //时间处理, 获取世界时间日期
                     const date = vue.getDate(timestamp);
 
                     // ************* 步骤 1：拼接规范请求串 *************
-                    const signedHeaders = "content-type;host";
+                    const signedHeaders = 'content-type;host';
 
                     const payload = JSON.stringify({
                         SourceText: translateText,
@@ -364,26 +366,29 @@
                     });
 
                     const hashedRequestPayload = getHash(payload);
-                    const httpRequestMethod = "POST";
-                    const canonicalUri = "/";
-                    const canonicalQueryString = "";
-                    const canonicalHeaders = "content-type:application/json; charset=utf-8\n" + "host:" + endpoint + "\n";
+                    const httpRequestMethod = 'POST';
+                    const canonicalUri = '/';
+                    const canonicalQueryString = '';
+                    const canonicalHeaders = 'content-type:application/json; charset=utf-8\n' + 'host:' + endpoint + '\n';
 
-                    const canonicalRequest = httpRequestMethod + "\n"
-                        + canonicalUri + "\n"
-                        + canonicalQueryString + "\n"
-                        + canonicalHeaders + "\n"
-                        + signedHeaders + "\n"
-                        + hashedRequestPayload;
+                    const canonicalRequest =
+                        httpRequestMethod +
+                        '\n' +
+                        canonicalUri +
+                        '\n' +
+                        canonicalQueryString +
+                        '\n' +
+                        canonicalHeaders +
+                        '\n' +
+                        signedHeaders +
+                        '\n' +
+                        hashedRequestPayload;
 
                     // ************* 步骤 2：拼接待签名字符串 *************
-                    const algorithm = "TC3-HMAC-SHA256";
+                    const algorithm = 'TC3-HMAC-SHA256';
                     const hashedCanonicalRequest = getHash(canonicalRequest);
-                    const credentialScope = date + "/" + service + "/" + "tc3_request";
-                    const stringToSign = algorithm + "\n" +
-                        timestamp + "\n" +
-                        credentialScope + "\n" +
-                        hashedCanonicalRequest;
+                    const credentialScope = date + '/' + service + '/' + 'tc3_request';
+                    const stringToSign = algorithm + '\n' + timestamp + '\n' + credentialScope + '\n' + hashedCanonicalRequest;
 
                     // ************* 步骤 3：计算签名 *************
                     const kDate = sha256(date, 'TC3' + translator.secret);
@@ -392,10 +397,19 @@
                     const signature = sha256(stringToSign, kSigning, 'hex');
 
                     // ************* 步骤 4：拼接 Authorization *************
-                    const authorization = algorithm + " " +
-                        "Credential=" + translator.appid + "/" + credentialScope + ", " +
-                        "SignedHeaders=" + signedHeaders + ", " +
-                        "Signature=" + signature;
+                    const authorization =
+                        algorithm +
+                        ' ' +
+                        'Credential=' +
+                        translator.appid +
+                        '/' +
+                        credentialScope +
+                        ', ' +
+                        'SignedHeaders=' +
+                        signedHeaders +
+                        ', ' +
+                        'Signature=' +
+                        signature;
 
                     return {
                         authorization: authorization,
@@ -408,8 +422,8 @@
                         data: payload
                     };
                 };
-                vue.translatorList[3].parseResult = function (json) {
-                    let translator = vue.translatorList[3];
+                vue.translatorList.tencent.parseResult = function (json) {
+                    let translator = vue.translatorList.tencent;
                     if (json.Response) {
                         if (json.Response.TargetText) {
                             translator.result.text = decodeURIComponent(json.Response.TargetText);
@@ -418,23 +432,23 @@
                     }
                     translator.result.text = JSON.stringify(json);
                 };
-                vue.translatorList[3].startTranslate = function () {
-                    let translator = vue.translatorList[3];
+                vue.translatorList.tencent.startTranslate = function () {
+                    let translator = vue.translatorList.tencent;
                     let params = translator.initParam();
                     GM_xmlhttpRequest({
-                        method: "POST",
+                        method: 'POST',
                         url: translator.url,
                         data: params.data,
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Content-Type": params.contentType,
-                            "Host": params.host,
-                            "X-TC-Action": params.tcAction,
-                            "X-TC-Region": params.tcRegion,
-                            "X-TC-Timestamp": params.tcTimestamp,
-                            "X-TC-Version": params.tcVersion,
-                            "Authorization": params.authorization,
-                            "Accept": "application/json"
+                            'Content-Type': params.contentType,
+                            'Host': params.host,
+                            'X-TC-Action': params.tcAction,
+                            'X-TC-Region': params.tcRegion,
+                            'X-TC-Timestamp': params.tcTimestamp,
+                            'X-TC-Version': params.tcVersion,
+                            'Authorization': params.authorization,
+                            'Accept': 'application/json'
                         },
                         onload: function (xhr) {
                             let d = vue.strToJson(xhr.responseText);
@@ -443,19 +457,21 @@
                     });
                 };
             }
-            { // caiyun
-                vue.translatorList[4].initParam = function () {
+            {
+                // caiyun
+                vue.translatorList.caiyun.initParam = function () {
                     let translateText = vue.translateText;
                     return JSON.stringify({
                         source: translateText,
                         trans_type: 'auto2zh',
                         request_id: vue.getSalt(),
-                        detect: true,
+                        detect: true
                     });
                 };
-                vue.translatorList[4].parseResult = function (json) {
-                    let translator = vue.translatorList[4];
-                    let result, confidence = '';
+                vue.translatorList.caiyun.parseResult = function (json) {
+                    let translator = vue.translatorList.caiyun;
+                    let result,
+                        confidence = '';
                     if (json.target) {
                         result = json.target;
                         confidence = json.confidence;
@@ -463,8 +479,7 @@
                         let parse = {};
                         try {
                             parse = JSON.parse(json);
-                        } catch (e) {
-                        }
+                        } catch (e) {}
                         if (parse.target) {
                             result = parse.target;
                             confidence = parse.confidence;
@@ -475,16 +490,16 @@
                     translator.result.text = result;
                     translator.result.confidence = confidence;
                 };
-                vue.translatorList[4].startTranslate = function () {
-                    let translator = vue.translatorList[4];
+                vue.translatorList.caiyun.startTranslate = function () {
+                    let translator = vue.translatorList.caiyun;
                     GM_xmlhttpRequest({
-                        method: "POST",
+                        method: 'POST',
                         url: translator.url,
                         data: translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Content-Type": "application/json",
-                            "x-authorization": 'token ' + translator.appid
+                            'Content-Type': 'application/json',
+                            'x-authorization': 'token ' + translator.appid
                         },
                         onload: function (xhr) {
                             let d = vue.strToJson(xhr.responseText);
@@ -493,14 +508,15 @@
                     });
                 };
             }
-            { // google
-                vue.translatorList[5].initParam = function () {
+            {
+                // google
+                vue.translatorList.google.initParam = function () {
                     let translateText = vue.translateText;
                     let encodedTranslateText = encodeURI(translateText);
-                    return "q=" + encodedTranslateText;
+                    return 'q=' + encodedTranslateText;
                 };
-                vue.translatorList[5].parseResult = function (json) {
-                    let translator = vue.translatorList[5];
+                vue.translatorList.google.parseResult = function (json) {
+                    let translator = vue.translatorList.google;
                     if (json) {
                         if (!json.sentences) {
                             json = JSON.parse(json);
@@ -520,16 +536,16 @@
                         }
                     }
                 };
-                vue.translatorList[5].startTranslate = function () {
-                    let translator = vue.translatorList[5];
+                vue.translatorList.google.startTranslate = function () {
+                    let translator = vue.translatorList.google;
                     GM_xmlhttpRequest({
-                        method: "POST",
+                        method: 'POST',
                         url: translator.url,
                         data: translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded;",
-                            "Accept": "application/json"
+                            'Content-Type': 'application/x-www-form-urlencoded;',
+                            'Accept': 'application/json'
                         },
                         onload: function (xhr) {
                             let d = vue.strToJson(xhr.responseText);
@@ -538,30 +554,31 @@
                     });
                 };
             }
-            { // bing
-                vue.translatorList[6].getPosIndex = function (pos) {
+            {
+                // bing
+                vue.translatorList.bing.getPosIndex = function (pos) {
                     switch (pos) {
-                        case "n.":
+                        case 'n.':
                             return 1;
-                        case "v.":
+                        case 'v.':
                             return 2;
-                        case "pron.":
+                        case 'pron.':
                             return 3;
-                        case "adj.":
+                        case 'adj.':
                             return 4;
-                        case "adv.":
+                        case 'adv.':
                             return 5;
                         default:
                             return 6;
                     }
                 };
-                vue.translatorList[6].initParam = function () {
+                vue.translatorList.bing.initParam = function () {
                     let translateText = vue.translateText;
                     let encodedTranslateText = encodeURI(translateText);
-                    return "?q=" + encodedTranslateText;
+                    return '?q=' + encodedTranslateText;
                 };
-                vue.translatorList[6].parseResult = function (html) {
-                    let translator = vue.translatorList[6];
+                vue.translatorList.bing.parseResult = function (html) {
+                    let translator = vue.translatorList.bing;
                     let dom = $.parseHTML(html);
                     let lis = $(dom).find('.lf_area>div>ul>li');
                     if (lis.length > 0) {
@@ -582,14 +599,14 @@
                         }
                     }
                 };
-                vue.translatorList[6].startTranslate = function () {
-                    let translator = vue.translatorList[6];
+                vue.translatorList.bing.startTranslate = function () {
+                    let translator = vue.translatorList.bing;
                     GM_xmlhttpRequest({
-                        method: "GET",
+                        method: 'GET',
                         url: translator.url + translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+                            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
                         },
                         onload: function (xhr) {
                             let d = xhr.responseText;
@@ -605,22 +622,26 @@
                 vue.showResult = false;
                 vue.showConfig = false;
                 let enabled = {};
-                for (const translator of vue.translatorList) {
-                    enabled[translator.code] = translator.enabled;
+                for (let key in vue.translatorList) {
+                    let translator = vue.translatorList[key];
+                    enabled[key] = translator.enabled;
                     translator.result.text = '';
                     translator.result.dict = [];
                 }
                 // save config
-                GM_setValue('OnySakuraTranslatorConfig', JSON.stringify({
-                    enabled: enabled,
-                    fixPos: vue.fixPos,
-                    resultPos: {
-                        top: vue.resultPos.top,
-                        right: vue.resultPos.right,
-                        bottom: vue.resultPos.bottom,
-                        left: vue.resultPos.left
-                    }
-                }));
+                GM_setValue(
+                    'OnySakuraTranslatorConfig',
+                    JSON.stringify({
+                        enabled: enabled,
+                        fixPos: vue.fixPos,
+                        resultPos: {
+                            top: vue.resultPos.top,
+                            right: vue.resultPos.right,
+                            bottom: vue.resultPos.bottom,
+                            left: vue.resultPos.left
+                        }
+                    })
+                );
             };
 
             document.onmouseup = function (ev) {
@@ -644,7 +665,8 @@
                     console.log(config);
                 }
                 vue.fixPos = config.fixPos || false;
-                for (const translator of vue.translatorList) {
+                for (let key in vue.translatorList) {
+                    let translator = vue.translatorList[key];
                     translator.enabled = config.enabled[translator.code];
                 }
                 vue.resultPos.top = config.resultPos.top || '';
@@ -665,8 +687,8 @@
                 this.showIcon = false;
                 if (this.translateText) {
                     if (!this.fixPos) {
-                        let height = document.body.clientHeight
-                        let width = document.body.clientWidth;
+                        let height = window.innerHeight;
+                        let width = window.innerWidth;
                         let left = this.mouseX;
                         let top = this.mouseY;
                         this.resultPos.top = '';
@@ -675,26 +697,27 @@
                         this.resultPos.left = '';
                         if (left > parseInt(width) / 2) {
                             // 右
-                            this.resultPos.right = (width - left + 10) + 'px';
+                            this.resultPos.right = width - left + 10 + 'px';
                         } else {
                             // 左
-                            this.resultPos.left = (left + 10) + 'px';
+                            this.resultPos.left = left + 10 + 'px';
                         }
                         if (top > parseInt(height) / 2) {
                             // 下
-                            this.resultPos.bottom = (height - top + 15) + 'px';
+                            this.resultPos.bottom = height - top + 15 + 'px';
                         } else {
                             // 上
-                            this.resultPos.top = (top + 15) + 'px';
+                            this.resultPos.top = top + 15 + 'px';
                         }
                     }
                     this.showResult = true;
-                    for (const translator of this.translatorList) {
+                    for (let key in this.translatorList) {
+                        let translator = this.translatorList[key];
                         if (translator.enabled) {
                             try {
                                 translator.startTranslate();
                             } catch (e) {
-                                console.warn(e);
+                                console.log('%cOnySakuraTranslator ' + translator.code + ' Error\n', 'font-size: 1rem; color: red;', e);
                                 translator.result = 'Error';
                             }
                         }
@@ -709,7 +732,7 @@
                     translator.parseResult(data);
                 } else if (xhr.status !== 200) {
                     translator.result = 'ERROR!';
-                    console.log('onysakuraTranslator', 'error', JSON.stringify(data));
+                    console.log('%cOnySakuraTranslator ' + translator.code + ' Error\n', 'font-size: 1rem; color: red;', JSON.stringify(data));
                 }
             },
             getSelection() {
@@ -720,22 +743,21 @@
             },
             strToJson(str) {
                 try {
-                    return (new Function("return " + str))();
-                } catch (e) {
-                }
+                    return new Function('return ' + str)();
+                } catch (e) {}
                 return str;
             },
             getSalt() {
-                let salt = "";
+                let salt = '';
                 for (let i = 0; i < 5; i++) salt += parseInt(Math.random() * 8);
                 return salt;
             },
             getDate(timestamp) {
-                const date = new Date(timestamp * 1000)
-                const year = date.getUTCFullYear()
-                const month = ('0' + (date.getUTCMonth() + 1)).slice(-2)
-                const day = ('0' + date.getUTCDate()).slice(-2)
-                return `${year}-${month}-${day}`
+                const date = new Date(timestamp * 1000);
+                const year = date.getUTCFullYear();
+                const month = ('0' + (date.getUTCMonth() + 1)).slice(-2);
+                const day = ('0' + date.getUTCDate()).slice(-2);
+                return `${year}-${month}-${day}`;
             }
         }
     });
@@ -756,7 +778,6 @@
      * @return {string}
      */
     function MD5(string) {
-
         /**
          * @return {number}
          */
@@ -769,22 +790,22 @@
          */
         function AddUnsigned(lX, lY) {
             let lX4, lY4, lX8, lY8, lResult;
-            lX8 = (lX & 0x80000000);
-            lY8 = (lY & 0x80000000);
-            lX4 = (lX & 0x40000000);
-            lY4 = (lY & 0x40000000);
-            lResult = (lX & 0x3FFFFFFF) + (lY & 0x3FFFFFFF);
+            lX8 = lX & 0x80000000;
+            lY8 = lY & 0x80000000;
+            lX4 = lX & 0x40000000;
+            lY4 = lY & 0x40000000;
+            lResult = (lX & 0x3fffffff) + (lY & 0x3fffffff);
             if (lX4 & lY4) {
-                return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
+                return lResult ^ 0x80000000 ^ lX8 ^ lY8;
             }
             if (lX4 | lY4) {
                 if (lResult & 0x40000000) {
-                    return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
+                    return lResult ^ 0xc0000000 ^ lX8 ^ lY8;
                 } else {
-                    return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
+                    return lResult ^ 0x40000000 ^ lX8 ^ lY8;
                 }
             } else {
-                return (lResult ^ lX8 ^ lY8);
+                return lResult ^ lX8 ^ lY8;
             }
         }
 
@@ -792,28 +813,28 @@
          * @return {number}
          */
         function F(x, y, z) {
-            return (x & y) | ((~x) & z);
+            return (x & y) | (~x & z);
         }
 
         /**
          * @return {number}
          */
         function G(x, y, z) {
-            return (x & z) | (y & (~z));
+            return (x & z) | (y & ~z);
         }
 
         /**
          * @return {number}
          */
         function H(x, y, z) {
-            return (x ^ y ^ z);
+            return x ^ y ^ z;
         }
 
         /**
          * @return {number}
          */
         function I(x, y, z) {
-            return (y ^ (x | (~z)));
+            return y ^ (x | ~z);
         }
 
         /**
@@ -861,7 +882,7 @@
                 lWordCount = (lByteCount - (lByteCount % 4)) / 4;
                 lBytePosition = (lByteCount % 4) * 8;
 
-                lWordArray[lWordCount] = (lWordArray[lWordCount] | ((string + '').charCodeAt(lByteCount) << lBytePosition));
+                lWordArray[lWordCount] = lWordArray[lWordCount] | ((string + '').charCodeAt(lByteCount) << lBytePosition);
                 lByteCount++;
             }
             lWordCount = (lByteCount - (lByteCount % 4)) / 4;
@@ -876,10 +897,13 @@
          * @return {string}
          */
         function WordToHex(lValue) {
-            let WordToHexValue = "", WordToHexValue_temp = "", lByte, lCount;
+            let WordToHexValue = '',
+                WordToHexValue_temp = '',
+                lByte,
+                lCount;
             for (lCount = 0; lCount <= 3; lCount++) {
                 lByte = (lValue >>> (lCount * 8)) & 255;
-                WordToHexValue_temp = "0" + lByte.toString(16);
+                WordToHexValue_temp = '0' + lByte.toString(16);
                 WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length - 2, 2);
             }
             return WordToHexValue;
@@ -889,13 +913,13 @@
          * @return {string}
          */
         function Utf8Encode(string) {
-            string = string.replace(/\r\n/g, "\n");
-            let utfText = "";
+            string = string.replace(/\r\n/g, '\n');
+            let utfText = '';
             for (let n = 0; n < string.length; n++) {
                 c = string.charCodeAt(n);
                 if (c < 128) {
                     utfText += String.fromCharCode(c);
-                } else if ((c > 127) && (c < 2048)) {
+                } else if (c > 127 && c < 2048) {
                     utfText += String.fromCharCode((c >> 6) | 192);
                     utfText += String.fromCharCode((c & 63) | 128);
                 } else {
@@ -909,18 +933,30 @@
 
         let y;
         let k, AA, BB, CC, DD, a, b, c, d;
-        let S11 = 7, S12 = 12, S13 = 17, S14 = 22;
-        let S21 = 5, S22 = 9, S23 = 14, S24 = 20;
-        let S31 = 4, S32 = 11, S33 = 16, S34 = 23;
-        let S41 = 6, S42 = 10, S43 = 15, S44 = 21;
+        let S11 = 7,
+            S12 = 12,
+            S13 = 17,
+            S14 = 22;
+        let S21 = 5,
+            S22 = 9,
+            S23 = 14,
+            S24 = 20;
+        let S31 = 4,
+            S32 = 11,
+            S33 = 16,
+            S34 = 23;
+        let S41 = 6,
+            S42 = 10,
+            S43 = 15,
+            S44 = 21;
 
         string = Utf8Encode(string);
 
         y = ConvertToWordArray(string);
 
         a = 0x67452301;
-        b = 0xEFCDAB89;
-        c = 0x98BADCFE;
+        b = 0xefcdab89;
+        c = 0x98badcfe;
         d = 0x10325476;
 
         for (k = 0; k < y.length; k += 16) {
@@ -928,70 +964,70 @@
             BB = b;
             CC = c;
             DD = d;
-            a = FF(a, b, c, d, y[k], S11, 0xD76AA478);
-            d = FF(d, a, b, c, y[k + 1], S12, 0xE8C7B756);
-            c = FF(c, d, a, b, y[k + 2], S13, 0x242070DB);
-            b = FF(b, c, d, a, y[k + 3], S14, 0xC1BDCEEE);
-            a = FF(a, b, c, d, y[k + 4], S11, 0xF57C0FAF);
-            d = FF(d, a, b, c, y[k + 5], S12, 0x4787C62A);
-            c = FF(c, d, a, b, y[k + 6], S13, 0xA8304613);
-            b = FF(b, c, d, a, y[k + 7], S14, 0xFD469501);
-            a = FF(a, b, c, d, y[k + 8], S11, 0x698098D8);
-            d = FF(d, a, b, c, y[k + 9], S12, 0x8B44F7AF);
-            c = FF(c, d, a, b, y[k + 10], S13, 0xFFFF5BB1);
-            b = FF(b, c, d, a, y[k + 11], S14, 0x895CD7BE);
-            a = FF(a, b, c, d, y[k + 12], S11, 0x6B901122);
-            d = FF(d, a, b, c, y[k + 13], S12, 0xFD987193);
-            c = FF(c, d, a, b, y[k + 14], S13, 0xA679438E);
-            b = FF(b, c, d, a, y[k + 15], S14, 0x49B40821);
-            a = GG(a, b, c, d, y[k + 1], S21, 0xF61E2562);
-            d = GG(d, a, b, c, y[k + 6], S22, 0xC040B340);
-            c = GG(c, d, a, b, y[k + 11], S23, 0x265E5A51);
-            b = GG(b, c, d, a, y[k], S24, 0xE9B6C7AA);
-            a = GG(a, b, c, d, y[k + 5], S21, 0xD62F105D);
+            a = FF(a, b, c, d, y[k], S11, 0xd76aa478);
+            d = FF(d, a, b, c, y[k + 1], S12, 0xe8c7b756);
+            c = FF(c, d, a, b, y[k + 2], S13, 0x242070db);
+            b = FF(b, c, d, a, y[k + 3], S14, 0xc1bdceee);
+            a = FF(a, b, c, d, y[k + 4], S11, 0xf57c0faf);
+            d = FF(d, a, b, c, y[k + 5], S12, 0x4787c62a);
+            c = FF(c, d, a, b, y[k + 6], S13, 0xa8304613);
+            b = FF(b, c, d, a, y[k + 7], S14, 0xfd469501);
+            a = FF(a, b, c, d, y[k + 8], S11, 0x698098d8);
+            d = FF(d, a, b, c, y[k + 9], S12, 0x8b44f7af);
+            c = FF(c, d, a, b, y[k + 10], S13, 0xffff5bb1);
+            b = FF(b, c, d, a, y[k + 11], S14, 0x895cd7be);
+            a = FF(a, b, c, d, y[k + 12], S11, 0x6b901122);
+            d = FF(d, a, b, c, y[k + 13], S12, 0xfd987193);
+            c = FF(c, d, a, b, y[k + 14], S13, 0xa679438e);
+            b = FF(b, c, d, a, y[k + 15], S14, 0x49b40821);
+            a = GG(a, b, c, d, y[k + 1], S21, 0xf61e2562);
+            d = GG(d, a, b, c, y[k + 6], S22, 0xc040b340);
+            c = GG(c, d, a, b, y[k + 11], S23, 0x265e5a51);
+            b = GG(b, c, d, a, y[k], S24, 0xe9b6c7aa);
+            a = GG(a, b, c, d, y[k + 5], S21, 0xd62f105d);
             d = GG(d, a, b, c, y[k + 10], S22, 0x2441453);
-            c = GG(c, d, a, b, y[k + 15], S23, 0xD8A1E681);
-            b = GG(b, c, d, a, y[k + 4], S24, 0xE7D3FBC8);
-            a = GG(a, b, c, d, y[k + 9], S21, 0x21E1CDE6);
-            d = GG(d, a, b, c, y[k + 14], S22, 0xC33707D6);
-            c = GG(c, d, a, b, y[k + 3], S23, 0xF4D50D87);
-            b = GG(b, c, d, a, y[k + 8], S24, 0x455A14ED);
-            a = GG(a, b, c, d, y[k + 13], S21, 0xA9E3E905);
-            d = GG(d, a, b, c, y[k + 2], S22, 0xFCEFA3F8);
-            c = GG(c, d, a, b, y[k + 7], S23, 0x676F02D9);
-            b = GG(b, c, d, a, y[k + 12], S24, 0x8D2A4C8A);
-            a = HH(a, b, c, d, y[k + 5], S31, 0xFFFA3942);
-            d = HH(d, a, b, c, y[k + 8], S32, 0x8771F681);
-            c = HH(c, d, a, b, y[k + 11], S33, 0x6D9D6122);
-            b = HH(b, c, d, a, y[k + 14], S34, 0xFDE5380C);
-            a = HH(a, b, c, d, y[k + 1], S31, 0xA4BEEA44);
-            d = HH(d, a, b, c, y[k + 4], S32, 0x4BDECFA9);
-            c = HH(c, d, a, b, y[k + 7], S33, 0xF6BB4B60);
-            b = HH(b, c, d, a, y[k + 10], S34, 0xBEBFBC70);
-            a = HH(a, b, c, d, y[k + 13], S31, 0x289B7EC6);
-            d = HH(d, a, b, c, y[k], S32, 0xEAA127FA);
-            c = HH(c, d, a, b, y[k + 3], S33, 0xD4EF3085);
-            b = HH(b, c, d, a, y[k + 6], S34, 0x4881D05);
-            a = HH(a, b, c, d, y[k + 9], S31, 0xD9D4D039);
-            d = HH(d, a, b, c, y[k + 12], S32, 0xE6DB99E5);
-            c = HH(c, d, a, b, y[k + 15], S33, 0x1FA27CF8);
-            b = HH(b, c, d, a, y[k + 2], S34, 0xC4AC5665);
-            a = II(a, b, c, d, y[k], S41, 0xF4292244);
-            d = II(d, a, b, c, y[k + 7], S42, 0x432AFF97);
-            c = II(c, d, a, b, y[k + 14], S43, 0xAB9423A7);
-            b = II(b, c, d, a, y[k + 5], S44, 0xFC93A039);
-            a = II(a, b, c, d, y[k + 12], S41, 0x655B59C3);
-            d = II(d, a, b, c, y[k + 3], S42, 0x8F0CCC92);
-            c = II(c, d, a, b, y[k + 10], S43, 0xFFEFF47D);
-            b = II(b, c, d, a, y[k + 1], S44, 0x85845DD1);
-            a = II(a, b, c, d, y[k + 8], S41, 0x6FA87E4F);
-            d = II(d, a, b, c, y[k + 15], S42, 0xFE2CE6E0);
-            c = II(c, d, a, b, y[k + 6], S43, 0xA3014314);
-            b = II(b, c, d, a, y[k + 13], S44, 0x4E0811A1);
-            a = II(a, b, c, d, y[k + 4], S41, 0xF7537E82);
-            d = II(d, a, b, c, y[k + 11], S42, 0xBD3AF235);
-            c = II(c, d, a, b, y[k + 2], S43, 0x2AD7D2BB);
-            b = II(b, c, d, a, y[k + 9], S44, 0xEB86D391);
+            c = GG(c, d, a, b, y[k + 15], S23, 0xd8a1e681);
+            b = GG(b, c, d, a, y[k + 4], S24, 0xe7d3fbc8);
+            a = GG(a, b, c, d, y[k + 9], S21, 0x21e1cde6);
+            d = GG(d, a, b, c, y[k + 14], S22, 0xc33707d6);
+            c = GG(c, d, a, b, y[k + 3], S23, 0xf4d50d87);
+            b = GG(b, c, d, a, y[k + 8], S24, 0x455a14ed);
+            a = GG(a, b, c, d, y[k + 13], S21, 0xa9e3e905);
+            d = GG(d, a, b, c, y[k + 2], S22, 0xfcefa3f8);
+            c = GG(c, d, a, b, y[k + 7], S23, 0x676f02d9);
+            b = GG(b, c, d, a, y[k + 12], S24, 0x8d2a4c8a);
+            a = HH(a, b, c, d, y[k + 5], S31, 0xfffa3942);
+            d = HH(d, a, b, c, y[k + 8], S32, 0x8771f681);
+            c = HH(c, d, a, b, y[k + 11], S33, 0x6d9d6122);
+            b = HH(b, c, d, a, y[k + 14], S34, 0xfde5380c);
+            a = HH(a, b, c, d, y[k + 1], S31, 0xa4beea44);
+            d = HH(d, a, b, c, y[k + 4], S32, 0x4bdecfa9);
+            c = HH(c, d, a, b, y[k + 7], S33, 0xf6bb4b60);
+            b = HH(b, c, d, a, y[k + 10], S34, 0xbebfbc70);
+            a = HH(a, b, c, d, y[k + 13], S31, 0x289b7ec6);
+            d = HH(d, a, b, c, y[k], S32, 0xeaa127fa);
+            c = HH(c, d, a, b, y[k + 3], S33, 0xd4ef3085);
+            b = HH(b, c, d, a, y[k + 6], S34, 0x4881d05);
+            a = HH(a, b, c, d, y[k + 9], S31, 0xd9d4d039);
+            d = HH(d, a, b, c, y[k + 12], S32, 0xe6db99e5);
+            c = HH(c, d, a, b, y[k + 15], S33, 0x1fa27cf8);
+            b = HH(b, c, d, a, y[k + 2], S34, 0xc4ac5665);
+            a = II(a, b, c, d, y[k], S41, 0xf4292244);
+            d = II(d, a, b, c, y[k + 7], S42, 0x432aff97);
+            c = II(c, d, a, b, y[k + 14], S43, 0xab9423a7);
+            b = II(b, c, d, a, y[k + 5], S44, 0xfc93a039);
+            a = II(a, b, c, d, y[k + 12], S41, 0x655b59c3);
+            d = II(d, a, b, c, y[k + 3], S42, 0x8f0ccc92);
+            c = II(c, d, a, b, y[k + 10], S43, 0xffeff47d);
+            b = II(b, c, d, a, y[k + 1], S44, 0x85845dd1);
+            a = II(a, b, c, d, y[k + 8], S41, 0x6fa87e4f);
+            d = II(d, a, b, c, y[k + 15], S42, 0xfe2ce6e0);
+            c = II(c, d, a, b, y[k + 6], S43, 0xa3014314);
+            b = II(b, c, d, a, y[k + 13], S44, 0x4e0811a1);
+            a = II(a, b, c, d, y[k + 4], S41, 0xf7537e82);
+            d = II(d, a, b, c, y[k + 11], S42, 0xbd3af235);
+            c = II(c, d, a, b, y[k + 2], S43, 0x2ad7d2bb);
+            b = II(b, c, d, a, y[k + 9], S44, 0xeb86d391);
             a = AddUnsigned(a, AA);
             b = AddUnsigned(b, BB);
             c = AddUnsigned(c, CC);

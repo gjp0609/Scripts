@@ -200,7 +200,7 @@
                         secret: ''
                     },
                     google: {
-                        enabled: true,
+                        enabled: false,
                         color: '#1fa463',
                         code: 'google',
                         name: '谷歌',

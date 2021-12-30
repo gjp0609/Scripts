@@ -1,15 +1,27 @@
 @startmindmap
 !include ../theme/mindmap.puml
+skinparam shadowing false
 <style>
 mindmapDiagram {
     .common {
         LineColor #b5000f
+        BackgroundColor #fff
     }
     .icbc {
         LineColor #c7000b
+        BackgroundColor #fff
     }
     .cmb {
         LineColor #a30030
+        BackgroundColor #fff
+    }
+    .doc {
+        LineColor #bee
+        BackgroundColor #bee
+    }
+    .api {
+        LineColor #fdd
+        BackgroundColor #fdd
     }
 }
 
@@ -20,19 +32,27 @@ mindmapDiagram {
 +++ 接口<<icbc>>
 ++++ 支付<<icbc>>
 +++++ APP<<icbc>>
-++++++ 文档：手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<icbc>>
-++++++ 接口：IcbcPayService.pay<<icbc>>
+++++++ 文档：手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<doc>>
+++++++ 接口：IcbcPayService.pay<<api>>
 +++++ HTML<<icbc>>
-++++++ 文档：B2CPayTransferV2.pdf<<icbc>>
-++++++ 接口：IcbcPayService.htmlPay<<icbc>>
+++++++ 文档：B2CPayTransferV2.pdf<<doc>>
+++++++ 接口：IcbcPayService.htmlPay<<api>>
 ++++ 通知<<icbc>>
-+++++ APP: 手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<icbc>>
-+++++ HTML: B2CPayTransferV2.pdf<<icbc>>
++++++ APP<<icbc>>
+++++++ 文档：手机银行（WAP）聚合支付B2C在线支付接口说明V1.0.0.0.doc<<doc>>
+++++++ 接口：IcbcPayService.handleNotify<<api>>
++++++ HTML<<icbc>>
+++++++ 文档：B2CPayTransferV2.pdf<<doc>>
+++++++ 接口：IcbcPayService.handleNotify<<api>>
 ++++ 查询<<icbc>>
-+++++ 查询接口_20190423.pdf<<icbc>>
++++++ 接口：IcbcPayService.queryOrder<<api>>
++++++ 文档：查询接口_20190423.pdf<<doc>>
 ++++ 退款<<icbc>>
-+++++ 退款接口_20190423.doc<<icbc>>
++++++ 接口：IcbcPayService.refund<<api>>
++++++ 文档：退款接口_20190423.doc<<doc>>
 ++++ 对账<<icbc>>
++++++ 接口：IcbcPayService.icbcBill<<api>>
++++++ 文档：融创线上收单接口文档.doc<<doc>>
 
 +++ 平台<<icbc>>
 ++++ Android<<icbc>>
@@ -42,12 +62,22 @@ mindmapDiagram {
 ++ 招行一网通<<cmb>>
 
 +++ 文档地址<<cmb>>
-++++ [[https://openhome.cmbchina.com/PayNew/pay/home]]<<cmb>>
+++++ [[https://openhome.cmbchina.com/PayNew/pay/home]]<<doc>>
 
 +++ 接口<<cmb>>
 ++++ 支付<<cmb>>
++++++ CmbyPayService.getAppPayParam<<api>>
++++++ CmbyPayService.getHtmlPayParam<<api>>
+++++ 查询<<cmb>>
++++++ CmbyPayService.query<<api>>
 ++++ 通知<<cmb>>
++++++ CmbyPayService.handleNotify<<api>>
 ++++ 退款<<cmb>>
++++++ CmbyPayService.refund<<api>>
+++++ 对账<<cmb>>
++++++ CmbyPayService.bill<<api>>
+++++ 更新公钥<<cmb>>
++++++ CmbyPayService.updatePublicKey<<api>>
 
 +++ 平台<<cmb>>
 ++++ Android<<cmb>>

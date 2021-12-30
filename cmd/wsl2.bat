@@ -3,6 +3,7 @@ setlocal enabledelayedexpansion
 
 wsl --shutdown
 wsl -d Debian -u root service nginx start | findstr "Starting nginx" > nul
+wsl -d Debian -u root service mysql start | findstr "Starting MariaDB" > nul
 wsl -d Ubuntu -u root service docker start | findstr "Starting Docker" > nul
 if !errorlevel! equ 0 (
     echo service start success

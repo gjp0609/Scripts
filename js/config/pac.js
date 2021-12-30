@@ -13,8 +13,13 @@ let gfwDomains = [
     'imgur.com',
     'jquery.com',
     'jsdelivr.net',
+    'jsfiddle.net',
+    'jshell.net',
     'live.com', // microsoft
     'medium.com',
+    'mega.co.nz',
+    'mega.nz',
+    'mozilla.org',
     'pixiv.net',
     'qiita.com',
     'redd.it',

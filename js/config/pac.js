@@ -1,6 +1,7 @@
 // SwitchyOmega pac
 let gfwDomains = [
     'amazonaws.com',
+    'archive.org',
     'blogspot.com',
     'bootstrapcdn.com',
     'chrome.com',
@@ -19,7 +20,10 @@ let gfwDomains = [
     'medium.com',
     'mega.co.nz',
     'mega.nz',
+    'mozilla.net',
     'mozilla.org',
+    'mozit.cloud',
+    'nodejs.org',
     'pixiv.net',
     'qiita.com',
     'redd.it',

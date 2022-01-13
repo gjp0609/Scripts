@@ -1,0 +1,107 @@
+@backgroundColor: #b6dcda;
+@backgroundColorLight: lighten(@backgroundColor, 5%);
+@backgroundColorDark: darken(@backgroundColor, 10%);
+@splitBorder: darken(@backgroundColor, 20%);
+
+@-moz-document url("chrome://browser/content/browser.xul"),
+url("chrome://browser/content/browser.xhtml")
+{
+    #navigator-toolbox-background {
+        // 导航栏
+        #navigator-toolbox {
+            background-color: @backgroundColor !important;
+
+            // 标题栏
+            #titlebar {
+                // 标签栏
+                #TabsToolbar {
+                    .titlebar-spacer {
+                        // 标签栏 左侧空白
+                        width: 0 !important;
+                    }
+
+                    // 标签组
+                    .toolbar-items {
+                        #tabbrowser-tabs {
+                            // 标签
+                            .tabbrowser-tab {
+                                padding-inline: 0 !important;
+
+                                // 非第一个 & 非激活的标签
+                                &:not(:first-child):not([visuallyselected='true']) {
+                                    border-left: @splitBorder solid 1px !important;
+                                }
+
+                                // 激活的标签、激活标签右侧的标签、非激活标签 hover、非激活标签的右侧 hover
+                                &[visuallyselected='true'],
+                                &[visuallyselected='true'] + .tabbrowser-tab,
+                                &:not([visuallyselected='true']):hover,
+                                &:not([visuallyselected='true']):hover + .tabbrowser-tab {
+                                    border-left: @backgroundColor solid 1px !important;
+                                }
+
+                                // 非激活标签 hover
+                                &:not([visuallyselected='true']):hover > .tab-stack .tab-content {
+                                    background-color: @backgroundColorLight !important;
+                                }
+
+                                // 标签
+                                .tab-stack {
+                                    // 标签栏 标签背景
+                                    .tab-background {
+                                        margin: 0 !important;
+                                        border-radius: 0 !important;
+                                        box-shadow: none !important;
+                                        background-color: @backgroundColor !important;
+                                    }
+
+                                    .tab-content {
+                                        // 关闭标签按钮
+                                        .tab-close-button {
+                                            display: none !important;
+                                        }
+                                    }
+                                }
+                            }
+
+                            #tabs-newtab-button {
+                                margin: 0 !important;
+                                padding: 0 !important;
+
+                                &:hover {
+                                    background-color: @backgroundColorDark !important;
+                                }
+
+                                // 标签栏 新标签按钮
+                                .toolbarbutton-icon {
+                                    background-color: unset !important;
+                                    /* width:30px !important;*/
+                                    /*height:30px !important;*/
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //// 导航栏
+            //#nav-bar {
+            //    #nav-bar-customization-target {
+            //        // 地址栏
+            //        #urlbar-container {
+            //            --urlbar-container-height: 32px !important;
+            //
+            //            // URL 输入框
+            //            #urlbar {
+            //                top: 0 !important;
+            //
+            //                #urlbar-background {
+            //                    border-radius: 0 !important;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+        }
+    }
+}

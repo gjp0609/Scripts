@@ -24,10 +24,13 @@ let gfwDomains = [
     'mozilla.org',
     'mozit.cloud',
     'nodejs.org',
+    'pages.onysakura.fun',
     'pixiv.net',
     'qiita.com',
     'redd.it',
+    'sstatic.net', // stackoverflow
     'stackoverflow.com',
+    't.me', // telegram
     'twitch.tv',
     'twitter.com',
     'v2ex.com',
@@ -46,6 +49,8 @@ let gfwRegexps = [
     /\.?reddit\w*.com$/,
     /\.?github\w*.com$/
 ];
+
+let allOverProxy = true;
 
 let proxies = [
     {
@@ -85,6 +90,9 @@ function FindProxyForURL(url, host) {
 
 function check(url, host) {
     for (const proxy of proxies) {
+        if (allOverProxy && proxy.name === 'qcloud') {
+            proxy.regexps = [/.+/];
+        }
         if (proxy.domains) {
             for (let domain of proxy.domains) {
                 if (host.endsWith(domain)) {

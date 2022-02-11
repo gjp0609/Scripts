@@ -64,7 +64,7 @@ let proxies = [
     {
         name: 'qcloud',
         host: '127.0.0.1',
-        socksPort: '40101',
+        httpPort: '40101',
         domains: []
     },
     {

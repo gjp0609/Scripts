@@ -50,7 +50,7 @@ let gfwRegexps = [
     /\.?github\w*.com$/
 ];
 
-let allOverProxy = true;
+let allOverProxy = false;
 
 let proxies = [
     {

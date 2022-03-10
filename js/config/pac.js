@@ -5,9 +5,11 @@ let gfwDomains = [
     'blogspot.com',
     'bootstrapcdn.com',
     'chrome.com',
+    'cloudflare.com',
     'dmhy.org',
     'duckduckgo.com',
     'ggpht.com', // youtube
+    'github.com',
     'github.io',
     'golang.org',
     'gstatic.com',
@@ -23,6 +25,7 @@ let gfwDomains = [
     'mozilla.net',
     'mozilla.org',
     'mozit.cloud',
+    'naiko.cloud',
     'nodejs.org',
     'pages.onysakura.fun',
     'pixiv.net',
@@ -50,28 +53,19 @@ let gfwRegexps = [
     /\.?github\w*.com$/
 ];
 
-let allOverProxy = false;
-
 let proxies = [
     {
         name: 'gfw',
         host: '127.0.0.1',
-        httpPort: '40080',
         socksPort: '40081',
         domains: gfwDomains,
         regexps: gfwRegexps
     },
     {
-        name: 'qcloud',
+        name: 'cloud',
         host: '127.0.0.1',
-        httpPort: '40101',
-        domains: []
-    },
-    {
-        name: 'vmware',
-        host: '127.0.0.1',
-        httpPort: '40102',
-        domains: []
+        socksPort: '41080',
+        all: true
     }
 ];
 
@@ -82,7 +76,7 @@ function FindProxyForURL(url, host) {
             return 'PROXY ' + proxy.host + ':' + proxy.httpPort;
         }
         if (proxy.socksPort) {
-            return 'SOCKS ' + proxy.host + ':' + proxy.socksPort;
+            return 'SOCKS5 ' + proxy.host + ':' + proxy.socksPort;
         }
     }
     return 'DIRECT';
@@ -90,8 +84,8 @@ function FindProxyForURL(url, host) {
 
 function check(url, host) {
     for (const proxy of proxies) {
-        if (allOverProxy && proxy.name === 'qcloud') {
-            proxy.regexps = [/.+/];
+        if (proxy.all) {
+            return proxy;
         }
         if (proxy.domains) {
             for (let domain of proxy.domains) {

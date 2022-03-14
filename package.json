@@ -11,7 +11,14 @@
         "url": "https://github.com/gjp0609/scripts"
     },
     "license": "ISC",
-    "dependencies": {},
+    "scripts": {
+        "_install": "npm install",
+        "_chaoxing": "node ./js/puppeteer/chaoxing.js",
+        "_test": "node ./js/puppeteer/test.js"
+    },
+    "dependencies": {
+        "puppeteer": "^13.5.1"
+    },
     "devDependencies": {
         "prettier": "^2.4.1"
     }

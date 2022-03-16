@@ -54,9 +54,9 @@ async function login() {
         await waitPage('http://passport2.chaoxing.com/login');
         await indexPage.waitForSelector('.tab-body');
         await indexPage.focus('.tab-body .ipt-tel');
-        await indexPage.type('.tab-body .ipt-tel', '15538307290');
+        await indexPage.type('.tab-body .ipt-tel', '-');
         await indexPage.focus('.tab-body .ipt-pwd');
-        await indexPage.type('.tab-body .ipt-pwd', '502117hautlah');
+        await indexPage.type('.tab-body .ipt-pwd', '-');
         await indexPage.click('.tab-body .btns-box button');
         await waitPage('http://i.mooc.chaoxing.com/space/index');
         console.log(new Date(), '登录成功');

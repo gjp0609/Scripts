@@ -2,6 +2,7 @@
 #SingleInstance force
 #Persistent ; 让脚本持续运行, 直到用户退出.
 DetectHiddenWindows, On
+Menu, Tray, NoMainWindow
 Menu, Tray, NoStandard
 
 SubUrl := "------"
@@ -11,7 +12,6 @@ CustomIcon = .\img\Clash.ico
 IfExist, %CustomIcon%
 Menu, Tray, Icon, %CustomIcon%
 
-Menu, Tray, Add  ; 创建分隔线.
 Menu, Tray, Add, 启动, StartMenuHandler
 Menu, Tray, Add, 显示, ShowMenuHandler
 Menu, Tray, Add, 停止, StopMenuHandler

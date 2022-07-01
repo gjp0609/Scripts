@@ -5,10 +5,10 @@ DetectHiddenWindows, On
 Menu, Tray, NoMainWindow
 Menu, Tray, NoStandard
 
-SubUrl := "------"
-ClashPath := "C:/Files/Portable/Clash"
+IniRead, SubUrl, ./clash.ini, config, url,
+IniRead, ClashPath, ./clash.ini, config, path,
 
-CustomIcon = .\img\Clash.ico
+CustomIcon = ./Clash.ico
 IfExist, %CustomIcon%
 Menu, Tray, Icon, %CustomIcon%
 
@@ -35,7 +35,6 @@ return
 
 ShowMenuHandler:
     WinShow, ahk_exe clash.exe
-    TrayTip, , 更新完成, 1,
 return
 
 

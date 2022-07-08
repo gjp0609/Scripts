@@ -1,6 +1,8 @@
 import puppeteer from 'puppeteer-core';
-let page;
-let browser;
+
+let page: puppeteer.Page;
+let browser: puppeteer.Browser;
+
 async function init() {
     browser = await puppeteer.launch({
         args: ['--disable-features=site-per-process'],
@@ -18,7 +20,8 @@ async function init() {
         height: 768
     });
 }
-async function getPage(url) {
+
+async function getPage(url: string): Promise<puppeteer.Page> {
     console.log('wait page', url);
     let pages = await browser.pages();
     for (let i = 0; i < pages.length; i++) {
@@ -30,6 +33,7 @@ async function getPage(url) {
     await page.waitForTimeout(1000);
     return await getPage(url);
 }
+
 (async () => {
     init().then(async () => {
         try {
@@ -46,9 +50,7 @@ async function getPage(url) {
             // await page2.waitForSelector('.infos');
             // await page2.click('.infos a');
             await page.goto('https://bot.sannysoft.com/');
-        }
-        catch (e) { }
+        } catch (e) {}
         await page.waitForTimeout(400000);
     });
 })();
-//# sourceMappingURL=test.js.map

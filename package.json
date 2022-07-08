@@ -13,13 +13,23 @@
     "license": "ISC",
     "scripts": {
         "_install": "npm install",
-        "_chaoxing": "node ./js/puppeteer/chaoxing.js",
-        "_test": "node ./js/puppeteer/test.js"
+        "_build": "tsc --build",
+        "_chaoxing": "tsc --build & node js/puppeteer/chaoxing.js",
+        "_test": "tsc --build & node js/puppeteer/test.js"
     },
+    "type": "module",
     "dependencies": {
-        "puppeteer": "^13.5.1"
+        "puppeteer-core": "^15.3.2"
     },
     "devDependencies": {
-        "prettier": "^2.4.1"
+        "@types/node": "^18.0.3",
+        "@typescript-eslint/eslint-plugin": "^5.30.5",
+        "@typescript-eslint/parser": "^5.30.5",
+        "eslint": "^8.19.0",
+        "eslint-config-alloy": "^4.6.2",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "prettier": "^2.7.1",
+        "typescript": "^4.7.4"
     }
 }

@@ -5,10 +5,10 @@ DetectHiddenWindows, On
 Menu, Tray, NoMainWindow
 Menu, Tray, NoStandard
 
-IniRead, SubUrl, ./clash.ini, config, url,
-IniRead, ClashPath, ./clash.ini, config, path,
+IniRead, SubUrl, clash.ini, config, url,
+IniRead, ClashPath, clash.ini, config, path,
 
-CustomIcon = ./Clash.ico
+CustomIcon = Clash.ico
 IfExist, %CustomIcon%
 Menu, Tray, Icon, %CustomIcon%
 

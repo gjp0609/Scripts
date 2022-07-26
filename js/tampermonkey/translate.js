@@ -213,7 +213,7 @@
                             text: '',
                             dict: []
                         },
-                        url: 'https://cn.bing.com/dict/search',
+                        url: 'https://cn.bing.com/dict',
                         appid: '',
                         secret: ''
                     }
@@ -582,7 +582,7 @@
                 vue.translatorList.bing.initParam = function () {
                     let translateText = vue.translateText;
                     let encodedTranslateText = encodeURI(translateText);
-                    return '?q=' + encodedTranslateText;
+                    return '/' + encodedTranslateText;
                 };
                 vue.translatorList.bing.parseResult = function (html) {
                     let translator = vue.translatorList.bing;

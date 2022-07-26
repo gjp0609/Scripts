@@ -725,7 +725,7 @@
                                 translator.startTranslate();
                             } catch (e) {
                                 console.log('%cOnySakuraTranslator ' + translator.code + ' Error\n', 'font-size: 1rem; color: red;', e);
-                                translator.result = 'Error';
+                                translator.result.text = 'Error';
                             }
                         }
                     }
@@ -738,7 +738,7 @@
                 if (xhr.readyState === 4 && xhr.status === 200) {
                     translator.parseResult(data);
                 } else if (xhr.status !== 200) {
-                    translator.result = 'ERROR!';
+                    translator.result.text = 'ERROR!';
                     console.log('%cOnySakuraTranslator ' + translator.code + ' Error\n', 'font-size: 1rem; color: red;', JSON.stringify(data));
                 }
             },

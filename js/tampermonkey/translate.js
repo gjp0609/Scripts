@@ -49,16 +49,8 @@
                             </template>
                             <template v-if="key === 'google'" v-for="item in translator.result.dict">
                                 <div class="OnySakuraTranslator_dict">
-                                    <span :class="'pos pos_'+item.pos_enum">{{item.pos}}</span>
-                                    <span class="base_form">{{translatorList.source.result === item.base_form ? '' : (' [' + item.base_form + '] ')}}</span>
-                                    <span class="terms">
-                                <template v-for="term in item.entry">
-                                     <span class="term">
-                                         {{term.word}}
-                                         <span class="tooltiptext">score: {{term.score}}<br/>reverse: {{term.reverse_translation}}</span>
-                                     </span>&nbsp;
-                                </template>
-                            </span>
+                                    <span :class="'pos pos_'+item.index">{{item.pos}}</span>
+                                    <span class="terms">{{item.def}}</span>
                                 </div>
                             </template>
                             <template v-if="key === 'bing'" v-for="item in translator.result.dict">
@@ -156,7 +148,7 @@
                             text: '',
                             dict: []
                         },
-                        url: 'https://fanyi.sogou.com/reventondc/api/sogouTranslate',
+                        url: 'https://fanyi.sogou.com/text',
                         appid: '-',
                         secret: '-'
                     },
@@ -200,7 +192,7 @@
                         secret: ''
                     },
                     google: {
-                        enabled: false,
+                        enabled: true,
                         color: '#1fa463',
                         code: 'google',
                         name: '谷歌',
@@ -208,7 +200,7 @@
                             text: '',
                             dict: []
                         },
-                        url: 'https://translate.google.cn/translate_a/single?client=gtx&dt=t&dt=bd&dj=1&source=input&hl=zh-CN&sl=auto&tl=zh-CN&',
+                        url: 'https://translate.google.cn/_/TranslateWebserverUi/data/batchexecute',
                         appid: '',
                         secret: ''
                     },
@@ -230,8 +222,8 @@
         },
         mounted() {
             let vue = this;
+            // source
             {
-                // source
                 vue.translatorList.source.parseResult = function (data) {
                     let translator = vue.translatorList.source;
                     translator.result.text = vue.translateText;
@@ -245,52 +237,36 @@
                     vue.getResult(translator, xhr, null);
                 };
             }
+            // sogou
             {
-                // sogou
                 vue.translatorList.sogou.initParam = function () {
-                    let translator = vue.translatorList.sogou;
                     let translateText = vue.translateText;
-                    let salt = vue.getSalt();
-                    let src = translator.appid + translateText + salt + translator.secret;
-                    let sign = MD5(src).toLowerCase();
                     let encodedTranslateText = encodeURI(translateText);
-                    return 'q=' + encodedTranslateText + '&pid=' + translator.appid + '&to=zh-CHS&from=auto&salt=' + salt + '&sign=' + sign;
+                    return '?transfrom=auto&transto=zh-CHS&model=general&keyword=' + encodedTranslateText;
                 };
-                vue.translatorList.sogou.parseResult = function (json) {
+                vue.translatorList.sogou.parseResult = function (html) {
                     let translator = vue.translatorList.sogou;
-                    if (json.query) {
-                        translator.result.text = json.translation;
-                    } else {
-                        let parse = '';
-                        try {
-                            parse = JSON.parse(json);
-                        } catch (e) {}
-                        if (parse.query) {
-                            translator.result.text = parse.translation;
-                        } else {
-                            translator.result.text = JSON.stringify(json);
-                        }
-                    }
+                    let dom = $.parseHTML(html);
+                    translator.result.text = $(dom).find('#trans-result').text();
                 };
                 vue.translatorList.sogou.startTranslate = function () {
                     let translator = vue.translatorList.sogou;
                     GM_xmlhttpRequest({
-                        method: 'POST',
-                        url: translator.url,
-                        data: translator.initParam(),
+                        method: 'GET',
+                        url: translator.url + translator.initParam(),
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded;',
-                            'Accept': 'application/json'
+                            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9'
                         },
                         onload: function (xhr) {
-                            vue.getResult(translator, xhr, vue.strToJson(xhr.responseText));
+                            let d = xhr.responseText;
+                            vue.getResult(translator, xhr, d);
                         }
                     });
                 };
             }
+            // baidu
             {
-                // baidu
                 vue.translatorList.baidu.initParam = function () {
                     let translator = vue.translatorList.baidu;
                     let translateText = vue.translateText;
@@ -340,8 +316,8 @@
                     });
                 };
             }
+            // tencent
             {
-                // tencent
                 vue.translatorList.tencent.initParam = function () {
                     let translator = vue.translatorList.tencent;
                     let translateText = vue.translateText;
@@ -457,8 +433,8 @@
                     });
                 };
             }
+            // caiyun
             {
-                // caiyun
                 vue.translatorList.caiyun.initParam = function () {
                     let translateText = vue.translateText;
                     return JSON.stringify({
@@ -508,29 +484,60 @@
                     });
                 };
             }
+            // google
             {
-                // google
+                vue.translatorList.google.getPosIndex = function (pos) {
+                    switch (pos) {
+                        case '名词':
+                            return 1;
+                        case '动词':
+                            return 2;
+                        case '代词':
+                            return 3;
+                        case '形容词':
+                            return 4;
+                        case '副词':
+                            return 5;
+                        default:
+                            return 6;
+                    }
+                };
                 vue.translatorList.google.initParam = function () {
                     let translateText = vue.translateText;
-                    let encodedTranslateText = encodeURI(translateText);
-                    return 'q=' + encodedTranslateText;
+                    let encodedTranslateText = encodeURI(
+                        JSON.stringify([
+                            [['MkEWBc', '[["' + translateText.replaceAll(/"/g, '\\"') + '","auto","zh-CN",true],[null]]', null, 'generic']]
+                        ])
+                    );
+                    let query =
+                        '?rpcids=MkEWBc&source-path=%2F&hl=zh-CN&soc-app=1&soc-platform=1&soc-device=1&_reqid=' +
+                        Math.floor(1000 + Math.random() * 9000) +
+                        '&rt=c';
+                    return {
+                        query: query,
+                        content: 'f.req=' + encodedTranslateText
+                    };
                 };
                 vue.translatorList.google.parseResult = function (json) {
                     let translator = vue.translatorList.google;
                     if (json) {
-                        if (!json.sentences) {
-                            json = JSON.parse(json);
+                        const d = JSON.parse(json[0][2]);
+                        const arr = d[1][0][0][5];
+                        console.log(d[3][5][0]);
+                        for (let i = 0; i < arr.length; i++) {
+                            translator.result.text += d[1][0][0][5][i][0];
                         }
-                        for (let item of json.sentences) {
-                            translator.result.text = item.trans;
-                        }
-                        if (json.dict) {
-                            for (let item of json.dict) {
+                        if (vue.translateText.indexOf(' ') === -1) {
+                            const arr = d[3][5][0];
+                            for (let i = 0; i < arr.length; i++) {
+                                let def = '';
+                                for (let j = 0; j < arr[i][1].length; j++) {
+                                    def += arr[i][1][j][0] + ', ';
+                                }
                                 translator.result.dict.push({
-                                    pos_enum: item.pos_enum,
-                                    pos: item.pos,
-                                    base_form: item.base_form,
-                                    entry: item.entry
+                                    index: translator.getPosIndex(arr[i][0]),
+                                    def: def,
+                                    pos: arr[i][0]
                                 });
                             }
                         }
@@ -541,21 +548,21 @@
                     GM_xmlhttpRequest({
                         method: 'POST',
                         url: translator.url,
-                        data: translator.initParam(),
+                        data: translator.initParam().content,
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded;',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                             'Accept': 'application/json'
                         },
                         onload: function (xhr) {
-                            let d = vue.strToJson(xhr.responseText);
+                            let d = vue.strToJson(xhr.responseText.substring(6));
                             vue.getResult(translator, xhr, d);
                         }
                     });
                 };
             }
+            // bing
             {
-                // bing
                 vue.translatorList.bing.getPosIndex = function (pos) {
                     switch (pos) {
                         case 'n.':

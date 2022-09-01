@@ -22,6 +22,7 @@
         transition: 1.5s;
     }
 }
+
 @-moz-document domain("cnbeta.com") {
     iframe,
     .cnbeta-side-sponsor,
@@ -36,6 +37,18 @@
         background-image: none !important;
     }
 }
+
+@-moz-document domain("share.dmhy.org") {
+    .even,
+    table.tablesorter tbody tr.even td {
+        background-color: white !important;
+    }
+
+    .download-pikpak {
+        display: none !important;
+    }
+}
+
 @-moz-document domain("dushu369.com") {
     .cntitle {
         font-size: 13px;
@@ -46,6 +59,7 @@
         background-color: white;
     }
 }
+
 @-moz-document domain("fmylife.com") {
     .icon-logo_fmylife {
         display: none;
@@ -56,6 +70,16 @@
         opacity: 0.1;
     }
 }
+
+@-moz-document domain("fsoufsou.com") {
+    #app > div > div {
+        padding-top: 0 !important;
+    }
+    #app > div.flex-justify-center > div > div > div > div.flex-double-center {
+        display: none;
+    }
+}
+
 @-moz-document domain("highlightjs.org") {
     body {
         color: black;
@@ -65,6 +89,7 @@
         color: black;
     }
 }
+
 @-moz-document domain("ithome.com") {
     #tt50,
     .dajia,
@@ -78,6 +103,7 @@
         color: #c6f;
     }
 }
+
 @-moz-document domain("jandan.net") {
     #box,
     #wrapper > #header {
@@ -107,15 +133,132 @@
         display: none;
     }
 }
+
 @-moz-document domain("nga.cn") {
-    * {
-        font-size: 15px !important;
+    /* 改为白色背景 */
+    html,
+    body,
+    body * {
+        background-color: rgba(255, 255, 255, 0) !important;
+    }
+    /* 去除版头 */
+    #mainmenu {
+        margin-bottom: 0 !important;
+    }
+    #custombg {
+        visibility: hidden;
+        display: none;
+    }
+    /* 收藏菜单背景 */
+    #mc > div:not([class]) {
+        background-color: #faf5f0 !important;
+    }
+    #sub_forums > div {
+        background-image: none !important;
+    }
+    #sub_forums > div .a .b {
+        text-align: center;
+    }
+    /* 导航栏 */
+    #b_nav,
+    #m_nav {
+        border: #cccccc solid 0.01rem;
+        border-radius: 2.5px;
+        box-shadow: 0 0 5px -3px #000;
+    }
+    #b_nav .nav_root,
+    #m_nav .nav_root {
+        border: none;
+        color: #e0c19e;
+    }
+    .nav_root,
+    .nav_link,
+    .nav_spr {
+        box-shadow: none;
+        margin-bottom: 0;
+    }
+    /* 功能栏 */
+    #m_pbtnbtm,
+    #m_pbtntop {
+        margin-top: 0.5rem;
+    }
+    #m_pbtnbtm .stdbtn,
+    #m_pbtntop .stdbtn {
+        border: none;
+    }
+    #m_pbtnbtm .w100 .right_,
+    #m_pbtntop .w100 .right_ {
+        margin-bottom: 0.5rem !important;
+        overflow: hidden !important;
+        border-radius: 5px;
+        box-shadow: 0 0 5px -3px #000;
+    }
+
+    /* 帖子正文 */
+    #m_posts table {
+        border-spacing: 0;
+    }
+    #m_posts table .postrow.row1 {
+        background-color: #ffffff !important;
+    }
+    #m_posts table .postrow.row2 {
+        background-color: #fafafa !important;
+    }
+    #m_posts table .postrow .c1 {
+        border-right: #e6e4e1 solid 0.01rem;
+    }
+    #m_posts table .postrow .c1 .posterinfo .stat {
+        margin: 0 !important;
+        border: none !important;
+    }
+    /* 头像 */
+    #m_posts table .postrow .c1 .posterinfo > img {
+        max-width: 4rem !important;
+    }
+    /* 进度条 */
+    #m_posts table .postrow .c1 .posterinfo .stat .r_bar {
+        background-color: #e0c19e !important;
+    }
+
+    /* 高亮文本、小标识 */
+    .block_txt,
+    .white,
+    .stxt,
+    svg {
+        color: #e0c19e !important;
+    }
+
+    /* 高亮文本 */
+    .block_txt {
+        padding-right: 0 !important;
+        min-width: unset !important;
+    }
+
+    svg {
+        fill: #e0c19e !important;
+    }
+
+    /* 帖子文本 */
+    .postcontent.ubbcode {
+        line-height: 3rem;
+    }
+    /* 帖子表情 */
+    .smile_ac,
+    .smile_a2 {
+        opacity: 0.5 !important;
+        width: 3rem;
+    }
+    .single_ttip2 {
+        background-color: white !important;
     }
 }
+
 @-moz-document domain("v2ex.com") {
+@import 'https://cdn.jsdelivr.net/gh/viewweiwu/v2ex-zhihu-theme@1.2/v2ex.css';
+
     .adsbygoogle,
     #Logo {
-    /* 淡化 logo 和广告 */
+        /* 淡化 logo 和广告 */
         opacity: 0.05;
         transition: 0.5s;
     }
@@ -137,7 +280,12 @@
     #Wrapper .box .small.fade img {
         opacity: 1 !important;
     }
+
+    iframe.embedded_video {
+        opacity: 0.01;
+    }
 }
+
 @-moz-document domain("zhihu.com") {
     .AppHeader,
     .AppHeader-inner,
@@ -150,5 +298,18 @@
     .ContentItem-title {
         font-size: 15px;
         font-weight: 400;
+    }
+}
+
+@-moz-document url-prefix("https://www.bilibili.com/read/") {
+    .fixed-top-header .inner > p {
+        font-size: 1rem !important;
+    }
+}
+
+@-moz-document url-prefix("https://kaisery.github.io/trpl-zh-cn/") {
+    #menu-bar,
+    #menu-bar-hover-placeholder {
+        opacity: 0;
     }
 }

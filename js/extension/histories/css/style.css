@@ -1,0 +1,82 @@
+html * {
+  box-sizing: border-box;
+  font-family: 'MPlus', 'Sarasa Mono SC', monospace !important;
+}
+body {
+  margin: 0;
+  font-size: 1rem;
+}
+body #app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+body #app aside {
+  width: 200px;
+}
+body #app article {
+  flex: 0 0 800px;
+  display: flex;
+  flex-direction: column;
+}
+body #app article > .title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 20px 0 0;
+  border-bottom: 1px solid black;
+}
+body #app article .search {
+  padding: 15px 0;
+}
+body #app article input {
+  width: 300px;
+}
+body #app article .pager {
+  padding: 8px 0;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+}
+body #app article .pager .left .pageCount {
+  width: 3rem;
+  text-align: center;
+}
+body #app article .pager .right {
+  width: 6rem;
+  display: flex;
+  justify-content: space-between;
+}
+body #app article .list .line {
+  line-height: 1.6rem;
+  display: flex;
+  height: 1.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body #app article .list .line .time {
+  font-size: 0.7rem;
+  width: 8rem;
+}
+body #app article .list .line img {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.3rem;
+}
+body #app article .list .line .title {
+  font-size: 0.9rem;
+  text-decoration: none;
+  margin-right: 1rem;
+  max-width: 30rem;
+  word-break: break-all;
+}
+body #app article .list .line .domain {
+  color: #777777;
+  font-size: 0.7rem;
+  max-width: 10rem;
+  word-break: break-all;
+}
+/*# sourceMappingURL=style.css.map */

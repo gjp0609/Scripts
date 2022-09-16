@@ -1,0 +1,25 @@
+{
+    "manifest_version": 2,
+    "name": "Histories",
+    "version": "1.0",
+    "description": "",
+    "homepage_url": "https://github.com/gjp0609/Scripts/tree/master/js/extension/histories",
+    "icons": {
+        "48": "icons/history.png",
+        "96": "icons/history.png"
+    },
+    "background": {
+        "page": "background.html"
+    },
+    "options_ui": {
+        "browser_style": false,
+        "open_in_tab": true,
+        "page": "options.html"
+    },
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "histories@noif.fun"
+        }
+    },
+    "permissions": ["<all_urls>", "history", "storage", "unlimitedStorage"]
+}

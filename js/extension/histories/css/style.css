@@ -12,6 +12,15 @@ body #app {
   display: flex;
   justify-content: center;
 }
+body #app * button,
+body #app * input,
+body #app * input::-webkit-file-upload-button,
+body #app * select {
+  height: 1.6rem;
+}
+body #app * button {
+  margin-left: 0.5rem;
+}
 body #app aside {
   width: 200px;
 }
@@ -28,6 +37,11 @@ body #app article > .title {
 }
 body #app article .search {
   padding: 15px 0;
+  display: flex;
+  justify-content: space-between;
+}
+body #app article .search .import input[type='file'] {
+  width: 12rem;
 }
 body #app article input {
   width: 300px;
@@ -44,9 +58,17 @@ body #app article .pager .left .pageCount {
   text-align: center;
 }
 body #app article .pager .right {
-  width: 6rem;
   display: flex;
   justify-content: space-between;
+}
+body #app article .loading {
+  text-align: center;
+  line-height: 20rem;
+}
+body #app article .list .day {
+  font-weight: bold;
+  padding-top: 0.8rem;
+  padding-bottom: 0.2rem;
 }
 body #app article .list .line {
   line-height: 1.6rem;

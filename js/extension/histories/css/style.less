@@ -6,6 +6,17 @@ body {
     margin: 0;
     font-size: 1rem;
     #app {
+        * {
+            button,
+            input,
+            input::-webkit-file-upload-button,
+            select {
+                height: 1.6rem;
+            }
+            button {
+                margin-left: 0.5rem;
+            }
+        }
         width: 100vw;
         height: 100vh;
         display: flex;
@@ -25,6 +36,13 @@ body {
             }
             .search {
                 padding: 15px 0;
+                display: flex;
+                justify-content: space-between;
+                .import {
+                    input[type='file'] {
+                        width: 12rem;
+                    }
+                }
             }
             input {
                 width: 300px;
@@ -42,12 +60,20 @@ body {
                     }
                 }
                 .right {
-                    width: 6rem;
                     display: flex;
                     justify-content: space-between;
                 }
             }
+            .loading {
+                text-align: center;
+                line-height: 20rem;
+            }
             .list {
+                .day {
+                    font-weight: bold;
+                    padding-top: 0.8rem;
+                    padding-bottom: 0.2rem;
+                }
                 .line {
                     line-height: 1.6rem;
                     display: flex;

@@ -82,7 +82,7 @@ body {
                     text-overflow: ellipsis;
                     .time {
                         font-size: 0.7rem;
-                        width: 8rem;
+                        width: 4rem;
                     }
                     img {
                         width: 16px;
@@ -91,18 +91,21 @@ body {
                         vertical-align: middle;
                         margin-right: 0.3rem;
                     }
-                    .title {
-                        font-size: 0.9rem;
-                        text-decoration: none;
-                        margin-right: 1rem;
-                        max-width: 30rem;
+                    .title-wrapper {
+                        max-width: 44rem;
                         word-break: break-all;
-                    }
-                    .domain {
-                        color: #777777;
-                        font-size: 0.7rem;
-                        max-width: 10rem;
-                        word-break: break-all;
+                        display: flex;
+                        .title {
+                            font-size: 0.9rem;
+                            text-decoration: none;
+                            margin-right: 1rem;
+                        }
+                        .domain {
+                            flex: 0 0 auto;
+                            color: #777777;
+                            font-size: 0.7rem;
+                            word-break: break-all;
+                        }
                     }
                 }
             }

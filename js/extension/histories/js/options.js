@@ -17,10 +17,8 @@ createApp({
     },
     mounted() {
         chrome.storage.local.get('pageCount', (val) => {
-            if (val || val.pageCount || this.pageCount) {
-                this.pageCount = val.pageCount;
-                this.search();
-            }
+            this.pageCount = val?.pageCount ?? this.pageCount;
+            this.search();
         });
     },
     methods: {
@@ -47,13 +45,14 @@ createApp({
                     return;
                 }
                 this.list = [];
-                let lastDay = null;
+                let lastDay = '';
                 for (let history of histories) {
                     let date = new Date(history.lastVisitTime);
-                    let day = date.getFullYear() + '年' + date.getMonth() + '月' + date.getDay() + '日 星期';
-                    if (lastDay !== day) {
-                        lastDay = day;
-                        this.list.push({ dayText: this.localDateFormat(date) });
+                    let dateFormat = this.localDateFormat(date);
+                    let dateStr = dateFormat.dateStr;
+                    if (lastDay !== dateStr) {
+                        lastDay = dateStr;
+                        this.list.push({ dayText: dateFormat.weekType2 + ' ' + lastDay + ' 星期' + dateFormat.weekType1 });
                     }
                     this.list.push(history);
                 }
@@ -65,10 +64,18 @@ createApp({
             return a.hostname;
         },
         localDateFormat(date) {
-            const weekInText = '日月火水木金土';
-            const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
-            let dayText = date.toLocaleDateString('chinese', options);
-            return `${weekInText[date.getDay()]} ${dayText}`;
+            let dayInWeek = date.getDay();
+            let year = date.getFullYear();
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let day = String(date.getDate()).padStart(2, '0');
+            let hour = String(date.getHours()).padStart(2, '0');
+            let minute = String(date.getMinutes()).padStart(2, '0');
+            let second = String(date.getSeconds()).padStart(2, '0');
+            let weekType1 = '日一二三四五六'[dayInWeek];
+            let weekType2 = '日月火水木金土'[dayInWeek];
+            let dateStr = `${year}年${month}月${day}日`;
+            let timeStr = `${hour}:${minute}:${second}`;
+            return { dateStr, timeStr, weekType1, weekType2 };
         }
     },
     props: ['modelValue'],
@@ -161,7 +168,7 @@ createApp({
                                     }
                                 }
                             },
-                            ['import']
+                            ['Import']
                         ),
                         h(
                             'button',
@@ -184,7 +191,7 @@ createApp({
                                     });
                                 }
                             },
-                            ['export']
+                            ['Export']
                         )
                     ])
                 ]),
@@ -249,17 +256,17 @@ createApp({
                     { class: 'list', style: { display: this.isLoading ? 'none' : 'block' } },
                     this.list.map(({ id, lastVisitTime, title, url, dayText }) => {
                         if (id) {
-                            let time = new Date(lastVisitTime);
-                            let date = time.toLocaleDateString().replaceAll(/\//g, '-');
                             return h('div', { key: id, class: 'line' }, [
-                                h('span', { class: 'time' }, date + ' ' + time.toLocaleTimeString()),
+                                h('span', { class: 'time' }, this.localDateFormat(new Date(lastVisitTime)).timeStr),
                                 h('div', [
                                     h('img', {
                                         src: 'chrome://favicon/' + url
                                     })
                                 ]),
-                                h('a', { class: 'title', href: url, title: url, target: '_blank' }, title ? title.trim() || url : url),
-                                h('span', { class: 'domain' }, this.getDomainFromUrl(url))
+                                h('span', { class: 'title-wrapper' }, [
+                                    h('a', { class: 'title', href: url, title: url, target: '_blank' }, title ? title.trim() || url : url),
+                                    h('span', { class: 'domain' }, this.getDomainFromUrl(url))
+                                ])
                             ]);
                         } else {
                             return h('div', { class: 'day' }, [dayText]);

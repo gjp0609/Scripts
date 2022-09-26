@@ -20,10 +20,5 @@
         "open_in_tab": true,
         "page": "options.html"
     },
-    "browser_specific_settings": {
-        "gecko": {
-            "id": "histories@noif.fun"
-        }
-    },
-    "permissions": ["history", "storage", "unlimitedStorage"]
+    "permissions": ["history", "storage", "unlimitedStorage", "chrome://favicon/"]
 }

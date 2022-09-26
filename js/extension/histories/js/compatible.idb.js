@@ -38,7 +38,7 @@ export const exportTsv = async function () {
     let cursor = await db.transaction('history').store.openCursor(null);
     while (cursor) {
         let val = cursor.value;
-        csvContent += val.url + '\t' + val.lastVisitTime + '\t' + val.typedCount + '\t' + val.title + '\r\n';
+        csvContent += val.url + '\tU' + val.lastVisitTime + '\t' + val.typedCount + '\t' + val.title + '\r\n';
         cursor = await cursor.continue();
     }
     return csvContent;

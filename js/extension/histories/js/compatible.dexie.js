@@ -33,7 +33,7 @@ export const exportTsv = async function () {
     let csvContent = 'data:text/tsv;charset=utf-8,';
     let arr = await db.histories.toArray();
     for (let val of arr) {
-        csvContent += val.url + '\t' + val.lastVisitTime + '\t' + val.typedCount + '\t' + val.title + '\r\n';
+        csvContent += val.url + '\tU' + val.lastVisitTime + '\t' + val.typedCount + '\t' + val.title + '\r\n';
     }
     return csvContent;
 };

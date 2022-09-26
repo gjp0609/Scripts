@@ -38,7 +38,7 @@
     }
 }
 
-@-moz-document domain("share.dmhy.org") {
+@-moz-document domain("dmhy.org") {
     .even,
     table.tablesorter tbody tr.even td {
         background-color: white !important;
@@ -72,6 +72,7 @@
 }
 
 @-moz-document domain("fsoufsou.com") {
+    #app > div,
     #app > div > div {
         padding-top: 0 !important;
     }
@@ -131,6 +132,12 @@
 
     #float {
         display: none;
+    }
+}
+
+@-moz-document domain("juejin.cn") {
+    .guide-collect-popover {
+        display: none !important;
     }
 }
 
@@ -253,8 +260,15 @@
     }
 }
 
+@-moz-document domain("ruanyifeng.com") {
+    body,
+    #container {
+        background-color: white;
+    }
+}
+
 @-moz-document domain("v2ex.com") {
-@import 'https://cdn.jsdelivr.net/gh/viewweiwu/v2ex-zhihu-theme@1.2/v2ex.css';
+    @import 'https://cdn.jsdelivr.net/gh/viewweiwu/v2ex-zhihu-theme@1.2/v2ex.css';
 
     .adsbygoogle,
     #Logo {

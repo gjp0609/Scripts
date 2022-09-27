@@ -1,3 +1,4 @@
+import { aside } from '../../common/js/options.js';
 import db from './compatible.js';
 
 const { createApp, h } = Vue;
@@ -20,6 +21,7 @@ createApp({
             this.pageCount = val?.pageCount ?? this.pageCount;
             this.search();
         });
+        this.$refs.keywordInput.focus();
     },
     methods: {
         search(page) {
@@ -78,17 +80,16 @@ createApp({
             return { dateStr, timeStr, weekType1, weekType2 };
         }
     },
-    props: ['modelValue'],
-    emits: ['update:modelValue'],
     render() {
         return [
-            h('aside', [h('ul', [h('li', 'Search'), h('li', 'Options')])]),
+            h('aside', aside('history')),
             h('article', [
                 h('div', { class: 'title' }, ['History Search']),
                 h('label', { class: 'search' }, [
                     h('div', [
                         'Search for: ',
                         h('input', {
+                            ref: 'keywordInput',
                             value: this.keyword,
                             onInput: (e) => {
                                 this.keyword = e.target.value;
@@ -197,8 +198,8 @@ createApp({
                 ]),
                 h('div', { class: 'pager' }, [
                     h('div', { class: 'left' }, [
-                        h('span', 'Page ' + this.page + ' of all history'),
-                        h('span', ' | Type: '),
+                        h('span', ['Page ' + this.page + ' of all history']),
+                        h('span', [' | Type: ']),
                         h(
                             'select',
                             {
@@ -208,9 +209,9 @@ createApp({
                                     this.type = e.target.value;
                                 }
                             },
-                            [h('option', { value: 1 }, 'regex'), h('option', { value: 2 }, 'normal')]
+                            [h('option', { value: 1 }, ['regex']), h('option', { value: 2 }, ['normal'])]
                         ),
-                        h('span', ' | Page Count: '),
+                        h('span', [' | Page Count: ']),
                         h('input', {
                             title: 'Page Count',
                             class: 'pageCount',
@@ -239,14 +240,14 @@ createApp({
                             {
                                 onClick: () => this.search(--this.page)
                             },
-                            'Prev'
+                            ['Prev']
                         ),
                         h(
                             'button',
                             {
                                 onClick: () => this.search(++this.page)
                             },
-                            'Next'
+                            ['Next']
                         )
                     ])
                 ]),
@@ -257,15 +258,15 @@ createApp({
                     this.list.map(({ id, lastVisitTime, title, url, dayText }) => {
                         if (id) {
                             return h('div', { key: id, class: 'line' }, [
-                                h('span', { class: 'time' }, this.localDateFormat(new Date(lastVisitTime)).timeStr),
+                                h('span', { class: 'time' }, [this.localDateFormat(new Date(lastVisitTime)).timeStr]),
                                 h('div', [
                                     h('img', {
                                         src: 'chrome://favicon/' + url
                                     })
                                 ]),
                                 h('span', { class: 'title-wrapper' }, [
-                                    h('a', { class: 'title', href: url, title: url, target: '_blank' }, title ? title.trim() || url : url),
-                                    h('span', { class: 'domain' }, this.getDomainFromUrl(url))
+                                    h('a', { class: 'title', href: url, title: url, target: '_blank' }, [title ? title.trim() || url : url]),
+                                    h('span', { class: 'domain' }, [this.getDomainFromUrl(url)])
                                 ])
                             ]);
                         } else {

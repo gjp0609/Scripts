@@ -1,0 +1,48 @@
+html * {
+    box-sizing: border-box;
+    font-family: 'Sarasa Mono SC', monospace !important;
+    button,
+    input,
+    input::-webkit-file-upload-button,
+    select {
+        height: 1.6rem;
+    }
+    button {
+        margin-left: 0.5rem;
+    }
+}
+
+body {
+    margin: 0;
+    font-size: 1rem;
+    #app {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        aside {
+            width: 200px;
+            ul {
+                list-style: none;
+                li {
+                    line-height: 2rem;
+                    a {
+                        text-decoration: none;
+                        text-transform: capitalize;
+                        color: gray;
+                        font-size: 0.8rem;
+                    }
+                    &.active a {
+                        color: black;
+                        font-size: 1rem;
+                    }
+                }
+            }
+        }
+        article {
+            flex: 0 0 800px;
+            display: flex;
+            flex-direction: column;
+        }
+    }
+}

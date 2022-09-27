@@ -1,34 +1,3 @@
-html * {
-  box-sizing: border-box;
-  font-family: 'MPlus', 'Sarasa Mono SC', monospace !important;
-}
-body {
-  margin: 0;
-  font-size: 1rem;
-}
-body #app {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-}
-body #app * button,
-body #app * input,
-body #app * input::-webkit-file-upload-button,
-body #app * select {
-  height: 1.6rem;
-}
-body #app * button {
-  margin-left: 0.5rem;
-}
-body #app aside {
-  width: 200px;
-}
-body #app article {
-  flex: 0 0 800px;
-  display: flex;
-  flex-direction: column;
-}
 body #app article > .title {
   font-size: 1.2rem;
   font-weight: bold;

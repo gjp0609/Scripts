@@ -1,0 +1,48 @@
+html * {
+  box-sizing: border-box;
+  font-family: 'Sarasa Mono SC', monospace !important;
+}
+html * button,
+html * input,
+html * input::-webkit-file-upload-button,
+html * select {
+  height: 1.6rem;
+}
+html * button {
+  margin-left: 0.5rem;
+}
+body {
+  margin: 0;
+  font-size: 1rem;
+}
+body #app {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+body #app aside {
+  width: 200px;
+}
+body #app aside ul {
+  list-style: none;
+}
+body #app aside ul li {
+  line-height: 2rem;
+}
+body #app aside ul li a {
+  text-decoration: none;
+  text-transform: capitalize;
+  color: gray;
+  font-size: 0.8rem;
+}
+body #app aside ul li.active a {
+  color: black;
+  font-size: 1rem;
+}
+body #app article {
+  flex: 0 0 800px;
+  display: flex;
+  flex-direction: column;
+}
+/*# sourceMappingURL=style.css.map */

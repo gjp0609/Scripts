@@ -1,24 +1,24 @@
 {
     "manifest_version": 2,
-    "name": "Histories",
+    "name": "My",
     "version": "1.0",
     "description": "",
-    "homepage_url": "https://github.com/gjp0609/Scripts/tree/master/js/extension/histories",
+    "homepage_url": "https://github.com/gjp0609/Scripts/tree/master/js/extension/",
     "icons": {
-        "48": "icons/history.png",
-        "96": "icons/history.png"
+        "48": "common/icons/history.png",
+        "96": "common/icons/history.png"
     },
     "browser_action": {
-        "default_icon": "icons/history.png",
-        "default_title": "__MSG_extension_name__"
+        "default_icon": "common/icons/history.png",
+        "default_title": "My"
     },
     "background": {
-        "page": "background.html"
+        "page": "common/background.html"
     },
     "options_ui": {
         "browser_style": false,
         "open_in_tab": true,
-        "page": "options.html"
+        "page": "common/index.html"
     },
     "browser_specific_settings": {
         "gecko": {

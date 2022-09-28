@@ -1,5 +1,7 @@
 import { aside } from '../../common/js/options.js';
+import { cachedFetch } from '../../common/js/utils.js';
 import db from './compatible.js';
+import isFirefox from './compatible.js';
 
 const { createApp, h } = Vue;
 createApp({
@@ -9,6 +11,8 @@ createApp({
             isLoading: false,
             importPercentage: 100,
             list: [],
+            icons: [],
+            defaultImage: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
             keyword: '',
             pageCount: 20,
             page: 1,
@@ -43,11 +47,17 @@ createApp({
                 console.timeEnd('search');
                 this.isLoading = false;
                 if (histories.length === 0) {
-                    --this.page;
-                    return;
+                    if (this.page > 1) {
+                        --this.page;
+                        return;
+                    }
+                    this.list = [];
+                    this.icons = [];
                 }
                 this.list = [];
+                this.icons = [];
                 let lastDay = '';
+                let index = 0;
                 for (let history of histories) {
                     let date = new Date(history.lastVisitTime);
                     let dateFormat = this.localDateFormat(date);
@@ -55,8 +65,12 @@ createApp({
                     if (lastDay !== dateStr) {
                         lastDay = dateStr;
                         this.list.push({ dayText: dateFormat.weekType2 + ' ' + lastDay + ' 星期' + dateFormat.weekType1 });
+                        index++;
                     }
-                    this.list.push(history);
+                    let domain = this.getDomainFromUrl(history.url);
+                    this.getIcon(domain, index);
+                    this.list.push(Object.assign({ domain: domain }, history));
+                    index++;
                 }
             });
         },
@@ -78,6 +92,32 @@ createApp({
             let dateStr = `${year}年${month}月${day}日`;
             let timeStr = `${hour}:${minute}:${second}`;
             return { dateStr, timeStr, weekType1, weekType2 };
+        },
+        getIcon(domain, index) {
+            cachedFetch('https://favicon.yandex.net/favicon/v2/' + domain, 60 * 60 * 24 * 7).then((response) => {
+                if (response.status === 200) {
+                    if (response.headers.has('Is-Cached-Fetch')) {
+                        response.text().then((text) => {
+                            if (text.length === 118) {
+                            } else {
+                                this.icons[index] = text;
+                            }
+                        });
+                    } else {
+                        response.blob().then((content) => {
+                            let reader = new FileReader();
+                            reader.readAsDataURL(content);
+                            reader.onloadend = () => {
+                                let base64data = reader.result;
+                                if (base64data.length === 118) {
+                                } else {
+                                    this.icons[index] = base64data;
+                                }
+                            };
+                        });
+                    }
+                }
+            });
         }
     },
     render() {
@@ -255,18 +295,14 @@ createApp({
                 h(
                     'div',
                     { class: 'list', style: { display: this.isLoading ? 'none' : 'block' } },
-                    this.list.map(({ id, lastVisitTime, title, url, dayText }) => {
+                    this.list.map(({ id, lastVisitTime, title, url, domain, dayText }, index) => {
                         if (id) {
                             return h('div', { key: id, class: 'line' }, [
                                 h('span', { class: 'time' }, [this.localDateFormat(new Date(lastVisitTime)).timeStr]),
-                                h('div', [
-                                    h('img', {
-                                        src: 'chrome://favicon/' + url
-                                    })
-                                ]),
+                                h('div', [h('img', { src: isFirefox ? this.icons[index] || this.defaultImage : 'chrome://favicon/' + url })]),
                                 h('span', { class: 'title-wrapper' }, [
                                     h('a', { class: 'title', href: url, title: url, target: '_blank' }, [title ? title.trim() || url : url]),
-                                    h('span', { class: 'domain' }, [this.getDomainFromUrl(url)])
+                                    h('span', { class: 'domain' }, [domain])
                                 ])
                             ]);
                         } else {

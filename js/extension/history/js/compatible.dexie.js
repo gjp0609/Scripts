@@ -25,6 +25,16 @@ export const bulkAdd = async function (histories) {
     });
 };
 
+export const updateTitle = async function ({  url, title }) {
+    let histories = await db.histories.orderBy('lastVisitTime').reverse().offset(0).limit(100).toArray();
+    for (let history of histories) {
+        if (history.url === url) {
+            history.title = title;
+            await db.histories.put(history);
+        }
+    }
+};
+
 export const clearTable = async function () {
     await db.histories.clear();
 };
@@ -45,7 +55,7 @@ export const queryList = async function (param) {
         .orderBy('lastVisitTime')
         .reverse()
         .filter((history) => {
-            let isMatch = !keyword || keyword === 0;
+            let isMatch = !keyword && keyword !== 0;
             if (!isMatch) {
                 for (let field of matchField) {
                     if (type === 1 ? globalRegex.test(history[field]) : history[field].toLowerCase().includes(keyword.toLowerCase())) {

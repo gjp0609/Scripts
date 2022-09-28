@@ -29,6 +29,22 @@ export const bulkAdd = async function (histories) {
     await tx.done;
 };
 
+export const updateTitle = async function ({ url, title }) {
+    const tx = db.transaction('history', 'readwrite');
+    let cursor = await tx.store.index('lastVisitTime').openCursor(null, 'prev');
+    let count = 0;
+    while (cursor && count < 100) {
+        let val = cursor.value;
+        if (val && val.url === url) {
+            val.title = title;
+            await cursor.update(val);
+        }
+        cursor = await cursor.continue();
+        count++;
+    }
+    await tx.done;
+};
+
 export const clearTable = async function () {
     await db.clear('history');
 };
@@ -52,7 +68,7 @@ export const queryList = async function (param) {
     const globalRegex = new RegExp(keyword, 'g');
     while (cursor && count < page * pageCount) {
         let val = cursor.value;
-        let isMatch = !keyword || keyword === 0;
+        let isMatch = !keyword && keyword !== 0;
         if (!isMatch) {
             for (let field of matchField) {
                 if (type === 1 ? globalRegex.test(val[field]) : val[field].toLowerCase().includes(keyword.toLowerCase())) {

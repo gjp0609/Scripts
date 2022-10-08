@@ -1,3 +1,25 @@
+* {
+  scrollbar-color: rgba(59, 178, 237, 0.22) rgba(214, 214, 214, 0.2);
+  scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background-color: rgba(214, 214, 214, 0.2);
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(59, 178, 237, 0.22);
+  border-radius: 6px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #4bafe1;
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: #64c8fa;
+}
+*::-webkit-scrollbar-corner {
+  background-color: rgba(214, 214, 214, 0.2);
+}
 html * {
   box-sizing: border-box;
   font-family: 'Sarasa Mono SC', monospace !important;
@@ -10,6 +32,7 @@ html * select {
 }
 html * button {
   margin-left: 0.5rem;
+  text-transform: capitalize;
 }
 body {
   margin: 0;
@@ -44,5 +67,12 @@ body #app article {
   flex: 0 0 800px;
   display: flex;
   flex-direction: column;
+}
+body #app article > .title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid black;
 }
 /*# sourceMappingURL=style.css.map */

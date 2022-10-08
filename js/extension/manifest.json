@@ -1,16 +1,17 @@
 {
-    "manifest_version": 2,
-    "name": "My",
+    "manifest_version": 3,
+    "name": "__MSG_extensionName__",
+    "description": "__MSG_extensionDescription__",
     "version": "1.0",
-    "description": "",
+    "default_locale": "en",
     "homepage_url": "https://github.com/gjp0609/Scripts/tree/master/js/extension/",
     "icons": {
-        "48": "common/icons/history.png",
-        "96": "common/icons/history.png"
+        "48": "common/icons/history.svg",
+        "96": "common/icons/history.svg"
     },
-    "browser_action": {
-        "default_icon": "common/icons/history.png",
-        "default_title": "My"
+    "action": {
+        "default_icon": "common/icons/history.svg",
+        "default_title": "__MSG_extensionName__"
     },
     "background": {
         "page": "common/background.html"
@@ -25,5 +26,5 @@
             "id": "histories@noif.fun"
         }
     },
-    "permissions": ["history", "storage", "unlimitedStorage"]
+    "permissions": ["history", "storage", "tabs", "unlimitedStorage"]
 }

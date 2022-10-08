@@ -1,0 +1,73 @@
+{
+    "extensionName": {
+        "message": "历史记录"
+    },
+    "extensionDescription": {
+        "message": "历史记录111"
+    },
+    "history": {
+        "message": "历史记录"
+    },
+    "history_title": {
+        "message": "历史记录搜索"
+    },
+    "history_searchLabel": {
+        "message": "查找内容："
+    },
+    "history_searchButton": {
+        "message": "搜索"
+    },
+    "history_import": {
+        "message": "导入"
+    },
+    "history_export": {
+        "message": "导出"
+    },
+    "history_page": {
+        "message": "第 $PAGE$ 页",
+        "placeholders": {
+            "page": {
+                "content": "$1"
+            }
+        }
+    },
+    "history_matchMode": {
+        "message": "匹配模式："
+    },
+    "history_regex": {
+        "message": "正则"
+    },
+    "history_include": {
+        "message": "包含"
+    },
+    "history_pageCount": {
+        "message": "分页数量："
+    },
+    "history_prev": {
+        "message": "上一页"
+    },
+    "history_next": {
+        "message": "下一页"
+    },
+    "history_loading": {
+        "message": "加载中···"
+    },
+    "newTab": {
+        "message": "新标签页"
+    },
+    "newTab_title": {
+        "message": "新标签页"
+    },
+    "newTab_urlLabel": {
+        "message": "地址："
+    },
+    "newTab_save": {
+        "message": "保存"
+    },
+    "test": {
+        "message": "测试"
+    },
+    "test_title": {
+        "message": "测试页面"
+    }
+}

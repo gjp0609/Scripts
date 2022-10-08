@@ -1,12 +1,7 @@
-body #app article > .title {
-  font-size: 1.2rem;
-  font-weight: bold;
-  padding: 20px 0 0;
-  border-bottom: 1px solid black;
-}
 body #app article .search {
-  padding: 15px 0;
+  margin-bottom: 1rem;
   display: flex;
+  align-items: center;
   justify-content: space-between;
 }
 body #app article .search .import input[type='file'] {
@@ -20,6 +15,7 @@ body #app article .pager {
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
   display: flex;
+  align-items: center;
   justify-content: space-between;
 }
 body #app article .pager .left .pageCount {

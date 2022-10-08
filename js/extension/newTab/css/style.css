@@ -1,0 +1,8 @@
+body #app article .content {
+  display: flex;
+  align-items: center;
+}
+body #app article .content input {
+  flex: 1;
+}
+/*# sourceMappingURL=style.css.map */

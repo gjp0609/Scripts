@@ -1,0 +1,73 @@
+{
+    "extensionName": {
+        "message": "history"
+    },
+    "extensionDescription": {
+        "message": "hi"
+    },
+    "history": {
+        "message": "history"
+    },
+    "history_title": {
+        "message": "History Search"
+    },
+    "history_searchLabel": {
+        "message": "Search For: "
+    },
+    "history_searchButton": {
+        "message": "go"
+    },
+    "history_import": {
+        "message": "import"
+    },
+    "history_export": {
+        "message": "export"
+    },
+    "history_page": {
+        "message": "Page $PAGE$ of all history",
+        "placeholders": {
+            "page": {
+                "content": "$1"
+            }
+        }
+    },
+    "history_matchMode": {
+        "message": "Match Mode: "
+    },
+    "history_regex": {
+        "message": "regex"
+    },
+    "history_include": {
+        "message": "normal"
+    },
+    "history_pageCount": {
+        "message": "Page Count: "
+    },
+    "history_prev": {
+        "message": "prev"
+    },
+    "history_next": {
+        "message": "next"
+    },
+    "history_loading": {
+        "message": "Loading..."
+    },
+    "newTab": {
+        "message": "New Tab"
+    },
+    "newTab_title": {
+        "message": "New Tab"
+    },
+    "newTab_urlLabel": {
+        "message": "Url: "
+    },
+    "newTab_save": {
+        "message": "save"
+    },
+    "test": {
+        "message": "Test"
+    },
+    "test_title": {
+        "message": "Test Page"
+    }
+}

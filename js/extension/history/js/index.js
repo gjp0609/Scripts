@@ -1,4 +1,4 @@
-import { aside } from '../../common/js/options.js';
+import { aside } from '../../common/js/aside.js';
 import { cachedFetch } from '../../common/js/utils.js';
 import db from './compatible.js';
 import isFirefox from './compatible.js';
@@ -124,10 +124,10 @@ createApp({
         return [
             h('aside', aside('history')),
             h('article', [
-                h('div', { class: 'title' }, ['History Search']),
+                h('div', { class: 'title' }, [chrome.i18n.getMessage('history_title')]),
                 h('label', { class: 'search' }, [
                     h('div', [
-                        'Search for: ',
+                        chrome.i18n.getMessage('history_searchLabel'),
                         h('input', {
                             ref: 'keywordInput',
                             value: this.keyword,
@@ -146,7 +146,7 @@ createApp({
                             {
                                 onClick: () => this.search()
                             },
-                            ['Go']
+                            [chrome.i18n.getMessage('history_searchButton')]
                         )
                     ]),
                     h('div', { class: 'import' }, [
@@ -190,7 +190,7 @@ createApp({
                                                         if (lastVisitTime.indexOf('U') === 0) {
                                                             lastVisitTime = lastVisitTime.substring(1);
                                                         }
-                                                        lastVisitTime = parseInt(lastVisitTime);
+                                                        lastVisitTime = parseFloat(lastVisitTime);
                                                         buf.push({ url, title, lastVisitTime, typedCount });
                                                         if (buf.length === bufSize) {
                                                             await db.bulkAdd(buf);
@@ -209,7 +209,7 @@ createApp({
                                     }
                                 }
                             },
-                            ['Import']
+                            [chrome.i18n.getMessage('history_import')]
                         ),
                         h(
                             'button',
@@ -232,28 +232,31 @@ createApp({
                                     });
                                 }
                             },
-                            ['Export']
+                            [chrome.i18n.getMessage('history_export')]
                         )
                     ])
                 ]),
                 h('div', { class: 'pager' }, [
                     h('div', { class: 'left' }, [
-                        h('span', ['Page ' + this.page + ' of all history']),
-                        h('span', [' | Type: ']),
+                        h('span', [chrome.i18n.getMessage('history_page', this.page)]),
+                        h('span', [' | ']),
+                        h('span', [chrome.i18n.getMessage('history_matchMode')]),
                         h(
                             'select',
                             {
-                                title: 'type',
                                 value: this.type,
                                 onChange: (e) => {
                                     this.type = e.target.value;
                                 }
                             },
-                            [h('option', { value: 1 }, ['regex']), h('option', { value: 2 }, ['normal'])]
+                            [
+                                h('option', { value: 1 }, [chrome.i18n.getMessage('history_regex')]),
+                                h('option', { value: 2 }, [chrome.i18n.getMessage('history_include')])
+                            ]
                         ),
-                        h('span', [' | Page Count: ']),
+                        h('span', [' | ']),
+                        h('span', [chrome.i18n.getMessage('history_pageCount')]),
                         h('input', {
-                            title: 'Page Count',
                             class: 'pageCount',
                             value: this.pageCount,
                             onInput: (e) => {
@@ -280,18 +283,18 @@ createApp({
                             {
                                 onClick: () => this.search(--this.page)
                             },
-                            ['Prev']
+                            [chrome.i18n.getMessage('history_prev')]
                         ),
                         h(
                             'button',
                             {
                                 onClick: () => this.search(++this.page)
                             },
-                            ['Next']
+                            [chrome.i18n.getMessage('history_next')]
                         )
                     ])
                 ]),
-                h('div', { class: 'loading', style: { display: this.isLoading ? 'block' : 'none' } }, [h('h3', ['Loading'])]),
+                h('div', { class: 'loading', style: { display: this.isLoading ? 'block' : 'none' } }, [h('h3', [chrome.i18n.getMessage('history_loading')])]),
                 h(
                     'div',
                     { class: 'list', style: { display: this.isLoading ? 'none' : 'block' } },

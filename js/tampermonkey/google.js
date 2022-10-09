@@ -22,6 +22,7 @@
             a.addEventListener(
                 'click',
                 (event) => {
+                    a.href = href;
                     window.open(href, '_blank');
                     event.stopPropagation();
                     event.preventDefault();

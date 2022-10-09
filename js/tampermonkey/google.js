@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         * Google结果跳转新标签 | 屏蔽特定网站
+// @name         * Google 移除重定向，结果跳转新标签 | 屏蔽特定网站
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  点击谷歌搜索结果时开启一个新的标签页、屏蔽特定网站
@@ -18,8 +18,17 @@
         let as = searchDiv.getElementsByTagName('a');
         for (const a of as) {
             // new tab
-            a.removeAttribute('onmousedown', null);
-            a.target = '_blank';
+            let href = a.href;
+            a.addEventListener(
+                'click',
+                (event) => {
+                    window.open(href, '_blank');
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                },
+                { capture: true }
+            );
             // block
             let cites = a.getElementsByTagName('cite');
             if (cites && cites[0]) {

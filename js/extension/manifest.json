@@ -16,6 +16,9 @@
     "background": {
         "page": "common/background.html"
     },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'"
+    },
     "options_ui": {
         "browser_style": false,
         "open_in_tab": true,
@@ -26,5 +29,5 @@
             "id": "histories@noif.fun"
         }
     },
-    "permissions": ["history", "storage", "tabs", "unlimitedStorage"]
+    "permissions": ["downloads", "history", "storage", "tabs", "unlimitedStorage"]
 }

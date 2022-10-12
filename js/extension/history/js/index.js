@@ -1,7 +1,6 @@
 import { aside } from '../../common/js/aside.js';
-import { cachedFetch } from '../../common/js/utils.js';
-import db from './compatible.js';
-import isFirefox from './compatible.js';
+import { isFirefox } from '../../common/js/compatible.js';
+import { cachedFetch } from '../../common/js/libs/utils.js';
 
 const { createApp, h } = Vue;
 createApp({
@@ -16,19 +15,22 @@ createApp({
             keyword: '',
             pageCount: 20,
             page: 1,
-            type: 2,
+            type: 'keywords',
             importFile: undefined
         };
     },
     mounted() {
+        this.$refs.keywordInput.focus();
         chrome.storage.local.get('pageCount', (val) => {
             this.pageCount = val?.pageCount ?? this.pageCount;
             this.search();
         });
-        this.$refs.keywordInput.focus();
     },
     methods: {
         search(page) {
+            if (this.isLoading) {
+                return;
+            }
             console.time('search');
             this.isLoading = true;
             if (!page || page <= 0) {
@@ -38,41 +40,49 @@ createApp({
             if (page <= 0) {
                 return;
             }
-            db.queryList({
-                keyword: this.keyword,
-                pageCount: this.pageCount,
-                page: this.page,
-                type: this.type
-            }).then((histories) => {
-                console.timeEnd('search');
-                this.isLoading = false;
-                if (histories.length === 0) {
-                    if (this.page > 1) {
-                        --this.page;
-                        return;
+            chrome.runtime
+                .sendMessage(null, {
+                    from: 'history',
+                    action: 'queryList',
+                    params: {
+                        keyword: this.keyword,
+                        pageCount: this.pageCount,
+                        page: this.page,
+                        type: this.type
+                    }
+                })
+                .then((histories) => {
+                    console.timeEnd('search');
+                    this.isLoading = false;
+                    if (histories.length === 0) {
+                        if (this.page > 1) {
+                            --this.page;
+                            return;
+                        }
+                        this.list = [];
+                        this.icons = [];
                     }
                     this.list = [];
                     this.icons = [];
-                }
-                this.list = [];
-                this.icons = [];
-                let lastDay = '';
-                let index = 0;
-                for (let history of histories) {
-                    let date = new Date(history.lastVisitTime);
-                    let dateFormat = this.localDateFormat(date);
-                    let dateStr = dateFormat.dateStr;
-                    if (lastDay !== dateStr) {
-                        lastDay = dateStr;
-                        this.list.push({ dayText: dateFormat.weekType2 + ' ' + lastDay + ' 星期' + dateFormat.weekType1 });
+                    let lastDay = '';
+                    let index = 0;
+                    for (let history of histories) {
+                        let date = new Date(history.lastVisitTime);
+                        let dateFormat = this.localDateFormat(date);
+                        let dateStr = dateFormat.dateStr;
+                        if (lastDay !== dateStr) {
+                            lastDay = dateStr;
+                            this.list.push({ dayText: dateFormat.weekType2 + ' ' + lastDay + ' 星期' + dateFormat.weekType1 });
+                            index++;
+                        }
+                        let domain = this.getDomainFromUrl(history.url);
+                        if (isFirefox) {
+                            this.getIcon(domain, index);
+                        }
+                        this.list.push(Object.assign({ domain: domain }, history));
                         index++;
                     }
-                    let domain = this.getDomainFromUrl(history.url);
-                    this.getIcon(domain, index);
-                    this.list.push(Object.assign({ domain: domain }, history));
-                    index++;
-                }
-            });
+                });
         },
         getDomainFromUrl(url) {
             let a = document.createElement('a');
@@ -144,6 +154,7 @@ createApp({
                         h(
                             'button',
                             {
+                                disabled: this.isLoading,
                                 onClick: () => this.search()
                             },
                             [chrome.i18n.getMessage('history_searchButton')]
@@ -168,44 +179,18 @@ createApp({
                                 onclick: () => {
                                     if (this.importFile) {
                                         this.importPercentage = 0;
-                                        db.clearTable().then(() => {
-                                            console.time('import');
-                                            let arr = this.importFile.split('\r\n');
-                                            (async () => {
-                                                let buf = [];
-                                                // 44w data insert speed:
-                                                // bufSize =  500: 106s
-                                                // bufSize = 1000: 86s
-                                                // bufSize = 2000: 80s
-                                                // bufSize = 5000: 90s
-                                                let bufSize = 2000;
-                                                for (let i = 0; i < arr.length; i++) {
-                                                    if ((100.0 * i) / arr.length > this.importPercentage) {
-                                                        this.importPercentage++;
-                                                    }
-                                                    let line = arr[i];
-                                                    let split = line.split('\t');
-                                                    if (split.length === 4) {
-                                                        let [url, lastVisitTime, typedCount, title] = split;
-                                                        if (lastVisitTime.indexOf('U') === 0) {
-                                                            lastVisitTime = lastVisitTime.substring(1);
-                                                        }
-                                                        lastVisitTime = parseFloat(lastVisitTime);
-                                                        buf.push({ url, title, lastVisitTime, typedCount });
-                                                        if (buf.length === bufSize) {
-                                                            await db.bulkAdd(buf);
-                                                            buf = [];
-                                                        }
-                                                    }
-                                                }
-                                                if (buf.length > 0) {
-                                                    await db.bulkAdd(buf);
-                                                }
-                                                this.importPercentage = 100;
+                                        console.time('import');
+                                        chrome.runtime
+                                            .sendMessage(null, {
+                                                from: 'history',
+                                                action: 'import',
+                                                params: this.importFile
+                                            })
+                                            .then(async () => {
                                                 console.timeEnd('import');
+                                                this.importPercentage = 100;
                                                 this.search();
-                                            })();
-                                        });
+                                            });
                                     }
                                 }
                             },
@@ -216,19 +201,9 @@ createApp({
                             {
                                 disabled: this.importPercentage !== 100,
                                 onclick: () => {
-                                    this.importPercentage = 0;
-                                    console.time('export');
-                                    db.exportTsv().then((csvContent) => {
-                                        this.importPercentage = 50;
-                                        csvContent = new Blob([csvContent], { type: 'text/tsv' });
-                                        let csvUrl = URL.createObjectURL(csvContent);
-                                        let link = document.createElement('a');
-                                        link.setAttribute('href', csvUrl);
-                                        link.setAttribute('download', 'export.tsv');
-                                        document.body.appendChild(link);
-                                        link.click();
-                                        console.timeEnd('export');
-                                        this.importPercentage = 100;
+                                    chrome.runtime.sendMessage(null, {
+                                        from: 'history',
+                                        action: 'export'
                                     });
                                 }
                             },
@@ -250,8 +225,9 @@ createApp({
                                 }
                             },
                             [
-                                h('option', { value: 1 }, [chrome.i18n.getMessage('history_regex')]),
-                                h('option', { value: 2 }, [chrome.i18n.getMessage('history_include')])
+                                h('option', { value: 'regex' }, [chrome.i18n.getMessage('history_regex')]),
+                                h('option', { value: 'include' }, [chrome.i18n.getMessage('history_include')]),
+                                h('option', { value: 'keywords' }, [chrome.i18n.getMessage('history_keywords')])
                             ]
                         ),
                         h('span', [' | ']),
@@ -294,23 +270,23 @@ createApp({
                         )
                     ])
                 ]),
-                h('div', { class: 'loading', style: { display: this.isLoading ? 'block' : 'none' } }, [h('h3', [chrome.i18n.getMessage('history_loading')])]),
+                h('div', { class: 'loading', style: { display: this.isLoading ? 'block' : 'none' } }, [
+                    h('h3', [chrome.i18n.getMessage('history_loading')])
+                ]),
                 h(
                     'div',
                     { class: 'list', style: { display: this.isLoading ? 'none' : 'block' } },
                     this.list.map(({ id, lastVisitTime, title, url, domain, dayText }, index) => {
-                        if (id) {
-                            return h('div', { key: id, class: 'line' }, [
-                                h('span', { class: 'time' }, [this.localDateFormat(new Date(lastVisitTime)).timeStr]),
-                                h('div', [h('img', { src: isFirefox ? this.icons[index] || this.defaultImage : 'chrome://favicon/' + url })]),
-                                h('span', { class: 'title-wrapper' }, [
-                                    h('a', { class: 'title', href: url, title: url, target: '_blank' }, [title ? title.trim() || url : url]),
-                                    h('span', { class: 'domain' }, [domain])
-                                ])
-                            ]);
-                        } else {
-                            return h('div', { class: 'day' }, [dayText]);
-                        }
+                        return dayText
+                            ? h('div', { class: 'day' }, [dayText])
+                            : h('div', { key: id, class: 'line' }, [
+                                  h('span', { class: 'time' }, [this.localDateFormat(new Date(lastVisitTime)).timeStr]),
+                                  h('div', [h('img', { src: isFirefox ? this.icons[index] || this.defaultImage : 'chrome://favicon/' + url })]),
+                                  h('span', { class: 'title-wrapper' }, [
+                                      h('a', { class: 'title', href: url, title: url, target: '_blank' }, [title ? title.trim() || url : url]),
+                                      h('span', { class: 'domain' }, [domain])
+                                  ])
+                              ]);
                     })
                 )
             ]),

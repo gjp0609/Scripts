@@ -38,7 +38,10 @@
         "message": "regex"
     },
     "history_include": {
-        "message": "normal"
+        "message": "include"
+    },
+    "history_keywords": {
+        "message": "keywords"
     },
     "history_pageCount": {
         "message": "Page Count: "

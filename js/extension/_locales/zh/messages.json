@@ -40,6 +40,10 @@
     "history_include": {
         "message": "包含"
     },
+    "history_keywords": {
+        "message": "关键词",
+        "description": "关键词"
+    },
     "history_pageCount": {
         "message": "分页数量："
     },

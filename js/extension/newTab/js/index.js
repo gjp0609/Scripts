@@ -15,7 +15,7 @@ createApp({
     methods: {
         setUrl() {
             chrome.storage.local.set({ newTabUrl: this.url });
-            chrome.runtime.sendMessage(null, { newTabUrl: this.url });
+            chrome.runtime.sendMessage(null, { from: 'newTab', action: 'updateUrl', params: { url: this.url } });
         }
     },
     render() {

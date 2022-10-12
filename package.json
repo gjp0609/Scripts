@@ -12,7 +12,7 @@
     },
     "license": "ISC",
     "scripts": {
-        "_install": "npm install",
+        "_install": "pnpm install",
         "_build": "tsc --build",
         "_chaoxing": "tsc --build & node js/puppeteer/chaoxing.js",
         "_test": "tsc --build & node js/puppeteer/test.js"
@@ -22,14 +22,14 @@
         "puppeteer-core": "^15.3.2"
     },
     "devDependencies": {
-        "@types/node": "^18.0.3",
-        "@typescript-eslint/eslint-plugin": "^5.30.5",
-        "@typescript-eslint/parser": "^5.30.5",
-        "eslint": "^8.19.0",
-        "eslint-config-alloy": "^4.6.2",
+        "@types/node": "^18.7.23",
+        "@typescript-eslint/eslint-plugin": "^5.38.1",
+        "@typescript-eslint/parser": "^5.38.1",
+        "eslint": "^8.24.0",
+        "eslint-config-alloy": "^4.7.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-prettier": "^4.2.1",
         "prettier": "^2.7.1",
-        "typescript": "^4.7.4"
+        "typescript": "^4.8.3"
     }
 }

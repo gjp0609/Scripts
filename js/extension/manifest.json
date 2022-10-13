@@ -22,12 +22,12 @@
     "options_ui": {
         "browser_style": false,
         "open_in_tab": true,
-        "page": "common/index.html"
+        "page": "history/index.html"
     },
     "browser_specific_settings": {
         "gecko": {
             "id": "histories@noif.fun"
         }
     },
-    "permissions": ["downloads", "history", "storage", "tabs", "unlimitedStorage"]
+    "permissions": ["downloads", "history", "menus", "storage", "tabs", "unlimitedStorage"]
 }

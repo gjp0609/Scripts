@@ -73,5 +73,14 @@
     },
     "test_title": {
         "message": "测试页面"
+    },
+    "translate": {
+        "message": "翻译"
+    },
+    "translate_title": {
+        "message": "翻译选项"
+    },
+    "translate_page": {
+        "message": "翻译此页面"
     }
 }

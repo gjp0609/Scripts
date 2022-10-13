@@ -72,5 +72,14 @@
     },
     "test_title": {
         "message": "Test Page"
+    },
+    "translate": {
+        "message": "Translate"
+    },
+    "translate_title": {
+        "message": "Translate Config"
+    },
+    "translate_page": {
+        "message": "Translate this page"
     }
 }

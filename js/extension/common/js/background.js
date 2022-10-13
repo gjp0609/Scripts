@@ -35,6 +35,19 @@ chrome.storage.local.get('newTabUrl', (val) => {
             chrome.tabs.update(tabId, { url: newTabUrl });
         }
     });
+
+    // translate page
+    chrome.menus.create({
+        id: 'translate-page',
+        title: chrome.i18n.getMessage('translate_page'),
+        contexts: ['all']
+    });
+    chrome.menus.onClicked.addListener((info, tab) => {
+        if (info.menuItemId === 'translate-page') {
+            chrome.tabs.update(tab.id, { url: 'https://translate.google.com/translate?js=n&sl=auto&tl=zh-CN&u=' + tab.url });
+        }
+    });
+
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         try {
             switch (message.from) {

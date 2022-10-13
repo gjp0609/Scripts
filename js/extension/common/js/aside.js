@@ -1,6 +1,6 @@
 const { h } = Vue;
 
-export const route = ['history', 'newTab', 'test'];
+export const route = ['history', 'newTab', 'translate', 'test'];
 
 export const aside = (title) => [
     h(

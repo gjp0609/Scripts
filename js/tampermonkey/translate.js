@@ -200,7 +200,7 @@
                             text: '',
                             dict: []
                         },
-                        url: 'https://translate.google.cn/_/TranslateWebserverUi/data/batchexecute',
+                        url: 'https://www.google.com/async/translate',
                         appid: '',
                         secret: ''
                     },
@@ -504,43 +504,45 @@
                 };
                 vue.translatorList.google.initParam = function () {
                     let translateText = vue.translateText;
-                    let encodedTranslateText = encodeURI(
-                        JSON.stringify([
-                            [['MkEWBc', '[["' + translateText.replaceAll(/"/g, '\\"') + '","auto","zh-CN",true],[null]]', null, 'generic']]
-                        ])
-                    );
-                    let query =
-                        '?rpcids=MkEWBc&source-path=%2F&hl=zh-CN&soc-app=1&soc-platform=1&soc-device=1&_reqid=' +
-                        Math.floor(1000 + Math.random() * 9000) +
-                        '&rt=c';
                     return {
-                        query: query,
-                        content: 'f.req=' + encodedTranslateText
+                        content:
+                            'async=translate,sl:auto,tl:zh-CN,st:' +
+                            encodeURIComponent(translateText) +
+                            ',id:' +
+                            new Date().getTime() +
+                            ',qc:true,ac:false,_id:tw-async-translate,_pms:s,_fmt:pc'
                     };
                 };
-                vue.translatorList.google.parseResult = function (json) {
+                vue.translatorList.google.parseResult = function (result) {
                     let translator = vue.translatorList.google;
-                    if (json) {
-                        const d = JSON.parse(json[0][2]);
-                        const arr = d[1][0][0][5];
-                        console.log(d[3][5][0]);
-                        for (let i = 0; i < arr.length; i++) {
-                            translator.result.text += d[1][0][0][5][i][0];
-                        }
-                        if (vue.translateText.indexOf(' ') === -1) {
-                            const arr = d[3][5][0];
-                            for (let i = 0; i < arr.length; i++) {
-                                let def = '';
-                                for (let j = 0; j < arr[i][1].length; j++) {
-                                    def += arr[i][1][j][0] + ', ';
-                                }
-                                translator.result.dict.push({
-                                    index: translator.getPosIndex(arr[i][0]),
-                                    def: def,
-                                    pos: arr[i][0]
-                                });
-                            }
-                        }
+                    if (result) {
+                        let div = document.createElement('div');
+                        div.innerHTML = result.substring(result.indexOf('<'));
+                        let dict = [];
+                        try {
+                            let words = [];
+                            div.querySelectorAll('#tw-answ-bil-fd > div .tw-bilingual-entry span span').forEach((span) => words.push(span.innerText));
+                            let pos = div.querySelector('#tw-answ-bil-fd > .tw-bilingual-pos').innerText;
+                            dict.push({
+                                index: translator.getPosIndex(pos),
+                                pos: pos,
+                                def: words.join(', ')
+                            });
+                        } catch (e) {}
+                        try {
+                            let words = [];
+                            div.querySelectorAll('g-expandable-content > span > div > div > span > span').forEach((span) =>
+                                words.push(span.innerText)
+                            );
+                            let pos = div.querySelector('g-expandable-content > span .tw-bilingual-pos').innerText;
+                            dict.push({
+                                index: translator.getPosIndex(pos),
+                                pos: pos,
+                                def: words.join(', ')
+                            });
+                        } catch (e) {}
+                        translator.result.text = div.querySelector('#tw-answ-target-text').innerText;
+                        translator.result.dict = dict;
                     }
                 };
                 vue.translatorList.google.startTranslate = function () {
@@ -551,8 +553,7 @@
                         data: translator.initParam().content,
                         timeout: REQUEST_TIMEOUT,
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                            'Accept': 'application/json'
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
                         },
                         onload: function (xhr) {
                             let d = vue.strToJson(xhr.responseText.substring(6));
@@ -581,6 +582,9 @@
                 };
                 vue.translatorList.bing.initParam = function () {
                     let translateText = vue.translateText;
+                    if (translateText.indexOf(' ') > 0) {
+                        throw new Error('not a word');
+                    }
                     let encodedTranslateText = encodeURI(translateText);
                     return '/' + encodedTranslateText;
                 };

@@ -595,7 +595,6 @@
                 vue.translatorList.youdao.parseResult = function (result) {
                     let translator = vue.translatorList.youdao;
                     if (result) {
-                        console.log(result);
                         translator.result.text = result.translation[0];
                         translator.result.dict = result.basic.explains.map((item) => {
                             let pos = item.substring(0, item.indexOf(' '));

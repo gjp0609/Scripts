@@ -1,51 +1,96 @@
 <html lang="zh-CN">
-<head>
-    <meta charset="utf-8">
-    <title>asd</title>
-    <script src="./js/jquery-3.3.1.js"></script>
-    <script src="./js/tampermonkey-wrapper.js"></script>
-    <script src="./js/crypto-js/hmac-256.js"></script>
-    <script src="./js/vue.min.js"></script>
-    <style>
-        .article div {
-            line-height: 2rem;
-            text-indent: 2rem;
-            margin: 1rem;
-        }
-    </style>
-</head>
-<body>
-<div style="height: 100%">
-    Are you a human being?
-    We apologize for the confusion, but we can't tell if you're a person or a script.
-    Please don't take this personally.
-    Bots and scripts can be remarkably lifelike these days!
-    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
-    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
-    <ul>
-        <li> 1 名词 noun n.<br/> student 学生</li>
-        <li> 2 代词 pronoun pron.<br/> you 你</li>
-        <li> 3 形容词 adjective adj.<br/> happy 高兴的</li>
-        <li> 4 副词 adverb adv.<br/> quickly 迅速地</li>
-        <li> 5 动词 verb v.<br/> cut 砍、割</li>
-        <li> 6 数词 numeral num.<br/> three 三</li>
-        <li> 7 冠词 article art.<br/> a 一个</li>
-        <li> 8 介词 preposition prep.<br/> at 在...</li>
-        <li> 9 连词 conjunction conj.<br/> and 和</li>
-        <li> 10 感叹词 interjection interj.<br/> oh 哦</li>
-        <li> 前六类叫实词，后四类叫虚词</li>
-    </ul>
-    <div class="article">
-        <h4>A clearer Vue</h4>
-        <div>Vue is a modern JavaScript framework that provides useful facilities for progressive enhancement — unlike many other frameworks, you can use Vue to enhance existing HTML. This lets you use Vue as a drop-in replacement for a library like JQuery.</div>
-        <div>That being said, you can also use Vue to write entire Single Page Applications (SPAs). This allows you to create markup managed entirely by Vue, which can improve developer experience and performance when dealing with complex applications. It also allows you to take advantage of libraries for client-side routing and state management when you need to. Additionally, Vue takes a "middle ground" approach to tooling like client-side routing and state management. While the Vue core team maintains suggested libraries for these functions, they are not directly bundled into Vue. This allows you to select a different routing/state management library if they better fit your application.</div>
-        <div>In addition to allowing you to progressively integrate Vue into your applications, Vue also provides a progressive approach to writing markup. Like most frameworks, Vue lets you create reusable blocks of markup via components. Most of the time, Vue components are written using a special HTML template syntax. When you need more control than the HTML syntax allows, you can write JSX or plain JavaScript functions to define your  components.</div>
-        <div>As you work through this tutorial, you might want to keep the Vue guide and API documentation open in other tabs, so you can refer to them if you want more information on any sub topic. For a good (but potentially biased) comparison between Vue and many of the other frameworks, see Vue Docs: Comparison with Other Frameworks.</div>
-    </div>
-</div>
-</body>
-<script type="text/javascript" src="../tampermonkey/translate.js" charset="UTF-8"></script>
-<script>
-
-</script>
+    <head>
+        <meta charset="utf-8" />
+        <title>asd</title>
+        <script src="./js/jquery-3.3.1.js"></script>
+        <script src="./js/tampermonkey-wrapper.js"></script>
+        <script src="./js/crypto-js/hmac-256.js"></script>
+        <script src="./js/vue.min.js"></script>
+        <style>
+            .article div {
+                line-height: 2rem;
+                text-indent: 2rem;
+                margin: 1rem;
+            }
+        </style>
+    </head>
+    <body>
+        <div style="height: 100%">
+            Are you a human being? We apologize for the confusion, but we can't tell if you're a person or a script. Please don't take this
+            personally. Bots and scripts can be remarkably lifelike these days!
+            <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+            <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
+            <ul>
+                <li>
+                    1 名词 noun n.<br />
+                    student 学生
+                </li>
+                <li>
+                    2 代词 pronoun pron.<br />
+                    you 你
+                </li>
+                <li>
+                    3 形容词 adjective adj.<br />
+                    happy 高兴的
+                </li>
+                <li>
+                    4 副词 adverb adv.<br />
+                    quickly 迅速地
+                </li>
+                <li>
+                    5 动词 verb v.<br />
+                    cut 砍、割
+                </li>
+                <li>
+                    6 数词 numeral num.<br />
+                    three 三
+                </li>
+                <li>
+                    7 冠词 article art.<br />
+                    a 一个
+                </li>
+                <li>
+                    8 介词 preposition prep.<br />
+                    at 在...
+                </li>
+                <li>
+                    9 连词 conjunction conj.<br />
+                    and 和
+                </li>
+                <li>
+                    10 感叹词 interjection interj.<br />
+                    oh 哦
+                </li>
+                <li>前六类叫实词，后四类叫虚词</li>
+            </ul>
+            <div class="article">
+                <h4>A clearer Vue</h4>
+                <div>
+                    Vue is a modern JavaScript framework that provides useful facilities for progressive enhancement — unlike many other frameworks,
+                    you can use Vue to enhance existing HTML. This lets you use Vue as a drop-in replacement for a library like JQuery.
+                </div>
+                <div>
+                    That being said, you can also use Vue to write entire Single Page Applications (SPAs). This allows you to create markup managed
+                    entirely by Vue, which can improve developer experience and performance when dealing with complex applications. It also allows you
+                    to take advantage of libraries for client-side routing and state management when you need to. Additionally, Vue takes a "middle
+                    ground" approach to tooling like client-side routing and state management. While the Vue core team maintains suggested libraries
+                    for these functions, they are not directly bundled into Vue. This allows you to select a different routing/state management
+                    library if they better fit your application.
+                </div>
+                <div>
+                    In addition to allowing you to progressively integrate Vue into your applications, Vue also provides a progressive approach to
+                    writing markup. Like most frameworks, Vue lets you create reusable blocks of markup via components. Most of the time, Vue
+                    components are written using a special HTML template syntax. When you need more control than the HTML syntax allows, you can write
+                    JSX or plain JavaScript functions to define your components.
+                </div>
+                <div>
+                    As you work through this tutorial, you might want to keep the Vue guide and API documentation open in other tabs, so you can refer
+                    to them if you want more information on any sub topic. For a good (but potentially biased) comparison between Vue and many of the
+                    other frameworks, see Vue Docs: Comparison with Other Frameworks.
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript" src="../tampermonkey/translate.js" charset="UTF-8"></script>
+    <script></script>
 </html>

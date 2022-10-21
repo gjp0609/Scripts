@@ -91,16 +91,14 @@
 }
 
 .OnySakuraTranslator_dict {
-    margin-top: 10px;
-}
-
-.OnySakuraTranslator_dict .base_form {
-    font-size: 14px !important;
-    font-family: "Sarasa Term SC", mononoki, monospace;
+    margin-top: 5px;
+    height: 15px;
+    line-height: 15px;
 }
 
 .OnySakuraTranslator_dict .terms {
     margin-left: 10px;
+    font-size: 12px;
 }
 
 .OnySakuraTranslator_dict .term {

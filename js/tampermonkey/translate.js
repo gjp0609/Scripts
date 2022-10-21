@@ -47,13 +47,7 @@
                             <template v-else>
                                 <span>{{translator.result.text}}</span>
                             </template>
-                            <template v-if="key === 'google'" v-for="item in translator.result.dict">
-                                <div class="OnySakuraTranslator_dict">
-                                    <span :class="'pos pos_'+item.index">{{item.pos}}</span>
-                                    <span class="terms">{{item.def}}</span>
-                                </div>
-                            </template>
-                            <template v-if="key === 'bing'" v-for="item in translator.result.dict">
+                            <template v-for="item in translator.result.dict">
                                 <div class="OnySakuraTranslator_dict">
                                     <span :class="'pos pos_'+item.index">{{item.pos}}</span>
                                     <span class="terms">{{item.def}}</span>
@@ -89,7 +83,7 @@
         </div>
     `;
     let style = document.createElement('style');
-    style.textContent = `#OnySakuraTranslatorShowIcon{background-color:#fff;border:#fd6848 solid 2px;border-radius:100%;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorShowIcon.icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorShowIcon.icon-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorShowIcon.icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorShowIcon.icon-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorResult.result-enter{transform:scale(1,0)}#OnySakuraTranslatorResult.result-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorResult.result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorResult.result-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorResult{font-size:15px;color:#000;line-height:25px;background-color:#FFFAF6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:#ffc1c1 solid 1px;text-align:left}#OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorResult .translateResult .translatorName{cursor:pointer}.OnySakuraTranslator_dict{margin-top:10px}.OnySakuraTranslator_dict .base_form{font-size:14px!important;font-family:"Sarasa Term SC",mononoki,monospace}.OnySakuraTranslator_dict .terms{margin-left:10px}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslator_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslator_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslator_dict .pos_1{color:#369}.OnySakuraTranslator_dict .pos_2{color:#396}.OnySakuraTranslator_dict .pos_3{color:#639}.OnySakuraTranslator_dict .pos_4{color:#693}.OnySakuraTranslator_dict .pos_5{color:#936}.OnySakuraTranslator_dict .pos_6{color:#963}#OnySakuraTranslatorConfig{background-color:#fff;border:#fd6848 solid 2px;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorConfig .configItem.translator label,#OnySakuraTranslatorConfig .configItem.pos label{padding:10px 30px 10px 0}#OnySakuraTranslatorConfig .configItem.translator>span,#OnySakuraTranslatorConfig .configItem.pos>span,#OnySakuraTranslatorConfig .configItem.pos>div>label>span{display:inline-block;width:100px;padding:3px 30px 3px 0}#OnySakuraTranslatorConfig .configItem.pos .posValue{margin-left:34px}#OnySakuraTranslatorConfig .configItem.pos .posValue>label>span{width:75px}#OnySakuraTranslatorConfig .configItem.pos .posValue input{width:50px}`;
+    style.textContent = `#OnySakuraTranslatorShowIcon{background-color:#fff;border:#fd6848 solid 2px;border-radius:100%;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorShowIcon.icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorShowIcon.icon-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorShowIcon.icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorShowIcon.icon-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorResult.result-enter{transform:scale(1,0)}#OnySakuraTranslatorResult.result-enter-active{transition:all 0.1s ease-in}#OnySakuraTranslatorResult.result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorResult.result-leave-active{transition:all 0.1s ease-out}#OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorResult{font-size:15px;color:#000;line-height:25px;background-color:#FFFAF6;border:#fd6848 solid 2px;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:#ffc1c1 solid 1px;text-align:left}#OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorResult .translateResult .translatorName{cursor:pointer}.OnySakuraTranslator_dict{margin-top:5px;height:15px;line-height:15px}.OnySakuraTranslator_dict .terms{margin-left:10px;font-size:12px}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term{position:relative;display:inline-block;border-bottom:1px dotted #000}.OnySakuraTranslator_dict .term .tooltiptext{visibility:hidden;background-color:#fdc;color:#555;text-align:left;padding:5px;border-radius:5px;position:absolute;z-index:1;white-space:pre;top:200%;left:0}.OnySakuraTranslator_dict .term:hover .tooltiptext{visibility:visible}.OnySakuraTranslator_dict .pos{width:50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}.OnySakuraTranslator_dict .pos_1{color:#369}.OnySakuraTranslator_dict .pos_2{color:#396}.OnySakuraTranslator_dict .pos_3{color:#639}.OnySakuraTranslator_dict .pos_4{color:#693}.OnySakuraTranslator_dict .pos_5{color:#936}.OnySakuraTranslator_dict .pos_6{color:#963}#OnySakuraTranslatorConfig{background-color:#fff;border:#fd6848 solid 2px;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorConfig .configItem.translator label,#OnySakuraTranslatorConfig .configItem.pos label{padding:10px 30px 10px 0}#OnySakuraTranslatorConfig .configItem.translator>span,#OnySakuraTranslatorConfig .configItem.pos>span,#OnySakuraTranslatorConfig .configItem.pos>div>label>span{display:inline-block;width:100px;padding:3px 30px 3px 0}#OnySakuraTranslatorConfig .configItem.pos .posValue{margin-left:34px}#OnySakuraTranslatorConfig .configItem.pos .posValue>label>span{width:75px}#OnySakuraTranslatorConfig .configItem.pos .posValue input{width:50px}`;
     let shadowRoot = document.createElement('div');
     shadowRoot.id = 'OnySakuraTranslatorShadow';
     document.body.appendChild(shadowRoot);
@@ -201,6 +195,19 @@
                             dict: []
                         },
                         url: 'https://www.google.com/async/translate',
+                        appid: '',
+                        secret: ''
+                    },
+                    youdao: {
+                        enabled: true,
+                        color: '#0783fa',
+                        code: 'youdao',
+                        name: '有道',
+                        result: {
+                            text: '',
+                            dict: []
+                        },
+                        url: 'https://aidemo.youdao.com/trans',
                         appid: '',
                         secret: ''
                     },
@@ -556,7 +563,63 @@
                             'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
                         },
                         onload: function (xhr) {
-                            let d = vue.strToJson(xhr.responseText.substring(6));
+                            vue.getResult(translator, xhr, xhr.responseText);
+                        }
+                    });
+                };
+            }
+            // youdao
+            {
+                vue.translatorList.youdao.getPosIndex = function (pos) {
+                    switch (pos) {
+                        case 'n.':
+                            return 1;
+                        case 'v.':
+                            return 2;
+                        case 'pron.':
+                            return 3;
+                        case 'adj.':
+                            return 4;
+                        case 'adv.':
+                            return 5;
+                        default:
+                            return 6;
+                    }
+                };
+                vue.translatorList.youdao.initParam = function () {
+                    let translateText = vue.translateText;
+                    return {
+                        content: 'from=Auto&to=Auto&q=' + encodeURIComponent(translateText)
+                    };
+                };
+                vue.translatorList.youdao.parseResult = function (result) {
+                    let translator = vue.translatorList.youdao;
+                    if (result) {
+                        console.log(result);
+                        translator.result.text = result.translation[0];
+                        translator.result.dict = result.basic.explains.map((item) => {
+                            let pos = item.substring(0, item.indexOf(' '));
+                            return {
+                                index: translator.getPosIndex(pos),
+                                pos: pos,
+                                def: item.substring(item.indexOf(' '))
+                            };
+                        });
+                    }
+                };
+                vue.translatorList.youdao.startTranslate = function () {
+                    let translator = vue.translatorList.youdao;
+                    GM_xmlhttpRequest({
+                        method: 'POST',
+                        url: translator.url,
+                        data: translator.initParam().content,
+                        timeout: REQUEST_TIMEOUT,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'accept-language': 'zh-CN,zh;q=0.6'
+                        },
+                        onload: function (xhr) {
+                            let d = vue.strToJson(xhr.responseText);
                             vue.getResult(translator, xhr, d);
                         }
                     });

@@ -21,7 +21,7 @@
         return;
     }
 
-    const isDevelopEnv = false;
+    const isDevelopEnv = typeof isDev === 'boolean' && isDev === true;
 
     const REQUEST_TIMEOUT = 2000; // 请求超时时间
 
@@ -87,6 +87,12 @@
     let shadowRoot = document.createElement('div');
     shadowRoot.id = 'OnySakuraTranslatorShadow';
     document.body.appendChild(shadowRoot);
+    // 某些网页会重置 document 而不重新加载网页
+    setInterval(() => {
+        if (!document.querySelector('#OnySakuraTranslatorShadow')) {
+            document.body.appendChild(shadowRoot);
+        }
+    }, 2000);
     let shadow = shadowRoot.attachShadow({ mode: 'open' });
     shadow.appendChild(resultDiv);
     // for develop

@@ -14,22 +14,25 @@
     const BLOCK_WORDS = ['csdn.net', 'cmsblogs.com'];
     let hidden = true;
     try {
-        let searchDiv = document.getElementById('search');
-        let as = searchDiv.getElementsByTagName('a');
+        let searchDiv = document.querySelector('#search');
+        let as = searchDiv.querySelectorAll('div > a');
         for (const a of as) {
             // new tab
-            let href = a.href;
-            a.addEventListener(
-                'click',
-                (event) => {
-                    a.href = href;
-                    window.open(href, '_blank');
-                    event.stopPropagation();
-                    event.preventDefault();
-                    return false;
-                },
-                { capture: true }
-            );
+            setTimeout(() => {
+                let newA = document.createElement('a');
+                a.parentElement.appendChild(newA);
+                newA.href = a.href;
+                newA.target = '_blank';
+                newA.appendChild(document.createElement('br'));
+                let h3 = a.querySelector('h3');
+                if (h3) {
+                    newA.appendChild(a.querySelector('h3'));
+                    newA.appendChild(a.querySelector('div'));
+                } else {
+                    newA.innerText = a.innerText;
+                }
+                a.parentElement.removeChild(a);
+            }, 1);
             // block
             let cites = a.getElementsByTagName('cite');
             if (cites && cites[0]) {

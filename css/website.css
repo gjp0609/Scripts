@@ -39,13 +39,16 @@
 }
 
 @-moz-document domain("dmhy.org") {
-    .even,
-    table.tablesorter tbody tr.even td {
-        background-color: white !important;
-    }
-
+    .bg > .header,
+    #mini_jmd,
     .download-pikpak {
-        display: none !important;
+        display: none;
+    }
+    .even,
+    .odd,
+    .even *,
+    .odd * {
+        background-color: #fff !important;
     }
 }
 

@@ -10,6 +10,20 @@ TimePeriod := 7 ; 尝试 7 或 3. 请参阅下面的注释.
 SetDefaultMouseSpeed, 0
 SetMouseDelay, -1
 
+; 以 Admin 启动
+full_command_line := DllCall("GetCommandLine", "str")
+if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
+{
+    try
+    {
+        if A_IsCompiled
+            Run *RunAs "%A_ScriptFullPath%" /restart
+        else
+            Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%"
+    }
+    ExitApp
+}
+
 loop := 0
 
 loop

@@ -49,6 +49,11 @@
 
         console.log('填充时间');
         let now = new Date();
+        let day = now.getDay();
+        // 工作日上午填前一天的
+        if (day > 0 && day < 6 && now.getHours() < 15) {
+            now.setDate(now.getDate() - 1);
+        }
         let padZero = (nNum, nPad) => ('' + (Math.pow(10, nPad) + nNum)).slice(1);
         let today = now.getFullYear() + '-' + padZero(now.getMonth() + 1, 2) + '-' + padZero(now.getDate(), 2);
         console.log('');
@@ -57,7 +62,7 @@
         let dayStartInput = await waitDom(tableDoc, '#field0003');
         dayStartInput.value = today + ' 09:40';
         let dayEndInput = await waitDom(tableDoc, '#field0004');
-        dayEndInput.value = today + ' 18:52';
+        dayEndInput.value = today + ' 18:50';
         let workContent = await waitDom(tableDoc, '#field0006');
         workContent.value = '';
     } else if (location.href.indexOf(URL + '/seeyon/collaboration/collaboration.do?method=tabOffice') !== -1) {

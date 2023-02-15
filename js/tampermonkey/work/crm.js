@@ -13,7 +13,7 @@
     const URL = '';
     const PROJ_CODE = '';
     let doc = document;
-    console.log(location.href);
+    console.log('href', location.href);
     const INTERVAL_TIMEOUT = 1000;
     if (location.href.indexOf(URL + '/seeyon/main.do?method=main') !== -1) {
         console.log('主页，新增工时按钮');
@@ -22,8 +22,30 @@
         doc.body.append(button);
         button.addEventListener('click', (e) => {
             console.log('点击新建技术部日志');
-            document.querySelector('.topMenuNav .topNavContainer .lev1Li .lev3Title[title="新建技术部日志"]').click();
+            doc.querySelector('.topMenuNav .topNavContainer .lev1Li .lev3Title[title="新建技术部日志"]').click();
         });
+        let date = null;
+        let prefix = ' 技术部日志：';
+        setTimeout(() => {
+            doc.querySelectorAll('.sectionPanel .section-body .multiRowVariableColumn table tr td.col_first').forEach((item) => {
+                let text = item.innerText;
+                if (date === null && text.startsWith(prefix)) {
+                    date = text.substring(prefix.length, prefix.length + 10);
+                }
+            });
+            if (date !== null) {
+                let lastDay = new Date(date);
+                if (lastDay) {
+                    let day = lastDay.getDay();
+                    if (day === 5) {
+                        lastDay.setDate(lastDay.getDate() + 3);
+                    } else {
+                        lastDay.setDate(lastDay.getDate() + 1);
+                    }
+                }
+                sessionStorage.setItem('lastDay', lastDay.toUTCString());
+            }
+        }, 3000);
     } else if (location.href.indexOf(URL + '/seeyon/collaboration/collaboration.do?method=newColl') !== -1) {
         console.log('工时页面');
         let tableDoc = await waitIframe(doc, '#zwIframe');

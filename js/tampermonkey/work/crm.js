@@ -70,15 +70,24 @@
         submitBtn.click();
 
         console.log('填充时间');
-        let now = new Date();
-        let day = now.getDay();
-        // 工作日上午填前一天的
-        if (day > 0 && day < 6 && now.getHours() < 15) {
-            now.setDate(now.getDate() - 1);
+        let lastDay = sessionStorage.getItem('lastDay');
+        let now;
+        if (lastDay) {
+            now = new Date(lastDay);
+        } else {
+            now = new Date();
+            let day = now.getDay();
+            // 工作日上午填前一天的
+            if (day > 0 && day < 6 && now.getHours() < 15) {
+                if (day === 1) {
+                    now.setDate(now.getDate() - 3);
+                } else {
+                    now.setDate(now.getDate() - 1);
+                }
+            }
         }
         let padZero = (nNum, nPad) => ('' + (Math.pow(10, nPad) + nNum)).slice(1);
         let today = now.getFullYear() + '-' + padZero(now.getMonth() + 1, 2) + '-' + padZero(now.getDate(), 2);
-        console.log('');
         let dayInput = await waitDom(tableDoc, '#field0016');
         dayInput.value = today;
         let dayStartInput = await waitDom(tableDoc, '#field0003');

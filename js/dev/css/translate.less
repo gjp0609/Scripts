@@ -1,0 +1,182 @@
+#OnySakuraTranslatorParent {
+    /* ---------- 图标渐入 ---------- */
+    .icon-enter {
+        transform: scale(0.3, 0.3);
+    }
+    .icon-enter-active {
+        transition: all 0.1s ease-in;
+    }
+    /* ---------- 图标渐出 ---------- */
+    .icon-leave-to {
+        transform: scale(0, 0);
+    }
+    .icon-leave-active {
+        transition: all 0.1s ease-out;
+    }
+    /* ---------- 结果渐入 ---------- */
+    .result-enter {
+        transform: scale(1, 0);
+    }
+    .result-enter-active {
+        transition: all 0.1s ease-in;
+    }
+    /* ---------- 结果渐出 ---------- */
+    .result-leave-to {
+        transform: scale(1, 0);
+    }
+    .result-leave-active {
+        transition: all 0.1s ease-out;
+    }
+    /* ---------- 配置渐入 ---------- */
+    .config-enter {
+        transform: scale(1, 0);
+    }
+    .config-enter-active {
+        transition: all 0.1s ease-in;
+    }
+    /* ---------- 配置渐出 ---------- */
+    .config-leave-to {
+        transform: scale(1, 0);
+    }
+    .config-leave-active {
+        transition: all 0.1s ease-out;
+    }
+
+    #OnySakuraTranslatorShowIcon {
+        background-color: white;
+        border: #fd6848 solid 2px;
+        border-radius: 100%;
+        box-shadow: 3px 3px 5px gray;
+        color: #fd6848;
+        box-sizing: border-box;
+        width: 30px;
+        height: 30px;
+        text-align: center;
+        line-height: 26px;
+        font-size: 17px;
+        cursor: pointer;
+        position: fixed;
+        opacity: 1;
+        z-index: 30000;
+        &:hover {
+            background-color: #fd6848;
+            color: white;
+        }
+        &:active {
+            margin-top: 2px;
+        }
+    }
+
+    #OnySakuraTranslatorResult {
+        font-size: 15px;
+        color: black;
+        line-height: 25px;
+        background-color: #fffaf6;
+        border: #fd6848 solid 2px;
+        border-radius: 10px;
+        padding: 5px;
+        margin: auto;
+        position: fixed;
+        z-index: 100000001;
+        .translateResult {
+            margin: 8px;
+            padding-top: 8px;
+            border-top: #ffc1c1 solid 1px;
+            text-align: left;
+            &:first-of-type {
+                border-top: 0;
+            }
+            .translatorName {
+                display: inline-block;
+                width: 38px;
+                cursor: pointer;
+            }
+
+            .OnySakuraTranslator_dict {
+                display: flex;
+                margin-top: 5px;
+                min-height: 15px;
+                line-height: 15px;
+                .pos {
+                    flex: 0 0 50px;
+                    font-size: 10px;
+                    font-style: italic;
+                    display: inline-block;
+                    text-align: right;
+                    &.pos_1 {
+                        color: #369;
+                    }
+                    &.pos_2 {
+                        color: #396;
+                    }
+                    &.pos_3 {
+                        color: #639;
+                    }
+                    &.pos_4 {
+                        color: #693;
+                    }
+                    &.pos_5 {
+                        color: #936;
+                    }
+                    &.pos_6 {
+                        color: #963;
+                    }
+                }
+                .terms {
+                    margin-left: 10px;
+                    font-size: 12px;
+                }
+            }
+        }
+    }
+
+    #OnySakuraTranslatorConfig {
+        background-color: white;
+        border: #fd6848 solid 2px;
+        border-radius: 5px;
+        box-shadow: 5px 5px 10px gray;
+        color: #fd6848;
+        box-sizing: border-box;
+        width: 800px;
+        height: 360px;
+        padding: 30px;
+        text-align: left;
+        line-height: 30px;
+        font-size: 15px;
+        cursor: pointer;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 100000005;
+        .configItem {
+            margin-bottom: 20px;
+            margin-left: 20px;
+            &.title {
+                font-size: 20px;
+                font-weight: bold;
+                text-align: center;
+            }
+            &.translator,
+            &.pos {
+                span {
+                    display: inline-block;
+                    width: 100px;
+                    padding: 3px 5px 3px 0;
+                }
+                label {
+                    padding: 10px 15px 10px 0;
+                }
+                .posValue {
+                    margin-left: 34px;
+                    span {
+                        width: 69px;
+                    }
+                    input {
+                        width: 50px;
+                    }
+                }
+            }
+        }
+    }
+}

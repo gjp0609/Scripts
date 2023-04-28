@@ -384,7 +384,6 @@
 
             onMounted(() => {
                 console.log('onMounted');
-                showIcon.value = true;
                 // 点击页面隐藏弹出框
                 document.onmousedown = function () {
                     showIcon.value = false;

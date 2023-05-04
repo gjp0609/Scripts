@@ -15,7 +15,7 @@ some scripts
 
   历史记录浏览器扩展 for Firefox
 
-- puppeteer
+* puppeteer
 
   网页自动化脚本
 

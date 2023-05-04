@@ -1,15 +1,19 @@
 // ==UserScript==
 // @name         * 多源翻译
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      1.1
-// @description  支持 百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
+// @version      1.2
+// @description  支持 阿里/百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
 // @author       onysakura
 // @require      https://cdn.staticfile.org/jquery/3.6.4/jquery.slim.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/core.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/sha1.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/sha256.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac-sha1.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac-sha256.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/md5.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/enc-base64.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/enc-hex.min.js
 // @require      https://cdn.staticfile.org/vue/3.2.47/vue.global.prod.min.js
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -27,12 +31,25 @@
         't'
     );
 
-    const REQUEST_TIMEOUT = 2000; // 请求超时时间
+    const REQUEST_TIMEOUT = 3000; // 请求超时时间
     const translatorMap = {
         source: {
             enabled: true,
             color: '#8A2BE2',
             name: '原文'
+        },
+        ali: {
+            enabled: false,
+            color: '#ff6a00',
+            name: '阿里',
+            api: {
+                // 免费调用量 100 万字符/月
+                url: 'https://mt.cn-hangzhou.aliyuncs.com/api/translate/web/general',
+                appid: '-',
+                secret: '-',
+                query: 'https://mt.console.aliyun.com/monitor',
+                doc: 'https://help.aliyun.com/document_detail/197134.html'
+            }
         },
         baidu: {
             enabled: false,
@@ -512,6 +529,57 @@
         this.result.text = translateText;
     };
 
+    // ali
+    translatorMap.ali.startTranslate = function (translateText) {
+        let url = new URL(this.api.url);
+        let date = new Date().toUTCString();
+        let nonce = getSalt(10);
+        let bodyStr = JSON.stringify({
+            FormatType: 'text',
+            SourceLanguage: 'auto',
+            TargetLanguage: 'zh',
+            SourceText: translateText,
+            Scene: 'general'
+        });
+        let bodyMD5 = CryptoJS.enc.Base64.stringify(CryptoJS.MD5(bodyStr));
+        let headerStringToSign = `POST\napplication/json\n${bodyMD5}\napplication/json;chrset=utf-8\n${date}\nx-acs-signature-method:HMAC-SHA1\nx-acs-signature-nonce:${nonce}\nx-acs-version:2019-01-02\n`;
+        let stringToSign = headerStringToSign + url.pathname;
+        let Signature = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA1(stringToSign, this.api.secret));
+        let Authorization = `acs ${this.api.appid}:${Signature}`;
+
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: url.href,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;chrset=utf-8',
+                'Content-MD5': bodyMD5,
+                'Date': date,
+                'Host': url.host,
+                'Authorization': Authorization,
+                'x-acs-signature-nonce': nonce,
+                'x-acs-signature-method': 'HMAC-SHA1',
+                'x-acs-version': '2019-01-02'
+            },
+            data: bodyStr,
+            timeout: REQUEST_TIMEOUT,
+            onload: (xhr) => {
+                if (isXhrSuccess(xhr)) {
+                    let json = strToJson(xhr.responseText);
+                    if (json.Code === '200') {
+                        if (json.Data.Translated) {
+                            this.result.text = json.Data.Translated;
+                            return;
+                        }
+                    }
+                    this.result.text = json.Message;
+                } else {
+                    console.log(xhr);
+                }
+            }
+        });
+    };
+
     // baidu
     translatorMap.baidu.startTranslate = function (translateText) {
         let salt = getSalt();
@@ -855,9 +923,9 @@
         selectionText = selectionText.trim().replace(/\n/g, '');
         return selectionText;
     }
-    function getSalt() {
+    function getSalt(length = 5) {
         let salt = '';
-        for (let i = 0; i < 5; i++) salt += Math.floor(Math.random() * 8);
+        for (let i = 0; i < length; i++) salt += Math.floor(Math.random() * 8);
         return salt;
     }
     function isXhrSuccess(xhr) {

@@ -1,0 +1,36 @@
+== Scripts
+
+some scripts
+
+- ahk
+
+  AutoHotKey
+
+- js
+* bookmarklet
+
+  书签脚本
+
+* extension
+
+  历史记录浏览器扩展 for Firefox
+
+- puppeteer
+
+  网页自动化脚本
+
+* tampermonkey
+
+  网站脚本
+
+- plantuml
+
+  流程图
+
+- powershell
+
+- python
+
+- reg
+
+- shell

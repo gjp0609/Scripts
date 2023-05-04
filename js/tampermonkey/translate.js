@@ -1,15 +1,19 @@
 // ==UserScript==
 // @name         * 多源翻译
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      1.0
-// @description  支持 百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
+// @version      1.2
+// @description  支持 阿里/百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
 // @author       onysakura
 // @require      https://cdn.staticfile.org/jquery/3.6.4/jquery.slim.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/core.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/sha1.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/sha256.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac-sha1.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac-sha256.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/md5.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/enc-base64.min.js
+// @require      https://cdn.staticfile.org/crypto-js/4.1.1/enc-hex.min.js
 // @require      https://cdn.staticfile.org/vue/3.2.47/vue.global.prod.min.js
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
@@ -27,12 +31,25 @@
         't'
     );
 
-    const REQUEST_TIMEOUT = 2000; // 请求超时时间
+    const REQUEST_TIMEOUT = 3000; // 请求超时时间
     const translatorMap = {
         source: {
             enabled: true,
             color: '#8A2BE2',
             name: '原文'
+        },
+        ali: {
+            enabled: false,
+            color: '#ff6a00',
+            name: '阿里',
+            api: {
+                // 免费调用量 100 万字符/月
+                url: 'https://mt.cn-hangzhou.aliyuncs.com/api/translate/web/general',
+                appid: '-',
+                secret: '-',
+                query: 'https://mt.console.aliyun.com/monitor',
+                doc: 'https://help.aliyun.com/document_detail/197134.html'
+            }
         },
         baidu: {
             enabled: false,
@@ -71,7 +88,7 @@
             name: 'Deepl',
             api: {
                 // 免费自建 docker
-                url: 'http://deepl.noif.fun/translate'
+                url: '-'
             }
         },
         google: {
@@ -113,7 +130,7 @@
     let shadowRoot = shadowParent.attachShadow({ mode: 'open' });
     // style
     let style = document.createElement('style');
-    style.textContent = `#OnySakuraTranslatorParent .icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorParent .config-enter-active,#OnySakuraTranslatorParent .icon-enter-active,#OnySakuraTranslatorParent .result-enter-active{transition:.1s ease-in}#OnySakuraTranslatorParent .icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorParent .config-leave-active,#OnySakuraTranslatorParent .icon-leave-active,#OnySakuraTranslatorParent .result-leave-active{transition:.1s ease-out}#OnySakuraTranslatorParent .config-enter,#OnySakuraTranslatorParent .config-leave-to,#OnySakuraTranslatorParent .result-enter,#OnySakuraTranslatorParent .result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon{background-color:#fff;border:2px solid #fd6848;border-radius:100%;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult{font-size:15px;color:#000;line-height:25px;background-color:#fffaf6;border:2px solid #fd6848;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:1px solid #ffc1c1;text-align:left}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .translatorName{display:inline-block;width:38px;cursor:pointer}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict{display:flex;margin-top:5px;min-height:15px;line-height:15px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos{flex:0 0 50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_1{color:#369}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_2{color:#396}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_3{color:#639}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_4{color:#693}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_5{color:#936}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_6{color:#963}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .terms{margin-left:10px;font-size:12px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig{background-color:#fff;border:2px solid #fd6848;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator span{display:inline-block;width:100px;padding:3px 5px 3px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos label,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator label{padding:10px 15px 10px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue{margin-left:34px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue span{width:69px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue input,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue input{width:50px}`;
+    style.textContent = `#OnySakuraTranslatorParent .icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorParent .config-enter-active,#OnySakuraTranslatorParent .icon-enter-active,#OnySakuraTranslatorParent .result-enter-active{transition:.1s ease-in}#OnySakuraTranslatorParent .icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorParent .config-leave-active,#OnySakuraTranslatorParent .icon-leave-active,#OnySakuraTranslatorParent .result-leave-active{transition:.1s ease-out}#OnySakuraTranslatorParent .config-enter,#OnySakuraTranslatorParent .config-leave-to,#OnySakuraTranslatorParent .result-enter,#OnySakuraTranslatorParent .result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon{background-color:#fff;border:2px solid #fd6848;border-radius:100%;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult{font-size:15px;color:#000;line-height:25px;background-color:#fffaf6;border:2px solid #fd6848;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:1px solid #ffc1c1;text-align:left}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .translatorName{display:inline-block;width:40px;cursor:pointer}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict{display:flex;margin-top:5px;min-height:15px;line-height:15px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos{flex:0 0 50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_1{color:#369}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_2{color:#396}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_3{color:#639}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_4{color:#693}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_5{color:#936}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_6{color:#963}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .terms{margin-left:10px;font-size:12px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig{background-color:#fff;border:2px solid #fd6848;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator span{display:inline-block;width:100px;padding:3px 5px 3px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos label,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator label{padding:10px 15px 10px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue{margin-left:34px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue span{width:69px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue input,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue input{width:50px}`;
     shadowRoot.appendChild(style);
     // html
     const rootDiv = document.createElement('div');
@@ -138,18 +155,18 @@
                     { name: 'icon' },
                     this.showIcon
                         ? [
-                              h(
-                                  'div',
-                                  {
-                                      id: 'OnySakuraTranslatorShowIcon',
-                                      style: `top: ${this.mouseY}px; left: ${this.mouseX + 10}px;`,
-                                      onMousedown: (e) => e.stopPropagation(),
-                                      onMouseup: (e) => e.stopPropagation(),
-                                      onClick: () => this.showResultModal()
-                                  },
-                                  ['译']
-                              )
-                          ]
+                            h(
+                                'div',
+                                {
+                                    id: 'OnySakuraTranslatorShowIcon',
+                                    style: `top: ${this.mouseY}px; left: ${this.mouseX + 10}px;`,
+                                    onMousedown: (e) => e.stopPropagation(),
+                                    onMouseup: (e) => e.stopPropagation(),
+                                    onClick: () => this.showResultModal()
+                                },
+                                ['译']
+                            )
+                        ]
                         : []
                 ),
                 h(
@@ -157,58 +174,58 @@
                     { name: 'result' },
                     this.showResult
                         ? [
-                              h(
-                                  'div',
-                                  {
-                                      id: 'OnySakuraTranslatorResult',
-                                      style: `
+                            h(
+                                'div',
+                                {
+                                    id: 'OnySakuraTranslatorResult',
+                                    style: `
                                           ${this.resultPos.top ? 'top: ' + this.resultPos.top : ''};
                                           ${this.resultPos.right ? 'right: ' + this.resultPos.right : ''};
                                           ${this.resultPos.bottom ? 'bottom: ' + this.resultPos.bottom : ''};
                                           ${this.resultPos.left ? 'left: ' + this.resultPos.left : ''};
                                       `,
-                                      onMousedown: (e) => e.stopPropagation()
-                                  },
-                                  Object.keys(this.translatorList)
-                                      .map((key) => this.translatorList[key])
-                                      .filter((it) => it.enabled)
-                                      .map((translator) =>
-                                          h(
-                                              'div',
-                                              {
-                                                  class: 'translateResult'
-                                              },
-                                              [
-                                                  h(
-                                                      'span',
-                                                      {
-                                                          class: 'translatorName',
-                                                          style: `color: ${translator.color};`,
-                                                          onClick: () => this.showConfigModal()
-                                                      },
-                                                      [translator.name]
-                                                  ),
-                                                  '：',
-                                                  translator.result.confidence
-                                                      ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
-                                                      : h('span', {}, [translator.result.text]),
-                                                  translator.result.dict?.map((it) =>
-                                                      h('div', { class: 'OnySakuraTranslator_dict' }, [
-                                                          h(
-                                                              'span',
-                                                              {
-                                                                  class: 'pos pos_' + it.index
-                                                              },
-                                                              [it.pos]
-                                                          ),
-                                                          h('span', { class: 'terms' }, [it.def])
-                                                      ])
-                                                  )
-                                              ]
-                                          )
-                                      )
-                              )
-                          ]
+                                    onMousedown: (e) => e.stopPropagation()
+                                },
+                                Object.keys(this.translatorList)
+                                    .map((key) => this.translatorList[key])
+                                    .filter((it) => it.enabled)
+                                    .map((translator) =>
+                                        h(
+                                            'div',
+                                            {
+                                                class: 'translateResult'
+                                            },
+                                            [
+                                                h(
+                                                    'span',
+                                                    {
+                                                        class: 'translatorName',
+                                                        style: `color: ${translator.color};`,
+                                                        onClick: () => this.showConfigModal()
+                                                    },
+                                                    [translator.name]
+                                                ),
+                                                '：',
+                                                translator.result.confidence
+                                                    ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
+                                                    : h('span', {}, [translator.result.text]),
+                                                translator.result.dict?.map((it) =>
+                                                    h('div', { class: 'OnySakuraTranslator_dict' }, [
+                                                        h(
+                                                            'span',
+                                                            {
+                                                                class: 'pos pos_' + it.index
+                                                            },
+                                                            [it.pos]
+                                                        ),
+                                                        h('span', { class: 'terms' }, [it.def])
+                                                    ])
+                                                )
+                                            ]
+                                        )
+                                    )
+                            )
+                        ]
                         : []
                 ),
                 h(
@@ -216,152 +233,152 @@
                     { name: 'config' },
                     this.showConfig
                         ? [
-                              h(
-                                  'div',
-                                  {
-                                      id: 'OnySakuraTranslatorConfig',
-                                      onMousedown: (e) => e.stopPropagation(),
-                                      onMouseup: (e) => e.stopPropagation()
-                                  },
-                                  [
-                                      h(
-                                          'form',
-                                          {
-                                              action: 'javascript:void(0);'
-                                          },
-                                          [
-                                              h(
-                                                  'div',
-                                                  {
-                                                      class: 'configItem title'
-                                                  },
-                                                  [h('span', {}, ['修改配置'])]
-                                              ),
-                                              h(
-                                                  'div',
-                                                  {
-                                                      class: 'configItem translator'
-                                                  },
-                                                  [
-                                                      h('span', {}, ['开关：']),
-                                                      Object.keys(this.translatorList).map((key) =>
-                                                          h('label', {}, [
-                                                              h(
-                                                                  'input',
-                                                                  {
-                                                                      type: 'checkbox',
-                                                                      name: this.translatorList[key].name,
-                                                                      checked: this.translatorList[key].enabled,
-                                                                      disabled: key === 'source',
-                                                                      onInput: (e) => {
-                                                                          this.translatorList[key].enabled = e.target.checked;
-                                                                          this.$emit('input', e.target.checked);
-                                                                      }
-                                                                  },
-                                                                  []
-                                                              ),
-                                                              this.translatorList[key].name
-                                                          ])
-                                                      )
-                                                  ]
-                                              ),
-                                              h(
-                                                  'div',
-                                                  {
-                                                      class: 'configItem pos'
-                                                  },
-                                                  [
-                                                      h('span', {}, ['固定位置：']),
-                                                      h('label', {}, [
-                                                          h(
-                                                              'input',
-                                                              {
-                                                                  type: 'checkbox',
-                                                                  name: 'fixPos',
-                                                                  checked: this.fixPos,
-                                                                  onInput: (e) => {
-                                                                      this.fixPos = e.target.checked;
-                                                                      this.$emit('input', e.target.checked);
-                                                                  }
-                                                              },
-                                                              []
-                                                          )
-                                                      ]),
-                                                      h('div', { class: 'posValue' }, [
-                                                          h('span', {}, ['Top:']),
-                                                          h(
-                                                              'input',
-                                                              {
-                                                                  type: 'text',
-                                                                  name: 'top',
-                                                                  readonly: !this.fixPos,
-                                                                  value: this.resultPos.top,
-                                                                  onInput: (e) => {
-                                                                      this.resultPos.top = e.target.value;
-                                                                      this.$emit('input', e.target.value);
-                                                                  }
-                                                              },
-                                                              []
-                                                          )
-                                                      ]),
-                                                      h('div', { class: 'posValue' }, [
-                                                          h('span', {}, ['Right:']),
-                                                          h(
-                                                              'input',
-                                                              {
-                                                                  type: 'text',
-                                                                  name: 'right',
-                                                                  readonly: !this.fixPos,
-                                                                  value: this.resultPos.right,
-                                                                  onInput: (e) => {
-                                                                      this.resultPos.right = e.target.value;
-                                                                      this.$emit('input', e.target.value);
-                                                                  }
-                                                              },
-                                                              []
-                                                          )
-                                                      ]),
-                                                      h('div', { class: 'posValue' }, [
-                                                          h('span', {}, ['Bottom:']),
-                                                          h(
-                                                              'input',
-                                                              {
-                                                                  type: 'text',
-                                                                  name: 'bottom',
-                                                                  readonly: !this.fixPos,
-                                                                  value: this.resultPos.bottom,
-                                                                  onInput: (e) => {
-                                                                      this.resultPos.bottom = e.target.value;
-                                                                      this.$emit('input', e.target.value);
-                                                                  }
-                                                              },
-                                                              []
-                                                          )
-                                                      ]),
-                                                      h('div', { class: 'posValue' }, [
-                                                          h('span', {}, ['Left:']),
-                                                          h(
-                                                              'input',
-                                                              {
-                                                                  type: 'text',
-                                                                  name: 'left',
-                                                                  readonly: !this.fixPos,
-                                                                  value: this.resultPos.left,
-                                                                  onInput: (e) => {
-                                                                      this.resultPos.left = e.target.value;
-                                                                      this.$emit('input', e.target.value);
-                                                                  }
-                                                              },
-                                                              []
-                                                          )
-                                                      ])
-                                                  ]
-                                              )
-                                          ]
-                                      )
-                                  ]
-                              )
-                          ]
+                            h(
+                                'div',
+                                {
+                                    id: 'OnySakuraTranslatorConfig',
+                                    onMousedown: (e) => e.stopPropagation(),
+                                    onMouseup: (e) => e.stopPropagation()
+                                },
+                                [
+                                    h(
+                                        'form',
+                                        {
+                                            action: 'javascript:void(0);'
+                                        },
+                                        [
+                                            h(
+                                                'div',
+                                                {
+                                                    class: 'configItem title'
+                                                },
+                                                [h('span', {}, ['修改配置'])]
+                                            ),
+                                            h(
+                                                'div',
+                                                {
+                                                    class: 'configItem translator'
+                                                },
+                                                [
+                                                    h('span', {}, ['开关：']),
+                                                    Object.keys(this.translatorList).map((key) =>
+                                                        h('label', {}, [
+                                                            h(
+                                                                'input',
+                                                                {
+                                                                    type: 'checkbox',
+                                                                    name: this.translatorList[key].name,
+                                                                    checked: this.translatorList[key].enabled,
+                                                                    disabled: key === 'source',
+                                                                    onInput: (e) => {
+                                                                        this.translatorList[key].enabled = e.target.checked;
+                                                                        this.$emit('input', e.target.checked);
+                                                                    }
+                                                                },
+                                                                []
+                                                            ),
+                                                            this.translatorList[key].name
+                                                        ])
+                                                    )
+                                                ]
+                                            ),
+                                            h(
+                                                'div',
+                                                {
+                                                    class: 'configItem pos'
+                                                },
+                                                [
+                                                    h('span', {}, ['固定位置：']),
+                                                    h('label', {}, [
+                                                        h(
+                                                            'input',
+                                                            {
+                                                                type: 'checkbox',
+                                                                name: 'fixPos',
+                                                                checked: this.fixPos,
+                                                                onInput: (e) => {
+                                                                    this.fixPos = e.target.checked;
+                                                                    this.$emit('input', e.target.checked);
+                                                                }
+                                                            },
+                                                            []
+                                                        )
+                                                    ]),
+                                                    h('div', { class: 'posValue' }, [
+                                                        h('span', {}, ['Top:']),
+                                                        h(
+                                                            'input',
+                                                            {
+                                                                type: 'text',
+                                                                name: 'top',
+                                                                readonly: !this.fixPos,
+                                                                value: this.resultPos.top,
+                                                                onInput: (e) => {
+                                                                    this.resultPos.top = e.target.value;
+                                                                    this.$emit('input', e.target.value);
+                                                                }
+                                                            },
+                                                            []
+                                                        )
+                                                    ]),
+                                                    h('div', { class: 'posValue' }, [
+                                                        h('span', {}, ['Right:']),
+                                                        h(
+                                                            'input',
+                                                            {
+                                                                type: 'text',
+                                                                name: 'right',
+                                                                readonly: !this.fixPos,
+                                                                value: this.resultPos.right,
+                                                                onInput: (e) => {
+                                                                    this.resultPos.right = e.target.value;
+                                                                    this.$emit('input', e.target.value);
+                                                                }
+                                                            },
+                                                            []
+                                                        )
+                                                    ]),
+                                                    h('div', { class: 'posValue' }, [
+                                                        h('span', {}, ['Bottom:']),
+                                                        h(
+                                                            'input',
+                                                            {
+                                                                type: 'text',
+                                                                name: 'bottom',
+                                                                readonly: !this.fixPos,
+                                                                value: this.resultPos.bottom,
+                                                                onInput: (e) => {
+                                                                    this.resultPos.bottom = e.target.value;
+                                                                    this.$emit('input', e.target.value);
+                                                                }
+                                                            },
+                                                            []
+                                                        )
+                                                    ]),
+                                                    h('div', { class: 'posValue' }, [
+                                                        h('span', {}, ['Left:']),
+                                                        h(
+                                                            'input',
+                                                            {
+                                                                type: 'text',
+                                                                name: 'left',
+                                                                readonly: !this.fixPos,
+                                                                value: this.resultPos.left,
+                                                                onInput: (e) => {
+                                                                    this.resultPos.left = e.target.value;
+                                                                    this.$emit('input', e.target.value);
+                                                                }
+                                                            },
+                                                            []
+                                                        )
+                                                    ])
+                                                ]
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
                         : []
                 )
             ];
@@ -384,7 +401,6 @@
 
             onMounted(() => {
                 console.log('onMounted');
-                showIcon.value = true;
                 // 点击页面隐藏弹出框
                 document.onmousedown = function () {
                     showIcon.value = false;
@@ -511,6 +527,57 @@
     // source
     translatorMap.source.startTranslate = function (translateText) {
         this.result.text = translateText;
+    };
+
+    // ali
+    translatorMap.ali.startTranslate = function (translateText) {
+        let url = new URL(this.api.url);
+        let date = new Date().toUTCString();
+        let nonce = getSalt(10);
+        let bodyStr = JSON.stringify({
+            FormatType: 'text',
+            SourceLanguage: 'auto',
+            TargetLanguage: 'zh',
+            SourceText: translateText,
+            Scene: 'general'
+        });
+        let bodyMD5 = CryptoJS.enc.Base64.stringify(CryptoJS.MD5(bodyStr));
+        let headerStringToSign = `POST\napplication/json\n${bodyMD5}\napplication/json;chrset=utf-8\n${date}\nx-acs-signature-method:HMAC-SHA1\nx-acs-signature-nonce:${nonce}\nx-acs-version:2019-01-02\n`;
+        let stringToSign = headerStringToSign + url.pathname;
+        let Signature = CryptoJS.enc.Base64.stringify(CryptoJS.HmacSHA1(stringToSign, this.api.secret));
+        let Authorization = `acs ${this.api.appid}:${Signature}`;
+
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: url.href,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;chrset=utf-8',
+                'Content-MD5': bodyMD5,
+                'Date': date,
+                'Host': url.host,
+                'Authorization': Authorization,
+                'x-acs-signature-nonce': nonce,
+                'x-acs-signature-method': 'HMAC-SHA1',
+                'x-acs-version': '2019-01-02'
+            },
+            data: bodyStr,
+            timeout: REQUEST_TIMEOUT,
+            onload: (xhr) => {
+                if (isXhrSuccess(xhr)) {
+                    let json = strToJson(xhr.responseText);
+                    if (json.Code === '200') {
+                        if (json.Data.Translated) {
+                            this.result.text = json.Data.Translated;
+                            return;
+                        }
+                    }
+                    this.result.text = json.Message;
+                } else {
+                    console.log(xhr);
+                }
+            }
+        });
     };
 
     // baidu
@@ -856,9 +923,9 @@
         selectionText = selectionText.trim().replace(/\n/g, '');
         return selectionText;
     }
-    function getSalt() {
+    function getSalt(length = 5) {
         let salt = '';
-        for (let i = 0; i < 5; i++) salt += Math.floor(Math.random() * 8);
+        for (let i = 0; i < length; i++) salt += Math.floor(Math.random() * 8);
         return salt;
     }
     function isXhrSuccess(xhr) {

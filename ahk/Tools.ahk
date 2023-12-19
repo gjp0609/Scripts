@@ -32,7 +32,8 @@ Menu, Tray, Add, LdTerm, :LdServiceMenu
 ; WSL
 Menu, Tray, Add,
 Menu, WslSubmenu, Add, Nginx, WslNginxMenuHandler
-Menu, WslSubmenu, Add, Test, ExitMenuHandler
+Menu, WslSubmenu, Add, MySQL, WslMySQLMenuHandler
+Menu, WslSubmenu, Add, Gitea, WslGiteaMenuHandler
 Menu, Tray, Add, WSL, :WslSubmenu
 ; 退出
 Menu, Tray, Add,
@@ -59,6 +60,14 @@ return
 
 WslNginxMenuHandler:
     RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root service nginx start"
+return
+
+WslMySQLMenuHandler:
+    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root service mysql start"
+return
+
+WslGiteaMenuHandler:
+    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root nohup /data/gitea/gitea-1.20.4-linux-amd64 web & > /data/gitea/nohup.log"
 return
 
 ExitMenuHandler:

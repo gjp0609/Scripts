@@ -1,7 +1,7 @@
 payload:
+  - '+.unpkg.com'
   - '+.jsfiddle.net'
   - '+.codesandbox.io'
   - '+.netlify.app'
   - '+.plugins.jetbrains.com'
-  - '+.library.kiwix.org'
   - '+.gofrp.org'

@@ -49,14 +49,18 @@ proxy-groups:
     proxies:
       - DIRECT
 rule-providers:
-  proxy:
+  mineBlock:
     type: file
     behavior: domain
-    path: ./ruleset/mineProxy.yaml
-  direct:
+    path: ./ruleset/mineBlock.yaml
+  mineDirect:
     type: file
     behavior: domain
     path: ./ruleset/mineDirect.yaml
+  mineProxy:
+    type: file
+    behavior: domain
+    path: ./ruleset/mineProxy.yaml
   lancidr: # 局域网 IP 及保留 IP 地址列表
     type: http
     behavior: ipcidr
@@ -97,8 +101,9 @@ rules:
   - DST-PORT,22,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
-  - RULE-SET,direct,DIRECT
-  - RULE-SET,proxy,PROXY
+  - RULE-SET,mineBlock,REJECT
+  - RULE-SET,mineDirect,DIRECT
+  - RULE-SET,mineProxy,PROXY
   - RULE-SET,lancidr,DIRECT
   - RULE-SET,private,DIRECT
   - RULE-SET,applications,DIRECT

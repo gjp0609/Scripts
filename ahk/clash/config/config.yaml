@@ -41,6 +41,15 @@ proxy-providers:
       enable: true
       interval: 3600
       url: http://www.gstatic.com/generate_204
+proxies:
+  -
+    name: '自定义代理'
+    type: socks5
+    server: 127.0.0.1
+    port: 31080
+    tls: false
+    skip-cert-verify: true
+    udp: false
 proxy-groups:
   - name: PROXY
     type: select
@@ -48,6 +57,11 @@ proxy-groups:
       - XXXX
     proxies:
       - DIRECT
+  - name: CUSTOM
+    type: select
+    proxies:
+      - DIRECT
+      - 自定义代理
 rule-providers:
   mineBlock:
     type: file
@@ -98,6 +112,7 @@ rule-providers:
     path: ./ruleset/tld-not-cn.yaml
     interval: 86400
 rules:
+  - IP-CIDR,10.0.0.0/8,CUSTOM
   - DST-PORT,22,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT

@@ -10,7 +10,6 @@ A_IconTip := 'ClashX'
 
 ; 以 Admin 启动
 full_command_line := DllCall("GetCommandLine", "str")
-
 if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
 {
     try
@@ -62,7 +61,7 @@ StopMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
 }
 
 ConfigMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
-    Run 'https://clash.razord.top/'
+    Run 'https://yacd.metacubex.one/'
     return
 }
 

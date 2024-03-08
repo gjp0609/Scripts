@@ -57,7 +57,6 @@ proxy-groups:
       - CustomProxy
     proxies:
       - DIRECT
-      - 自定义代理
 rule-providers:
   customProxy:
     type: file

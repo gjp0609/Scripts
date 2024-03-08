@@ -1,0 +1,3 @@
+payload:
+  - 'DOMAIN,+.xxx.com'
+#  - 'IP-CIDR,10.0.0.0/8'

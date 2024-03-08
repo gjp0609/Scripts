@@ -41,9 +41,9 @@ proxy-providers:
       enable: true
       interval: 3600
       url: http://www.gstatic.com/generate_204
-  CustomProxy:
+  CustomServer:
     type: file
-    path: ./sub/CustomProxy.yaml
+    path: ./sub/CustomServer.yaml
 proxy-groups:
   - name: PROXY
     type: select
@@ -54,74 +54,74 @@ proxy-groups:
   - name: CUSTOM
     type: select
     use:
-      - CustomProxy
+      - CustomServer
     proxies:
       - DIRECT
 rule-providers:
-  customProxy:
+  custom-proxy:
     type: file
     behavior: classical
-    path: ./ruleset/customProxy.yaml
-  mineBlock:
+    path: ./ruleset/custom-proxy.yaml
+  mine-block:
     type: file
     behavior: domain
-    path: ./ruleset/mineBlock.yaml
-  mineDirect:
+    path: ./ruleset/mine-block.yaml
+  mine-direct:
     type: file
     behavior: domain
-    path: ./ruleset/mineDirect.yaml
-  mineProxy:
+    path: ./ruleset/mine-direct.yaml
+  mine-proxy:
     type: file
     behavior: domain
-    path: ./ruleset/mineProxy.yaml
-  lancidr: # 局域网 IP 及保留 IP 地址列表
+    path: ./ruleset/mine-proxy.yaml
+  third-party-lancidr: # 局域网 IP 及保留 IP 地址列表
     type: http
     behavior: ipcidr
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
-    path: ./ruleset/lancidr.yaml
+    path: ./ruleset/third-party-lancidr.yaml
     interval: 86400
-  private: # 私有网络专用域名
+  third-party-private: # 私有网络专用域名
     type: http
     behavior: domain
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
-    path: ./ruleset/private.yaml
+    path: ./ruleset/third-party-private.yaml
     interval: 86400
-  applications: # 需要直连的常见软件列表
+  third-party-applications: # 需要直连的常见软件列表
     type: http
     behavior: classical
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt"
-    path: ./ruleset/applications.yaml
+    path: ./ruleset/third-party-applications.yaml
     interval: 86400
-  reject: # 广告域名
+  third-party-reject: # 广告域名
     type: http
     behavior: domain
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
-    path: ./ruleset/reject.yaml
+    path: ./ruleset/third-party-reject.yaml
     interval: 86400
-  gfw: # GFW
+  third-party-gfw: # GFW
     type: http
     behavior: domain
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
-    path: ./ruleset/gfw.yaml
+    path: ./ruleset/third-party-gfw.yaml
     interval: 86400
-  tld-not-cn: # 非中国大陆使用的顶级域名列表
+  third-party-tld-not-cn: # 非中国大陆使用的顶级域名列表
     type: http
     behavior: domain
     url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
-    path: ./ruleset/tld-not-cn.yaml
+    path: ./ruleset/third-party-tld-not-cn.yaml
     interval: 86400
 rules:
   - DST-PORT,22,DIRECT
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
-  - RULE-SET,customProxy,CUSTOM
-  - RULE-SET,mineBlock,REJECT
-  - RULE-SET,mineDirect,DIRECT
-  - RULE-SET,mineProxy,PROXY
-  - RULE-SET,lancidr,DIRECT
-  - RULE-SET,private,DIRECT
-  - RULE-SET,applications,DIRECT
-  - RULE-SET,reject,REJECT
-  - RULE-SET,gfw,PROXY
-  - RULE-SET,tld-not-cn,PROXY
+  - RULE-SET,custom-proxy,CUSTOM
+  - RULE-SET,mine-block,REJECT
+  - RULE-SET,mine-direct,DIRECT
+  - RULE-SET,mine-proxy,PROXY
+  - RULE-SET,third-party-lancidr,DIRECT
+  - RULE-SET,third-party-private,DIRECT
+  - RULE-SET,third-party-applications,DIRECT
+  - RULE-SET,third-party-reject,REJECT
+  - RULE-SET,third-party-gfw,PROXY
+  - RULE-SET,third-party-tld-not-cn,PROXY
   - MATCH,DIRECT

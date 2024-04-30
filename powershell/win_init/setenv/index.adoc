@@ -1,0 +1,28 @@
+== SetEnv
+
+=== Java
+
+[source,powershell]
+----
+[Environment]::SetEnvironmentVariable('JAVA_HOME', 'R:\Files\Programs\JDK\graalvm-jdk-21.0.2+13.1', 'Machine')
+[Environment]::SetEnvironmentVariable('GRAALVM_HOME', 'R:\Files\Programs\JDK\graalvm-jdk-21.0.2+13.1', 'Machine')
+[Environment]::SetEnvironmentVariable('MAVEN_HOME', 'R:\Files\Programs\maven\apache-maven-3.9.6', 'Machine')
+[System.Environment]::SetEnvironmentVariable("Path", [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) + "; $($env:JAVA_HOME)\bin")
+[System.Environment]::SetEnvironmentVariable("Path", [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) + "; $($env:MAVEN_HOME)\bin")
+----
+
+=== Scoop
+
+[source,powershell]
+----
+[Environment]::SetEnvironmentVariable('SCOOP_PATH', 'R:\Files\Scoop', 'Machine')
+----
+
+=== Go
+
+[source,powershell]
+----
+[Environment]::SetEnvironmentVariable('GOROOT', 'R:\Files\Scoop\Scoop\apps\go\current\', 'Machine')
+[Environment]::SetEnvironmentVariable('GOPATH', 'R:\.go-path\', 'Machine')
+[System.Environment]::SetEnvironmentVariable("Path", [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine) + "; $($env:GOROOT)\bin")
+----

@@ -1,0 +1,21 @@
+=== Main
+
+==== image:https://nodejs.org/favicon.ico[,16,16] Node.js
+
+[source,powershell]
+----
+scoop install main/nvm
+nvm node_mirror https://npmmirror.com/mirrors/node/
+nvm npm_mirror https://npmmirror.com/mirrors/npm/
+nvm install 20
+nvm use 20
+npm install -g pnpm
+pnpm config set registry https://registry.npmmirror.com
+----
+
+==== image:https://go.dev/favicon.ico[,16,16] Go
+
+[source,powershell]
+----
+scoop install main/go
+----

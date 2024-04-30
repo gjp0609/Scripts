@@ -1,0 +1,38 @@
+=== Init
+
+==== Install
+
+[source,powershell]
+----
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+Invoke-RestMethod get.scoop.sh -outfile 'scoop_install.ps1'
+.\scoop_install.ps1 -RunAsAdmin -ScoopGlobalDir $env:SCOOP_PATH -ScoopDir $env:SCOOP_PATH'\Scoop\' -NoProxy
+
+scoop config main https://mirror.ghproxy.com/https://github.com/ScoopInstaller/Main
+----
+
+==== image:https://www.7-zip.org/favicon.ico[,16,16] 7-Zip
+
+[source,powershell]
+----
+scoop install main/7zip
+reg import $env:SCOOP_PATH"\Scoop\apps\7zip\current\install-context.reg" # not work
+----
+
+[TIP]
+plugins: https://www.tc4shell.com/en/7zip/
+
+==== image:https://curl.se/favicon.ico[,16,16] curl
+
+[source,powershell]
+----
+scoop install main/curl
+----
+
+==== image:https://git-scm.com/favicon.ico[,16,16] Git
+
+[source,powershell]
+----
+scoop install main/git
+----

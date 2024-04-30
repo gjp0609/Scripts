@@ -1,0 +1,182 @@
+=== Extras
+
+==== Init
+
+[source,powershell]
+----
+scoop bucket add extras https://mirror.ghproxy.com/https://github.com/ScoopInstaller/Extras
+----
+
+==== image:https://learn.microsoft.com/windows/terminal/images/terminal.svg[,16,16] Windows Terminal
+
+[source,powershell]
+----
+scoop install extras/windows-terminal
+reg import $env:SCOOP_PATH"\Scoop\apps\windows-terminal\current\install-context.reg"
+----
+
+==== image:https://www.neatdownloadmanager.com/templates/neat/favicon.ico[,16,16] NeatDownloadManager
+
+[source,powershell]
+----
+scoop install extras/neatdownloadmanager
+----
+
+==== image:https://joplinapp.org/favicon.ico[,16,16] Joplin
+
+[source,powershell]
+----
+scoop install extras/joplin
+----
+
+==== image:https://rustdesk.com/images/favicon.png[,16,16] RustDesk
+
+[source,powershell]
+----
+scoop install extras/rustdesk
+----
+
+==== image:https://ditto-cp.sourceforge.io/Ditto2.png[,16,16] Ditto
+
+[source,powershell]
+----
+scoop install extras/ditto
+----
+
+==== image:https://raw.githubusercontent.com/zhongyang219/TrafficMonitor/master/TrafficMonitor/res/notifyicon3.ico[,16,16] TrafficMonitor
+
+[source,powershell]
+----
+scoop install extras/trafficmonitor
+----
+
+==== image:https://raw.githubusercontent.com/rizonesoft/Notepad3/master/res/Notepad3.ico[,16,16] Notepad3
+
+[source,powershell]
+----
+scoop install extras/notepad3
+reg import $env:SCOOP_PATH"\Scoop\apps\notepad3\current\install-context.reg"
+----
+
+==== image:https://keepassxc.org/favicon.ico[,16,16]KeepassXC
+
+[source,powershell]
+----
+scoop install extras/keepassxc
+----
+
+==== image:https://tortoisesvn.net/assets/img/favicons/favicon.ico[,16,16] TortoiseSVN
+
+[source,powershell]
+----
+scoop install extras/tortoisesvn
+reg import $env:SCOOP_PATH"\Scoop\apps\tortoisesvn\current\tortoisesvn-install.reg"
+----
+
+==== image:https://www.thunderbird.net/favicon.ico[,16,16] Thunderbird
+
+[source,powershell]
+----
+scoop install extras/thunderbird
+----
+
+[TIP]
+https://support.mozilla.org/en-US/kb/moving-thunderbird-data-to-a-new-computer
+
+==== image:https://code.visualstudio.com/favicon.ico[,16,16] VSCode
+
+[source,powershell]
+----
+scoop install extras/vscode
+----
+
+==== image:https://raw.githubusercontent.com/microsoft/PowerToys/main/doc/images/icons/PowerToys%20icon/ICO/PowerToys.ico[,16,16] PowerToys
+
+[source,powershell]
+----
+scoop install extras/powertoys
+----
+
+==== image:https://www.xnview.com/favicon.ico[,16,16] XnViewMP
+
+[source,powershell]
+----
+scoop install extras/xnviewmp # 配置文件
+----
+
+==== image:https://raw.githubusercontent.com/RamonUnch/AltSnap/main/media/icon.ico[,16,16] AltSnap
+
+[source,powershell]
+----
+scoop install extras/altsnap # 配置文件
+----
+
+==== image:https://www.voidtools.com/favicon.ico[,16,16] Everything
+
+[source,powershell]
+----
+scoop install extras/everything
+----
+
+==== image:https://fastcopy.jp/favicon.ico[,16,16] FastCopy
+
+[source,powershell]
+----
+scoop install extras/fastcopy
+----
+
+==== image:https://www.sumatrapdfreader.org/favicon.ico[,16,16] SumatraPDF
+
+[source,powershell]
+----
+scoop install extras/sumatrapdf
+----
+
+==== image:https://raw.githubusercontent.com/QL-Win/QuickLook/master/QuickLook/Resources/app.svg[,16,16] QuickLook
+
+[source,powershell]
+----
+scoop install extras/quicklook
+----
+
+[TIP]
+OfficeNative 插件新版本 WPS 不可用
+
+==== image:https://winscp.net/favicon.ico[,16,16] WinSCP
+
+[source,powershell]
+----
+scoop install extras/winscp
+----
+
+[TIP]
+使用 Terminal 配合 WSL 打开会话
+`wt.exe -w 0 wsl.exe -d Debian -u root -- sshpass -p '!P' ssh !U@!@ -p !#  -t 'cd !/ \; /bin/bash --login'`
+
+==== image:https://filezilla-project.org/favicon.ico[,16,16] FileZilla
+
+[source,powershell]
+----
+scoop install extras/filezilla
+----
+
+==== image:https://www.videolan.org/favicon.ico[,16,16] VLC
+
+[source,powershell]
+----
+scoop install extras/vlc
+----
+
+==== image:https://obsproject.com/favicon.ico[,16,16] OBS-Studio
+
+[source,powershell]
+----
+scoop install extras/obs-studio
+----
+
+==== image:https://obsproject.com/favicon.ico[,16,16] WinMerge
+
+[source,powershell]
+----
+scoop install extras/winmerge
+----

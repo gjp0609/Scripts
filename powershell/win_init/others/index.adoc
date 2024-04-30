@@ -1,0 +1,21 @@
+== Others
+
+=== IME
+
+==== image:https://rime.im/favicon.png[,16,16] Rime Weasel
+
+- 下载: https://github.com/rime/weasel
+- 配置: https://github.com/iDvel/rime-ice
+- 说明: https://dvel.me/posts/rime-ice/
+
+=== Tencent
+
+==== image:https://res.wx.qq.com/a/wx_fed/assets/res/NTI4MWU5.ico[,16,16] WeChat
+
+[TIP]
+https://kf.qq.com/faq/190425ZFBzqa190425ZNNzQv.html
+
+==== image:https://im.qq.com/favicon.ico[,16,16] QQ
+
+==== image:https://meeting.tencent.com/favicon.ico[,16,16] Tencent Meeting
+

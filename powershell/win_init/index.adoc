@@ -1,0 +1,84 @@
+= Init
+:toc: right
+:toclevels: 3
+:tip-caption: 💡
+:nofooter:
+:nofootnotes:
+:sectnums:
+:!webfonts:
+
+++++
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.sectlevel1>li>a').forEach(item => {
+            let div = document.createElement('div');
+            let span = document.createElement('span');
+            span.innerText = '<';
+            div.appendChild(span);
+            item.parentElement.querySelector('ul').classList.add('hide');
+            span.style.transform = 'rotate(0deg)'
+            div.addEventListener('click', (_) => {
+                let ul = div.parentElement.querySelector('ul');
+                if (ul) {
+                    if (ul.matches('.hide')) {
+                        ul.classList.remove('hide')
+                        span.style.transform = 'rotate(-90deg)'
+                    } else {
+                        ul.classList.add('hide')
+                        span.style.transform = 'rotate(90deg)'
+
+                    }
+                }
+            })
+            item.insertAdjacentElement('afterend', div)
+        })
+    })
+</script>
+<style>
+    * {
+        font-family: '等距更纱黑体 SC', 'Sarasa Mono SC', 'mononoki regular', 'Consolas', monospace;
+    }
+    #toc.toc2 {
+        overflow-y: auto;
+    }
+    .sectlevel1 {
+        & > li {
+            & > a {
+                float: left;
+            }
+            & > div {
+                float: none;
+                overflow: hidden;
+                text-align: right;
+                cursor: pointer;
+                user-select: none;
+                & > span {
+                    display: inline-block;
+                    transform: rotate(-90deg);
+                    transition-duration: 200ms;
+                }
+            }
+            & > ul.hide {
+                display: none;
+            }
+        }
+    }
+    pre {
+        background-color: #f4f9ff;
+        code {
+            max-height: 300px;
+        }
+    }
+    i {
+        user-select: none;
+    }
+    * {
+        scrollbar-width: thin;
+    }
+</style>
+++++
+
+include::setenv/index.adoc[]
+include::browser/index.adoc[]
+include::scoop/index.adoc[]
+include::others/index.adoc[]

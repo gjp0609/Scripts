@@ -1,0 +1,7 @@
+== Scoop
+
+include::$1_init.adoc[]
+include::$2_main.adoc[]
+include::$3_extras.adoc[]
+include::$4_fonts.adoc[]
+include::$5_versions.adoc[]

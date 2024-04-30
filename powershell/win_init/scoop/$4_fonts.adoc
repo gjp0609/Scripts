@@ -1,0 +1,17 @@
+=== Fonts
+
+==== Init
+
+[source,powershell]
+----
+scoop bucket add nerd-fonts https://mirror.ghproxy.com/https://github.com/matthewjberger/scoop-nerd-fonts
+----
+
+[source,powershell]
+----
+scoop install nerd-fonts/Rounded-Mplus
+scoop install nerd-fonts/Mononoki-NF-Mono
+scoop install nerd-fonts/LXGWWenKaiMono
+scoop install nerd-fonts/SarasaGothic-SC # 太大了
+# https://mirrors.tuna.tsinghua.edu.cn/github-release/be5invis/Sarasa-Gothic/LatestRelease/
+----

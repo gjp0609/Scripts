@@ -1,0 +1,15 @@
+=== Versions
+
+==== Init
+
+[source,powershell]
+----
+scoop bucket add versions https://mirror.ghproxy.com/https://github.com/ScoopInstaller/Versions
+----
+
+==== image:https://sqlitebrowser.org/favicon.ico[,16,16] SQLiteBrowser Nightly
+
+[source,powershell]
+----
+scoop install versions/sqlitebrowser-nightly
+----

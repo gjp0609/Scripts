@@ -1,0 +1,209 @@
+== Browser
+
+=== image:https://brave.com/static-assets/images/brave-favicon.png[,16,16] Brave
+
+=== image:https://www.mozilla.org/media/img/favicons/firefox/browser/favicon.f093404c0135.ico[,16,16] Firefox Developer Edition
+
+- `userChrome.css`
++
+[source,less]
+----
+@backgroundColor: #b6dcda;
+@backgroundColorLight: lighten(@backgroundColor, 5%);
+@backgroundColorDark: darken(@backgroundColor, 10%);
+@splitBorder: darken(@backgroundColor, 20%);
+
+@-moz-document url("chrome://browser/content/browser.xul"),
+url("chrome://browser/content/browser.xhtml")
+{
+    #navigator-toolbox-background {
+        // 导航栏
+        #navigator-toolbox {
+            background-color: @backgroundColor !important;
+
+            // 标题栏
+            #titlebar {
+                // 标签栏
+                #TabsToolbar {
+                    .titlebar-spacer {
+                        // 标签栏 左侧空白
+                        width: 0 !important;
+                    }
+
+                    // 标签组
+                    .toolbar-items {
+                        // 标签后侧保留空白
+                        margin-right: 20px;
+
+                        #firefox-view-button {
+                            padding: 0 !important;
+                            image.toolbarbutton-icon {
+                                border-radius: 0 !important;
+                            }
+                        }
+
+                        #tabbrowser-tabs {
+                            border-inline-start: 0 !important;
+                            padding-inline-start: 0 !important;
+                            margin-inline-start: 0 !important;
+                            // 标签
+                            .tabbrowser-tab {
+                                padding-inline: 0 !important;
+
+                                // 非第一个 & 非激活的标签
+                                &:not(:first-child):not([visuallyselected='true']) {
+                                    border-left: @splitBorder solid 1px !important;
+                                }
+
+                                // 激活的标签、激活标签右侧的标签、非激活标签 hover、非激活标签的右侧 hover
+                                &[visuallyselected='true'],
+                                &[visuallyselected='true'] + .tabbrowser-tab,
+                                &:not([visuallyselected='true']):hover,
+                                &:not([visuallyselected='true']):hover + .tabbrowser-tab {
+                                    border-left: @backgroundColor solid 1px !important;
+                                }
+
+                                // 非激活标签 hover
+                                &:not([visuallyselected='true']):hover > .tab-stack .tab-content {
+                                    background-color: @backgroundColorLight !important;
+                                }
+
+                                // 标签
+                                .tab-stack {
+                                    // 标签栏 标签背景
+                                    .tab-background {
+                                        margin: 0 !important;
+                                        border-radius: 0 !important;
+                                        box-shadow: none !important;
+                                        background-color: @backgroundColor !important;
+                                    }
+
+                                    .tab-content {
+                                        // 关闭标签按钮
+                                        .tab-close-button {
+                                            display: none !important;
+                                        }
+                                    }
+                                }
+                            }
+
+                            #tabs-newtab-button {
+                                margin: 0 !important;
+                                padding: 0 !important;
+
+                                &:hover {
+                                    background-color: @backgroundColorDark !important;
+                                }
+
+                                // 标签栏 新标签按钮
+                                .toolbarbutton-icon {
+                                    background-color: unset !important;
+                                    /* width:30px !important;*/
+                                    /*height:30px !important;*/
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            //// 导航栏
+            //#nav-bar {
+            //    #nav-bar-customization-target {
+            //        // 地址栏
+            //        #urlbar-container {
+            //            --urlbar-container-height: 32px !important;
+            //
+            //            // URL 输入框
+            //            #urlbar {
+            //                top: 0 !important;
+            //
+            //                #urlbar-background {
+            //                    border-radius: 0 !important;
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+        }
+    }
+
+    #browser {
+        #appcontent {
+            #tabbrowser-tabbox {
+                #tabbrowser-tabpanels {
+                    .browserSidebarContainer {
+                        // 搜索框置顶
+                        findbar {
+                            -moz-box-ordinal-group: 0;
+                            border-top: none !important;
+                            border-bottom: 1px solid #cccccc !important;
+                            .findbar-container {
+                                -moz-box-direction: reverse;
+                            }
+                            .findbar-closebutton.close-icon {
+                                -moz-box-ordinal-group: 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+- `policies.json`
++
+[source,json]
+----
+{
+    "policies": {
+        "AppAutoUpdate": false,
+        "BackgroundAppUpdate": false,
+        "DisableAppUpdate": true,
+        "DisableDefaultBrowserAgent": true,
+        "DisableFeedbackCommands": true,
+        "DisableFirefoxStudies": true,
+        "DisablePocket": true,
+        "DisableSetDesktopBackground": true,
+        "DisableSystemAddonUpdate": true,
+        "DisableTelemetry": true,
+        "DontCheckDefaultBrowser": true,
+        "GoToIntranetSiteForSingleWordEntryInAddressBar": false,
+        "Homepage": {
+            "URL": "http://127.0.0.1/pages/single/bookmarks/index.html",
+            "Locked": true,
+            "Additional": [],
+            "StartPage": "none"
+        },
+        "ManualAppUpdateOnly": true,
+        "OverrideFirstRunPage": "",
+        "SearchBar": "unified",
+        "UserMessaging": {
+            "WhatsNew": false,
+            "ExtensionRecommendations": false,
+            "FeatureRecommendations": false,
+            "UrlbarInterventions": false,
+            "SkipOnboarding": true,
+            "MoreFromMozilla": false
+        }
+    }
+}
+----
+
+=== Extensions
+
+==== image:https://lh3.googleusercontent.com/LBqBVUUdHgOyrZkHClFY-aTd6gNCi1a_ddDAzTfQRh0cS-U2vRqsygYoS4qri1INwUw_jks2d_4csui2aBeai_Q5Jw=s60[,16,16] History Trends Unlimited https://chromewebstore.google.com/detail/history-trends-unlimited/pnmchffiealhkdloeffcdnbgdnedheme[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/gi92Uq5ScxlMrm9WbsCN09d8KCLZ9JXgc8sWr4qCTu7EGFD9jcVAI3zQvTC-MDBBLpLO8Rbj7knyQy77YXGFghxtAQ=s60[,16,16] Tampermonkey Beta https://chromewebstore.google.com/detail/%E7%AF%A1%E6%94%B9%E7%8C%B4%E6%B5%8B%E8%AF%95%E7%89%88/gcalenpjmijncebpfijmoaglllgpjagf[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/2K8pc_5-2DkPam9b3oAWoITZ7IuIz68A5a8Ssg2_MNNHTPWPOPSBVTFdTmeVu9hi8GJxpKbvTekgwpeyGV6vXyBKH80=s60[,16,16] Stylus https://chromewebstore.google.com/detail/stylus/clngdbkpkpeebahjckkjfobafhncgmne[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/_c2ZNvBG59qBe0zYNmDY00xnOiseH5grH5vqgt5ZOkd9lPr0YOmoQpoiYb3pvhQ4eE8Zs8cg8eIheEw-7NthscaRhg=s60[,16,16] NeatDownloadManager Extension https://chromewebstore.google.com/detail/neatdownloadmanager-exten/cpcifbdmkopohnnofedkjghjiclmhdah[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/R-DDF52rVjGST0_c_LgZ5Qxtr_JXgRU8palDtRFW8vvIslnQXZC3VpUW-LEFXw06eggfnJW2vm8ghQIVoBbFRvfRgA=s60[,16,16] KeePassXC-Browser https://chromewebstore.google.com/detail/keepassxc-browser/oboonakemofpalcgghocfoadofidjkkk[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/TVpbNuPjjffaNlI2sT1HuXHxUMx-MhUAFX751Yf4bndnTMI6j1YH5Oehkb8Mm2dtsTG36UAVYvOmFGbA0fFsnJp1=s60[,16,16] Joplin Web Clipper https://chromewebstore.google.com/detail/joplin-web-clipper/alofnhikmmkdbbbgpnglcpdollgjjfek[Chrome Web Store]
+
+==== image:https://lh3.googleusercontent.com/L6md4ykRiFHQ2ndDjHtJX93joWA5Tm4-MW7CK0-k3WctxeIIJt0gAQYbPXSTJ9MRaVl7StyGTDgqOmisqkheMaHldw=s60[,16,16] Floccus bookmarks sync https://chromewebstore.google.com/detail/floccus-bookmarks-sync/fnaicdffflnofjppbagibeoednhnbjhg[Chrome Web Store]

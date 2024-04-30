@@ -1,0 +1,37 @@
+[package]
+name = "hello"
+version = "0.0.1"
+authors = ["noif"]
+description = ""
+repository = ""
+license = "ISC"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = "0.2.89"
+js-sys = "0.3.6"
+wasm-bindgen-futures = "0.4.39"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+[dependencies.web-sys]
+version = "0.3.66"
+features = [
+    'Headers',
+    'Request',
+    'RequestInit',
+    'RequestMode',
+    'Response',
+    'Window',
+]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.39"
+
+[profile.release]
+opt-level = "s"

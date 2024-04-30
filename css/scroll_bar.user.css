@@ -1,0 +1,40 @@
+/* ==UserStyle==
+@name         滚动条美化
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  滚动条美化
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/scroll_bar.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
+i {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+* {
+    scrollbar-color: rgba(59, 178, 237, 0.22) rgba(214, 214, 214, 0.2);
+    scrollbar-width: thin;
+}
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+    background-color: rgba(214, 214, 214, 0.2);
+}
+*::-webkit-scrollbar-thumb {
+    background-color: rgba(59, 178, 237, 0.22);
+    border-radius: 6px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(75, 175, 225, 1);
+}
+*::-webkit-scrollbar-thumb:active {
+    background-color: rgba(100, 200, 250, 1);
+}
+*::-webkit-scrollbar-corner {
+    background-color: rgba(214, 214, 214, 0.2);
+}

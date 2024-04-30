@@ -1,0 +1,56 @@
+/* ==UserStyle==
+@name         隐藏图片显示
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  隐藏图片显示
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/hide_image.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
+video,
+img {
+    background: #fff !important;
+    opacity: 0.05 !important;
+    transform: scaleY(0.2) !important;
+    transform-origin: top !important;
+    &:hover {
+        opacity: 0.85 !important;
+        transform: scaleY(1) !important;
+        transition: 1s cubic-bezier(0, 0, 1, 0) !important;
+    }
+}
+* {
+    background-blend-mode: saturation !important;
+    &:hover {
+        background-blend-mode: unset !important;
+    }
+}
+h1 {
+    font-size: 16px !important;
+    color: #ff669640 !important;
+    * {
+        font-size: 16px !important;
+        color: #ff669640 !important;
+    }
+}
+h2 {
+    font-size: 15px !important;
+    color: #6ac !important;
+    * {
+        font-size: 15px !important;
+        color: #6ac !important;
+    }
+}
+h3 {
+    font-size: 14px !important;
+    color: #86a !important;
+}
+h4,
+h5,
+h6 {
+    font-size: 13px !important;
+    color: #668 !important;
+}

@@ -1,5 +1,14 @@
-# Default ignored files
+# idea
 *.iml
 /.idea/
+
+# js
 /node_modules/
+
+# python
 /python/venv/
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

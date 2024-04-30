@@ -565,7 +565,7 @@
             timeout: REQUEST_TIMEOUT,
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let json = strToJson(xhr.responseText);
+                    let json = JSON.parse(xhr.responseText);
                     if (json.Code === '200') {
                         if (json.Data.Translated) {
                             this.result.text = json.Data.Translated;
@@ -596,7 +596,7 @@
             },
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let json = strToJson(xhr.responseText);
+                    let json = JSON.parse(xhr.responseText);
                     if (json.trans_result) {
                         if (json.trans_result[0].dst) {
                             this.result.text = decodeURI(json.trans_result[0].dst);
@@ -604,7 +604,7 @@
                         }
                     } else {
                         try {
-                            let parse = strToJson(json);
+                            let parse = JSON.parse(json);
                             if (parse.trans_result) {
                                 if (parse.trans_result[0].dst) {
                                     this.result.text = decodeURI(parse.trans_result[0].dst);
@@ -691,7 +691,7 @@
             },
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let json = strToJson(xhr.responseText);
+                    let json = JSON.parse(xhr.responseText);
                     let result,
                         confidence = '';
                     if (json.target) {
@@ -700,7 +700,7 @@
                     } else {
                         let parse = {};
                         try {
-                            parse = strToJson(json);
+                            parse = JSON.parse(json);
                         } catch (e) {}
                         if (parse.target) {
                             result = parse.target;
@@ -732,7 +732,7 @@
             },
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let json = strToJson(xhr.responseText);
+                    let json = JSON.parse(xhr.responseText);
                     if (json.code === 200) {
                         this.result.text = json.data;
                     } else {
@@ -860,7 +860,7 @@
             },
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let json = strToJson(xhr.responseText);
+                    let json = JSON.parse(xhr.responseText);
                     if (json.Response) {
                         if (json.Response.TargetText) {
                             this.result.text = decodeURIComponent(json.Response.TargetText);
@@ -902,7 +902,7 @@
             },
             onload: (xhr) => {
                 if (isXhrSuccess(xhr)) {
-                    let result = strToJson(xhr.responseText);
+                    let result = JSON.parse(xhr.responseText);
                     this.result.text = result.translation[0];
                     this.result.dict = result.basic?.explains?.map((item) => {
                         let pos = item.substring(0, item.indexOf(' '));
@@ -930,11 +930,5 @@
     }
     function isXhrSuccess(xhr) {
         return xhr.readyState === 4 && xhr.status === 200;
-    }
-    function strToJson(str) {
-        try {
-            return new Function('return ' + str)();
-        } catch (e) {}
-        return {};
     }
 })();

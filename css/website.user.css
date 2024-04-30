@@ -1,3 +1,16 @@
+/* ==UserStyle==
+@name         网站展示优化
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  网站展示优化
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/website.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
+
 @-moz-document domain("appinn.com") {
     .main-container {
         width: 100%;
@@ -15,11 +28,48 @@
     .secondary-navigation {
         opacity: 0.15;
         transition: 0.5s;
+        background: white;
     }
 
     .secondary-navigation:hover {
         opacity: 0.8;
         transition: 1.5s;
+    }
+    #navigation {
+        background: white;
+    }
+
+    #navigation li a {
+        color: #666;
+        padding: 4px 3px;
+    }
+
+    #latest-posts article .post-img {
+        height: 100px;
+    }
+
+    .thecategory a {
+        background: #e4e9ec;
+    }
+}
+
+@-moz-document domain("coolshell.cn") {
+    header {
+        opacity: 0.9 !important;
+    }
+}
+
+@-moz-document domain("raw.githubusercontent.com") {
+    * {
+        font-family: 'Sarasa Mono SC', serif;
+    }
+
+    code {
+        font-size: unset !important;
+    }
+
+    p {
+        text-indent: 2rem;
     }
 }
 
@@ -94,8 +144,18 @@
     }
 }
 
+@-moz-document domain("google.com") {
+    div[aria-label='广告'] {
+        display: none;
+    }
+}
+
 @-moz-document domain("ithome.com") {
+    #top,
+    .shareto,
+    #tt,
     #tt50,
+    #login-guide-box,
     .dajia,
     .adblock,
     .sidebar {
@@ -139,12 +199,14 @@
 }
 
 @-moz-document domain("juejin.cn") {
+    .main-header-box,
+    .category-course-recommend,
     .guide-collect-popover {
         display: none !important;
     }
 }
 
-@-moz-document domain("nga.cn") {
+@-moz-document domain("nga.cn"), domain("ngabbs.com") {
     /* 改为白色背景 */
     html,
     body,
@@ -154,6 +216,12 @@
     /* 去除版头 */
     #mainmenu {
         margin-bottom: 0 !important;
+        .mmdefault {
+            svg {
+                visibility: hidden;
+                display: none;
+            }
+        }
     }
     #custombg {
         visibility: hidden;
@@ -271,8 +339,11 @@
 }
 
 @-moz-document domain("v2ex.com") {
-    @import 'https://cdn.jsdelivr.net/gh/viewweiwu/v2ex-zhihu-theme@1.2/v2ex.css';
+    @import 'https://cdn.jsdelivr.net/gh/viewweiwu/v2ex-zhihu-theme@1.6.2/v2ex.css';
 
+    body {
+        font-family: sans-serif;
+    }
     .adsbygoogle,
     #Logo {
         /* 淡化 logo 和广告 */
@@ -292,14 +363,30 @@
         background-image: none;
     }
     #Wrapper .box img {
-        opacity: 0.5 !important;
     }
     #Wrapper .box .small.fade img {
         opacity: 1 !important;
     }
 
     iframe.embedded_video {
-        opacity: 0.01;
+        opacity: 0.01 !important;
+    }
+}
+
+@-moz-document domain("zhangxinxu.com") {
+    #page {
+        #header {
+            #headerimg {
+                display: none;
+            }
+        }
+        .sldebar_out {
+            .slide_list {
+                & > :not(a, ul, div) {
+                    display: none;
+                }
+            }
+        }
     }
 }
 
@@ -316,15 +403,21 @@
         font-size: 15px;
         font-weight: 400;
     }
+    .Question-sideColumn {
+        width: 0 !important;
+        display: none !important;
+    }
 }
 
-@-moz-document url-prefix("https://www.bilibili.com/read/") {
+@-moz-document url-prefix("https://www.bilibili.com/read/")
+{
     .fixed-top-header .inner > p {
         font-size: 1rem !important;
     }
 }
 
-@-moz-document url-prefix("https://kaisery.github.io/trpl-zh-cn/") {
+@-moz-document url-prefix("https://kaisery.github.io/trpl-zh-cn/")
+{
     #menu-bar,
     #menu-bar-hover-placeholder {
         opacity: 0;

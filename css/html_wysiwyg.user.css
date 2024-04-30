@@ -1,0 +1,96 @@
+/* ==UserStyle==
+@name         html_wysiwyg
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  html_wysiwyg
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/html_wysiwyg.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
+
+/* From: https://github.com/secretGeek/html_wysiwyg/blob/master/html.css */
+style::before {
+    content: '<style>';
+}
+style::after {
+    content: '<\/style>';
+}
+
+/* brutify */
+*::before,
+*::after {
+    color: rgb(136, 18, 128, 0.5);
+    font-weight: 100;
+    font-size: 1em;
+}
+
+/* here is the highly repetitive bit */
+p::before {
+    content: '<p>';
+}
+p::after {
+    content: '</p>';
+}
+h1::before {
+    content: '<h1>';
+}
+h1::after {
+    content: '</h1>';
+}
+h2::before {
+    content: '<h2>';
+}
+h2::after {
+    content: '</h2>';
+}
+p::before {
+    content: '<p>';
+}
+p::after {
+    content: '</p>';
+}
+pre::before {
+    content: '<pre>';
+}
+pre::after {
+    content: '</pre>';
+}
+code::before {
+    content: '<code>';
+}
+code::after {
+    content: '</code>';
+}
+a::before {
+    content: '<a>';
+}
+a::after {
+    content: '</a>';
+}
+aside::before {
+    content: '<aside>';
+}
+aside::after {
+    content: '</aside>';
+}
+blockquote::before {
+    content: '<blockquote>';
+}
+blockquote::after {
+    content: '</blockquote>';
+}
+em::before {
+    content: '<em>';
+}
+em::after {
+    content: '</em>';
+}
+strong::before {
+    content: '<strong>';
+}
+strong::after {
+    content: '</strong>';
+}

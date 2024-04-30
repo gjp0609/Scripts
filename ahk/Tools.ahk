@@ -1,10 +1,12 @@
-﻿#NoEnv
-#SingleInstance force
-#Persistent ; 让脚本持续运行, 直到用户退出.
-DetectHiddenWindows, On
-Menu, Tray, NoMainWindow
-Menu, Tray, NoStandard
-Menu, Tray, Tip, Tools
+﻿#SingleInstance force
+DetectHiddenWindows True
+Persistent
+
+CustomIcon := 'img/Tools.ico'
+if FileExist(CustomIcon) {
+    TraySetIcon(CustomIcon)
+}
+A_IconTip := 'Tools'
 
 ; 以 Admin 启动
 full_command_line := DllCall("GetCommandLine", "str")
@@ -13,63 +15,44 @@ if not (A_IsAdmin or RegExMatch(full_command_line, " /restart(?!\S)"))
     try
     {
         if A_IsCompiled
-            Run *RunAs "%A_ScriptFullPath%" /restart
+            Run '*RunAs "' A_ScriptFullPath '" /restart'
         else
-            Run *RunAs "%A_AhkPath%" /restart "%A_ScriptFullPath%"
+            Run '*RunAs "' A_AhkPath '" /restart "' A_ScriptFullPath '"'
     }
     ExitApp
 }
 
-; 自定义托盘图标
-CustomIcon = %A_ScriptDir%/img/Tools.ico
-IfExist, %CustomIcon%
-Menu, Tray, Icon, %CustomIcon%
+Tray:= A_TrayMenu
+Tray.Delete()
+Tray.ClickCount := 2
 
-; 天锐绿盾
-Menu, LdServiceMenu, Add, Enable, LdServiceStartMenuHandler
-Menu, LdServiceMenu, Add, Disable, LdServiceStopMenuHandler
-Menu, Tray, Add, LdTerm, :LdServiceMenu
-; WSL
-Menu, Tray, Add,
-Menu, WslSubmenu, Add, Nginx, WslNginxMenuHandler
-Menu, WslSubmenu, Add, MySQL, WslMySQLMenuHandler
-Menu, WslSubmenu, Add, Gitea, WslGiteaMenuHandler
-Menu, Tray, Add, WSL, :WslSubmenu
-; 退出
-Menu, Tray, Add,
-Menu, Tray, Add, 退出, ExitMenuHandler
+WslMenu := Menu()
+WslMenu.Add('Nginx', WslNginxMenuHandler)
+WslMenu.Add('MySQL', WslMySQLMenuHandler)
+WslMenu.Add('Gitea', WslGiteaMenuHandler)
+Tray.Add("WSL", WslMenu)
+Tray.Add()
+Tray.Add('退出', ExitMenuHandler)
 
 ; 接管 Ctrl + Space，转到活动窗口
-^Space::ControlSend, , ^{Space}, A
+; ^Space::ControlSend, , ^{Space}, A
+^Space::ControlSend('^{Space}', , 'A')
 ; x
 return
 
-LdServiceStartMenuHandler:
-    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "net start ldcore"
-    TrayTip, , 启动成功, 1,
-    Menu, LdServiceMenu, Check, Enable
-    Menu, LdServiceMenu, UnCheck, Disable
-return
+WslNginxMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
+    Run 'wsl -d Debian -u root service nginx start', , 'Hide'
+}
 
-LdServiceStopMenuHandler:
-    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "net stop ldcore"
-    TrayTip, , 停止成功, 1,
-    Menu, LdServiceMenu, Check, Disable
-    Menu, LdServiceMenu, UnCheck, Enable
-return
+WslMySQLMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
+    Run 'wsl -d Debian -u root service mysql start', , 'Hide'
+}
 
-WslNginxMenuHandler:
-    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root service nginx start"
-return
+WslGiteaMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
+    Run 'wsl -d Debian -u root nohup /data/gitea/gitea-1.20.4-linux-amd64 web & > /data/gitea/nohup.log', , 'Hide'
+}
 
-WslMySQLMenuHandler:
-    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root service mysql start"
-return
-
-WslGiteaMenuHandler:
-    RunWait, cmd /c start /min "" PowerShell -WindowStyle Hidden -ExecutionPolicy Bypass -C "wsl -d Debian -u root nohup /data/gitea/gitea-1.20.4-linux-amd64 web & > /data/gitea/nohup.log"
-return
-
-ExitMenuHandler:
-    exitapp
-return
+ExitMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
+    ExitApp()
+    return
+}

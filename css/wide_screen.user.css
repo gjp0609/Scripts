@@ -1,3 +1,15 @@
+/* ==UserStyle==
+@name         宽屏适配
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  宽屏适配
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/wide_screen.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
 @-moz-document domain("cloud.allinpay.com") {
     .mgmt-content {
         max-width: 2000px;
@@ -15,6 +27,7 @@
         width: 400px !important;
     }
 }
+
 @-moz-document domain("developers.weixin.qq.com") {
     .footer,
     .page-inner {
@@ -22,6 +35,7 @@
         padding: 0 0 0 200px !important;
     }
 }
+
 @-moz-document domain("jianshu.com") {
     .post {
         width: 1600px !important;
@@ -31,6 +45,7 @@
         display: none;
     }
 }
+
 @-moz-document domain("juejin.cn") {
     .container {
         max-width: 1600px;
@@ -42,7 +57,12 @@
     .recommend-box {
         display: none;
     }
+
+    #juejin > div.view-container > main > div > div.sidebar.sidebar.top.sticky > div.sticky-block-box {
+        right: 0 !important;
+    }
 }
+
 @-moz-document domain("open.icbc.com.cn") {
     .header-nav {
         width: 99%;
@@ -53,6 +73,7 @@
         width: 150px !important;
     }
 }
+
 @-moz-document domain("open.unionpay.com") {
     #divModalDialogPubtest {
         top: 5%;
@@ -63,6 +84,7 @@
         font-size: 50px !important;
     }
 }
+
 @-moz-document domain("oschina.net") {
     .ui.container {
         width: 100% !important;
@@ -82,15 +104,27 @@
         display: none !important;
     }
 }
+
 @-moz-document domain("segmentfault.com") {
     .container {
         max-width: 1800px;
     }
 }
+
 @-moz-document domain("stackoverflow.com") {
     body > .container,
     #content {
         max-width: 2160px !important;
+    }
+}
+
+@-moz-document domain("www.zhihu.com") {
+    .Question-main {
+        width: 1200px !important;
+    }
+
+    .Question-mainColumn {
+        width: 1200px !important;
     }
 }
 
@@ -100,22 +134,28 @@
         max-width: 1800px;
     }
 }
+
 @-moz-document url-prefix("https://www.google.com/search")
 {
     #center_col,
     .g {
-        width: 1300px;
+        width: 1100px;
     }
     .g .IsZvec {
         max-width: 10000px;
-        width: 1300px;
+        width: 1100px;
     }
     /* 补充搜索结果 悬浮靠右 */
     #rhs {
-        margin-left: 1500px;
+        margin-left: 30px;
+        position: absolute;
+        right: 100px;
     }
     /* 修复重影问题 */
     .YacQv.gsfi {
         color: white;
+    }
+    .qJ4Pqe > div {
+        width: unset !important;
     }
 }

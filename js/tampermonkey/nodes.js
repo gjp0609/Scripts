@@ -6,12 +6,10 @@
 // @author       onysakura
 // @include      *
 // @grant        none
+// @noframes
 // ==/UserScript==
 
 (function () {
-    if (window.top !== window.self) { //don't run on frames or iframes
-        return;
-    }
     let COUNT = 30, // 圆点数量
         mouseX = 0,
         mouseY = 0,
@@ -26,47 +24,20 @@
         shadowColor = '#fd8', // 阴影颜色
         shadowOffsetX = 5, // 阴影x轴偏移
         shadowOffsetY = 5, // 阴影y轴偏移
-        shadowBlur = 15, // 阴影虚化扩散量
+        shadowBlur = 10, // 阴影虚化扩散量
         arr = [],
         style = [
-            [
-                '#feb',
-                '#fca',
-                '#fcc',
-                '#fac',
-                '#fbe',
-            ], [
-                '#bef',
-                '#bfe',
-                '#afc',
-                '#cfa',
-                '#cfc',
-            ], [
-                '#efb',
-                '#feb',
-                '#fca',
-                '#fcc',
-            ], [
-                '#fbe',
-                '#ebf',
-                '#caf',
-                '#ccf',
-                '#acf',
-            ], [
-                '#eee',
-                '#ddd',
-                '#ccc',
-                '#bbb',
-                '#aaa',
-                '#999',
-                '#888',
-            ]
+            ['#feb', '#fca', '#fcc', '#fac', '#fbe'],
+            ['#bef', '#bfe', '#afc', '#cfa', '#cfc'],
+            ['#efb', '#feb', '#fca', '#fcc'],
+            ['#fbe', '#ebf', '#caf', '#ccf', '#acf'],
+            ['#eee', '#ddd', '#ccc', '#bbb', '#aaa', '#999', '#888']
         ],
         color = style[0];
     let body = document.getElementsByTagName('body')[0];
-    let background = document.createElement("div");
+    let background = document.createElement('div');
     let canvas = document.createElement('canvas');
-    let ctx = canvas.getContext("2d");
+    let ctx = canvas.getContext('2d');
     body.insertBefore(background, body.firstChild);
     background.appendChild(canvas);
     background.setAttribute('style', 'position:fixed;z-index:-1;width: 100%;height: 100%');
@@ -76,25 +47,43 @@
     let height = canvas.clientHeight;
     mouseColor = getRandomColor();
     // 鼠标事件
-    body.addEventListener('mouseover', e => {
-        mouseX = e.x - getElementLeft(canvas);
-        mouseY = e.y - getElementTop(canvas);
-    }, true);
-    body.addEventListener('mousemove', e => {
-        mouseX = e.x - getElementLeft(canvas);
-        mouseY = e.y - getElementTop(canvas);
-    }, true);
-    body.addEventListener('mouseout', e => {
-        mouseX = 0;
-        mouseY = 0;
-    }, true);
-    body.addEventListener('dblclick', e => {
-        color = style[~~(Math.random() * style.length)];
-        for (let i = 0; i < arr.length; i++) {
-            arr[i].color = getRandomColor();
-        }
-        mouseColor = getRandomColor();
-    }, true);
+    body.addEventListener(
+        'mouseover',
+        (e) => {
+            mouseX = e.x - getElementLeft(canvas);
+            mouseY = e.y - getElementTop(canvas);
+        },
+        true
+    );
+    body.addEventListener(
+        'mousemove',
+        (e) => {
+            mouseX = e.x - getElementLeft(canvas);
+            mouseY = e.y - getElementTop(canvas);
+        },
+        true
+    );
+    body.addEventListener(
+        'mouseout',
+        (e) => {
+            mouseX = 0;
+            mouseY = 0;
+        },
+        true
+    );
+    body.addEventListener(
+        'dblclick',
+        (e) => {
+            color = style[~~(Math.random() * style.length)];
+            for (let i = 0; i < arr.length; i++) {
+                arr[i].color = getRandomColor();
+                arr[i].x = width / 2;
+                arr[i].y = height / 2;
+            }
+            mouseColor = getRandomColor();
+        },
+        true
+    );
 
     // 初始化点
     for (let i = 0; i < COUNT; i++) {
@@ -121,7 +110,7 @@
             ctx.fillStyle = k.color;
             ctx.fill();
             for (let j = 0; j < arr.length; j++) {
-                if (i != j) {
+                if (i !== j) {
                     drawLine(k, arr[j]);
                 }
             }
@@ -130,19 +119,22 @@
                 //ctx.arc(mouseX, mouseY, 2, 0, 2 * Math.PI);
                 //ctx.fillStyle = mouseColor;
                 //ctx.fill();
-                drawLine({
-                    x: mouseX,
-                    y: mouseY,
-                    xsKew: 0,
-                    ysKew: 0,
-                    r: 2,
-                    color: mouseColor
-                }, k);
+                drawLine(
+                    {
+                        x: mouseX,
+                        y: mouseY,
+                        xsKew: 0,
+                        ysKew: 0,
+                        r: 2,
+                        color: mouseColor
+                    },
+                    k
+                );
                 // 鼠标捕获
                 let d = calcDistance(mouseX, mouseY, k.x, k.y);
                 if (d < maxCatchDistance && d > maxCatchR) {
-                    k.x += (mouseX - k.x) / 600 * speed * 4;
-                    k.y += (mouseY - k.y) / 600 * speed * 4;
+                    k.x += ((mouseX - k.x) / 600) * speed * 4;
+                    k.y += ((mouseY - k.y) / 600) * speed * 4;
                 }
             }
             if (k.x + k.xsKew + k.r < width && k.x + k.xsKew - k.r > 0) {
@@ -222,7 +214,7 @@
         color = color.toLowerCase();
         //十六进制颜色值的正则表达式
         if (color.length === 4) {
-            let colorNew = "#";
+            let colorNew = '#';
             for (let i = 1; i < 4; i += 1) {
                 colorNew += color.slice(i, i + 1).concat(color.slice(i, i + 1));
             }
@@ -231,8 +223,8 @@
         //处理六位的颜色值
         let colorChange = [];
         for (let i = 1; i < 7; i += 2) {
-            colorChange.push(parseInt("0x" + color.slice(i, i + 2)));
+            colorChange.push(parseInt('0x' + color.slice(i, i + 2)));
         }
-        return 'rgba(' + colorChange.join(",") + ',' + alpha + ')'
+        return 'rgba(' + colorChange.join(',') + ',' + alpha + ')';
     }
 })();

@@ -1,5 +1,33 @@
 === Main
 
+==== image:https://www.gstatic.com/devrel-devsite/prod/v138136e2eb30b542aaba1f756fef1bb285a0aca3815d9b3afa69262b01441aa5/android/images/favicon.svg[,16,16] adb
+
+[source,powershell]
+----
+scoop install main/adb
+----
+
+==== image:https://gofrp.org/favicons/favicon-16x16.png[,16,16] frp
+
+[source,powershell]
+----
+scoop install main/frp
+----
+
+==== image:https://go.dev/favicon.ico[,16,16] Go
+
+[source,powershell]
+----
+scoop install main/go
+----
+
+==== image:https://www.mingw-w64.org/logo.svg[,16,16] GZIP
+
+[source,powershell]
+----
+scoop install main/gzip
+----
+
 ==== image:https://nodejs.org/favicon.ico[,16,16] Node.js
 
 [source,powershell]
@@ -11,11 +39,4 @@ nvm install 20
 nvm use 20
 npm install -g pnpm
 pnpm config set registry https://registry.npmmirror.com
-----
-
-==== image:https://go.dev/favicon.ico[,16,16] Go
-
-[source,powershell]
-----
-scoop install main/go
 ----

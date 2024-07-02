@@ -32,5 +32,6 @@ module.exports = {
     htmlWhitespaceSensitivity: 'css',
     vueIndentScriptAndStyle: true,
     // 换行符使用 lf
-    endOfLine: 'lf'
+    endOfLine: 'lf',
+    plugins: ['prettier-plugin-sh']
 };

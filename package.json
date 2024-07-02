@@ -15,21 +15,36 @@
         "_install": "pnpm install",
         "_build": "tsc --build",
         "_chaoxing": "tsc --build & node js/puppeteer/chaoxing.js",
-        "_test": "tsc --build & node js/puppeteer/test.js"
+        "_test": "tsc --build & node js/puppeteer/test.js",
+        "_handRule": "node inspect js/mysql/handRule.js",
+        "_testsql": "node js/mysql/test.js",
+        "_cfw_parser": "node js/config/cfw/parser.js"
     },
     "type": "module",
     "dependencies": {
-        "puppeteer-core": "^15.3.2"
+        "axios": "^1.6.2",
+        "big.js": "^6.2.1",
+        "cheerio": "1.0.0-rc.12",
+        "dayjs": "^1.11.10",
+        "fastify": "^4.26.1",
+        "lodash": "^4.17.21",
+        "mysql2": "^3.6.5",
+        "puppeteer-core": "^21.6.1",
+        "redis": "^4.6.12",
+        "yaml": "^2.3.4"
     },
     "devDependencies": {
-        "@types/node": "^18.7.23",
-        "@typescript-eslint/eslint-plugin": "^5.38.1",
-        "@typescript-eslint/parser": "^5.38.1",
-        "eslint": "^8.24.0",
-        "eslint-config-alloy": "^4.7.0",
-        "eslint-config-prettier": "^8.5.0",
-        "eslint-plugin-prettier": "^4.2.1",
-        "prettier": "^2.7.1",
-        "typescript": "^4.8.3"
+        "@playwright/test": "^1.40.1",
+        "@types/node": "^20.10.5",
+        "@typescript-eslint/eslint-plugin": "^6.16.0",
+        "@typescript-eslint/parser": "^6.16.0",
+        "eslint": "^8.56.0",
+        "eslint-config-alloy": "^5.1.2",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.1.2",
+        "pino-pretty": "^10.3.1",
+        "prettier": "^3.1.1",
+        "prettier-plugin-sh": "^0.14.0",
+        "typescript": "^5.3.3"
     }
 }

@@ -44,6 +44,8 @@ proxy-providers:
   CustomServer:
     type: file
     path: ./sub/CustomServer.yaml
+    health-check:
+      enable: false
 proxy-groups:
   - name: PROXY
     type: select
@@ -123,5 +125,5 @@ rules:
   - RULE-SET,third-party-applications,DIRECT
   - RULE-SET,third-party-reject,REJECT
   - RULE-SET,third-party-gfw,PROXY
-  - RULE-SET,third-party-tld-not-cn,PROXY
+#  - RULE-SET,third-party-tld-not-cn,PROXY
   - MATCH,DIRECT

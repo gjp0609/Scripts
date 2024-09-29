@@ -25,13 +25,14 @@
 
 (function () {
     'use strict';
+
     GM_registerMenuCommand(
         '使用谷歌翻译此页面',
         () => window.open(`https://translate.google.com/translate?js=n&sl=auto&tl=zh-CN&u=${location.href}`, '_blank').focus(),
         't'
     );
 
-    const REQUEST_TIMEOUT = 3000; // 请求超时时间
+    const REQUEST_TIMEOUT = 10000; // 请求超时时间
     const translatorMap = {
         source: {
             enabled: true,
@@ -71,13 +72,13 @@
             url: 'https://cn.bing.com/dict'
         },
         caiyun: {
-            enabled: true,
+            enabled: false,
             color: '#ddc35d',
             name: '彩云',
             api: {
-                // 免费调用量 100 万字符/月
+                // 免费调用量没了
                 url: 'http://api.interpreter.caiyunai.com/v1/translator',
-                appid: '3975l6lr5pcbvidl6jl2',
+                appid: '-',
                 query: 'https://dashboard.caiyunapp.com/v1/token/',
                 doc: 'https://docs.caiyunapp.com/blog/2018/09/03/lingocloud-api/'
             }
@@ -89,6 +90,15 @@
             api: {
                 // 免费自建 docker
                 url: '-'
+            }
+        },
+        deepseek: {
+            enabled: true,
+            color: '#4D6BFE',
+            name: 'LLM',
+            api: {
+                url: 'https://api.deepseek.com/chat/completions',
+                key: '-'
             }
         },
         google: {
@@ -155,18 +165,18 @@
                     { name: 'icon' },
                     this.showIcon
                         ? [
-                            h(
-                                'div',
-                                {
-                                    id: 'OnySakuraTranslatorShowIcon',
-                                    style: `top: ${this.mouseY}px; left: ${this.mouseX + 10}px;`,
-                                    onMousedown: (e) => e.stopPropagation(),
-                                    onMouseup: (e) => e.stopPropagation(),
-                                    onClick: () => this.showResultModal()
-                                },
-                                ['译']
-                            )
-                        ]
+                              h(
+                                  'div',
+                                  {
+                                      id: 'OnySakuraTranslatorShowIcon',
+                                      style: `top: ${this.mouseY}px; left: ${this.mouseX + 10}px;`,
+                                      onMousedown: (e) => e.stopPropagation(),
+                                      onMouseup: (e) => e.stopPropagation(),
+                                      onClick: () => this.showResultModal()
+                                  },
+                                  ['译']
+                              )
+                          ]
                         : []
                 ),
                 h(
@@ -174,58 +184,58 @@
                     { name: 'result' },
                     this.showResult
                         ? [
-                            h(
-                                'div',
-                                {
-                                    id: 'OnySakuraTranslatorResult',
-                                    style: `
+                              h(
+                                  'div',
+                                  {
+                                      id: 'OnySakuraTranslatorResult',
+                                      style: `
                                           ${this.resultPos.top ? 'top: ' + this.resultPos.top : ''};
                                           ${this.resultPos.right ? 'right: ' + this.resultPos.right : ''};
                                           ${this.resultPos.bottom ? 'bottom: ' + this.resultPos.bottom : ''};
                                           ${this.resultPos.left ? 'left: ' + this.resultPos.left : ''};
                                       `,
-                                    onMousedown: (e) => e.stopPropagation()
-                                },
-                                Object.keys(this.translatorList)
-                                    .map((key) => this.translatorList[key])
-                                    .filter((it) => it.enabled)
-                                    .map((translator) =>
-                                        h(
-                                            'div',
-                                            {
-                                                class: 'translateResult'
-                                            },
-                                            [
-                                                h(
-                                                    'span',
-                                                    {
-                                                        class: 'translatorName',
-                                                        style: `color: ${translator.color};`,
-                                                        onClick: () => this.showConfigModal()
-                                                    },
-                                                    [translator.name]
-                                                ),
-                                                '：',
-                                                translator.result.confidence
-                                                    ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
-                                                    : h('span', {}, [translator.result.text]),
-                                                translator.result.dict?.map((it) =>
-                                                    h('div', { class: 'OnySakuraTranslator_dict' }, [
-                                                        h(
-                                                            'span',
-                                                            {
-                                                                class: 'pos pos_' + it.index
-                                                            },
-                                                            [it.pos]
-                                                        ),
-                                                        h('span', { class: 'terms' }, [it.def])
-                                                    ])
-                                                )
-                                            ]
-                                        )
-                                    )
-                            )
-                        ]
+                                      onMousedown: (e) => e.stopPropagation()
+                                  },
+                                  Object.keys(this.translatorList)
+                                      .map((key) => this.translatorList[key])
+                                      .filter((it) => it.enabled)
+                                      .map((translator) =>
+                                          h(
+                                              'div',
+                                              {
+                                                  class: 'translateResult'
+                                              },
+                                              [
+                                                  h(
+                                                      'span',
+                                                      {
+                                                          class: 'translatorName',
+                                                          style: `color: ${translator.color};`,
+                                                          onClick: () => this.showConfigModal()
+                                                      },
+                                                      [translator.name]
+                                                  ),
+                                                  '：',
+                                                  translator.result.confidence
+                                                      ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
+                                                      : h('span', {}, [translator.result.text]),
+                                                  translator.result.dict?.map((it) =>
+                                                      h('div', { class: 'OnySakuraTranslator_dict' }, [
+                                                          h(
+                                                              'span',
+                                                              {
+                                                                  class: 'pos pos_' + it.index
+                                                              },
+                                                              [it.pos]
+                                                          ),
+                                                          h('span', { class: 'terms' }, [it.def])
+                                                      ])
+                                                  )
+                                              ]
+                                          )
+                                      )
+                              )
+                          ]
                         : []
                 ),
                 h(
@@ -233,152 +243,152 @@
                     { name: 'config' },
                     this.showConfig
                         ? [
-                            h(
-                                'div',
-                                {
-                                    id: 'OnySakuraTranslatorConfig',
-                                    onMousedown: (e) => e.stopPropagation(),
-                                    onMouseup: (e) => e.stopPropagation()
-                                },
-                                [
-                                    h(
-                                        'form',
-                                        {
-                                            action: 'javascript:void(0);'
-                                        },
-                                        [
-                                            h(
-                                                'div',
-                                                {
-                                                    class: 'configItem title'
-                                                },
-                                                [h('span', {}, ['修改配置'])]
-                                            ),
-                                            h(
-                                                'div',
-                                                {
-                                                    class: 'configItem translator'
-                                                },
-                                                [
-                                                    h('span', {}, ['开关：']),
-                                                    Object.keys(this.translatorList).map((key) =>
-                                                        h('label', {}, [
-                                                            h(
-                                                                'input',
-                                                                {
-                                                                    type: 'checkbox',
-                                                                    name: this.translatorList[key].name,
-                                                                    checked: this.translatorList[key].enabled,
-                                                                    disabled: key === 'source',
-                                                                    onInput: (e) => {
-                                                                        this.translatorList[key].enabled = e.target.checked;
-                                                                        this.$emit('input', e.target.checked);
-                                                                    }
-                                                                },
-                                                                []
-                                                            ),
-                                                            this.translatorList[key].name
-                                                        ])
-                                                    )
-                                                ]
-                                            ),
-                                            h(
-                                                'div',
-                                                {
-                                                    class: 'configItem pos'
-                                                },
-                                                [
-                                                    h('span', {}, ['固定位置：']),
-                                                    h('label', {}, [
-                                                        h(
-                                                            'input',
-                                                            {
-                                                                type: 'checkbox',
-                                                                name: 'fixPos',
-                                                                checked: this.fixPos,
-                                                                onInput: (e) => {
-                                                                    this.fixPos = e.target.checked;
-                                                                    this.$emit('input', e.target.checked);
-                                                                }
-                                                            },
-                                                            []
-                                                        )
-                                                    ]),
-                                                    h('div', { class: 'posValue' }, [
-                                                        h('span', {}, ['Top:']),
-                                                        h(
-                                                            'input',
-                                                            {
-                                                                type: 'text',
-                                                                name: 'top',
-                                                                readonly: !this.fixPos,
-                                                                value: this.resultPos.top,
-                                                                onInput: (e) => {
-                                                                    this.resultPos.top = e.target.value;
-                                                                    this.$emit('input', e.target.value);
-                                                                }
-                                                            },
-                                                            []
-                                                        )
-                                                    ]),
-                                                    h('div', { class: 'posValue' }, [
-                                                        h('span', {}, ['Right:']),
-                                                        h(
-                                                            'input',
-                                                            {
-                                                                type: 'text',
-                                                                name: 'right',
-                                                                readonly: !this.fixPos,
-                                                                value: this.resultPos.right,
-                                                                onInput: (e) => {
-                                                                    this.resultPos.right = e.target.value;
-                                                                    this.$emit('input', e.target.value);
-                                                                }
-                                                            },
-                                                            []
-                                                        )
-                                                    ]),
-                                                    h('div', { class: 'posValue' }, [
-                                                        h('span', {}, ['Bottom:']),
-                                                        h(
-                                                            'input',
-                                                            {
-                                                                type: 'text',
-                                                                name: 'bottom',
-                                                                readonly: !this.fixPos,
-                                                                value: this.resultPos.bottom,
-                                                                onInput: (e) => {
-                                                                    this.resultPos.bottom = e.target.value;
-                                                                    this.$emit('input', e.target.value);
-                                                                }
-                                                            },
-                                                            []
-                                                        )
-                                                    ]),
-                                                    h('div', { class: 'posValue' }, [
-                                                        h('span', {}, ['Left:']),
-                                                        h(
-                                                            'input',
-                                                            {
-                                                                type: 'text',
-                                                                name: 'left',
-                                                                readonly: !this.fixPos,
-                                                                value: this.resultPos.left,
-                                                                onInput: (e) => {
-                                                                    this.resultPos.left = e.target.value;
-                                                                    this.$emit('input', e.target.value);
-                                                                }
-                                                            },
-                                                            []
-                                                        )
-                                                    ])
-                                                ]
-                                            )
-                                        ]
-                                    )
-                                ]
-                            )
-                        ]
+                              h(
+                                  'div',
+                                  {
+                                      id: 'OnySakuraTranslatorConfig',
+                                      onMousedown: (e) => e.stopPropagation(),
+                                      onMouseup: (e) => e.stopPropagation()
+                                  },
+                                  [
+                                      h(
+                                          'form',
+                                          {
+                                              action: 'javascript:void(0);'
+                                          },
+                                          [
+                                              h(
+                                                  'div',
+                                                  {
+                                                      class: 'configItem title'
+                                                  },
+                                                  [h('span', {}, ['修改配置'])]
+                                              ),
+                                              h(
+                                                  'div',
+                                                  {
+                                                      class: 'configItem translator'
+                                                  },
+                                                  [
+                                                      h('span', {}, ['开关：']),
+                                                      Object.keys(this.translatorList).map((key) =>
+                                                          h('label', {}, [
+                                                              h(
+                                                                  'input',
+                                                                  {
+                                                                      type: 'checkbox',
+                                                                      name: this.translatorList[key].name,
+                                                                      checked: this.translatorList[key].enabled,
+                                                                      disabled: key === 'source',
+                                                                      onInput: (e) => {
+                                                                          this.translatorList[key].enabled = e.target.checked;
+                                                                          this.$emit('input', e.target.checked);
+                                                                      }
+                                                                  },
+                                                                  []
+                                                              ),
+                                                              this.translatorList[key].name
+                                                          ])
+                                                      )
+                                                  ]
+                                              ),
+                                              h(
+                                                  'div',
+                                                  {
+                                                      class: 'configItem pos'
+                                                  },
+                                                  [
+                                                      h('span', {}, ['固定位置：']),
+                                                      h('label', {}, [
+                                                          h(
+                                                              'input',
+                                                              {
+                                                                  type: 'checkbox',
+                                                                  name: 'fixPos',
+                                                                  checked: this.fixPos,
+                                                                  onInput: (e) => {
+                                                                      this.fixPos = e.target.checked;
+                                                                      this.$emit('input', e.target.checked);
+                                                                  }
+                                                              },
+                                                              []
+                                                          )
+                                                      ]),
+                                                      h('div', { class: 'posValue' }, [
+                                                          h('span', {}, ['Top:']),
+                                                          h(
+                                                              'input',
+                                                              {
+                                                                  type: 'text',
+                                                                  name: 'top',
+                                                                  readonly: !this.fixPos,
+                                                                  value: this.resultPos.top,
+                                                                  onInput: (e) => {
+                                                                      this.resultPos.top = e.target.value;
+                                                                      this.$emit('input', e.target.value);
+                                                                  }
+                                                              },
+                                                              []
+                                                          )
+                                                      ]),
+                                                      h('div', { class: 'posValue' }, [
+                                                          h('span', {}, ['Right:']),
+                                                          h(
+                                                              'input',
+                                                              {
+                                                                  type: 'text',
+                                                                  name: 'right',
+                                                                  readonly: !this.fixPos,
+                                                                  value: this.resultPos.right,
+                                                                  onInput: (e) => {
+                                                                      this.resultPos.right = e.target.value;
+                                                                      this.$emit('input', e.target.value);
+                                                                  }
+                                                              },
+                                                              []
+                                                          )
+                                                      ]),
+                                                      h('div', { class: 'posValue' }, [
+                                                          h('span', {}, ['Bottom:']),
+                                                          h(
+                                                              'input',
+                                                              {
+                                                                  type: 'text',
+                                                                  name: 'bottom',
+                                                                  readonly: !this.fixPos,
+                                                                  value: this.resultPos.bottom,
+                                                                  onInput: (e) => {
+                                                                      this.resultPos.bottom = e.target.value;
+                                                                      this.$emit('input', e.target.value);
+                                                                  }
+                                                              },
+                                                              []
+                                                          )
+                                                      ]),
+                                                      h('div', { class: 'posValue' }, [
+                                                          h('span', {}, ['Left:']),
+                                                          h(
+                                                              'input',
+                                                              {
+                                                                  type: 'text',
+                                                                  name: 'left',
+                                                                  readonly: !this.fixPos,
+                                                                  value: this.resultPos.left,
+                                                                  onInput: (e) => {
+                                                                      this.resultPos.left = e.target.value;
+                                                                      this.$emit('input', e.target.value);
+                                                                  }
+                                                              },
+                                                              []
+                                                          )
+                                                      ])
+                                                  ]
+                                              )
+                                          ]
+                                      )
+                                  ]
+                              )
+                          ]
                         : []
                 )
             ];
@@ -737,6 +747,44 @@
                         this.result.text = json.data;
                     } else {
                         throw Error(json.msg);
+                    }
+                }
+            }
+        });
+    };
+
+    // deepseek
+    translatorMap.deepseek.startTranslate = function (translateText) {
+        GM_xmlhttpRequest({
+            method: 'POST',
+            url: this.api.url,
+            data: JSON.stringify({
+                model: 'deepseek-chat',
+                messages: [
+                    {
+                        role: 'system',
+                        content:
+                            '你是一个翻译软件，用户输入一段话，你翻译为中文，只需要输出翻译结果，总长度超过500字时，只翻译前500字；如果输入为单词或缩写，详细解释单词或缩写的含义但不能超过100字；如果输入为中文，则翻译为英文。'
+                    },
+                    {
+                        role: 'user',
+                        content: translateText
+                    }
+                ],
+                stream: false
+            }),
+            timeout: REQUEST_TIMEOUT,
+            headers: {
+                'Authorization': 'Bearer ' + this.api.key,
+                'Content-Type': 'application/json'
+            },
+            onload: (xhr) => {
+                if (isXhrSuccess(xhr)) {
+                    let json = JSON.parse(xhr.responseText);
+                    if (json.choices && json.choices.length > 0) {
+                        this.result.text = json.choices[0]?.message?.content;
+                    } else {
+                        throw Error(xhr.responseText);
                     }
                 }
             }

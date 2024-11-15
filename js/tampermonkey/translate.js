@@ -92,7 +92,7 @@
                 url: '-'
             }
         },
-        deepseek: {
+        llm: {
             enabled: true,
             color: '#4D6BFE',
             name: 'LLM',
@@ -140,7 +140,7 @@
     let shadowRoot = shadowParent.attachShadow({ mode: 'open' });
     // style
     let style = document.createElement('style');
-    style.textContent = `#OnySakuraTranslatorParent .icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorParent .config-enter-active,#OnySakuraTranslatorParent .icon-enter-active,#OnySakuraTranslatorParent .result-enter-active{transition:.1s ease-in}#OnySakuraTranslatorParent .icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorParent .config-leave-active,#OnySakuraTranslatorParent .icon-leave-active,#OnySakuraTranslatorParent .result-leave-active{transition:.1s ease-out}#OnySakuraTranslatorParent .config-enter,#OnySakuraTranslatorParent .config-leave-to,#OnySakuraTranslatorParent .result-enter,#OnySakuraTranslatorParent .result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon{background-color:#fff;border:2px solid #fd6848;border-radius:100%;box-shadow:3px 3px 5px gray;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult{font-size:15px;color:#000;line-height:25px;background-color:#fffaf6;border:2px solid #fd6848;border-radius:10px;padding:5px;margin:auto;position:fixed;z-index:100000001}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult{margin:8px;padding-top:8px;border-top:1px solid #ffc1c1;text-align:left}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .translatorName{display:inline-block;width:40px;cursor:pointer}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict{display:flex;margin-top:5px;min-height:15px;line-height:15px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos{flex:0 0 50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_1{color:#369}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_2{color:#396}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_3{color:#639}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_4{color:#693}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_5{color:#936}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .pos.pos_6{color:#963}#OnySakuraTranslatorParent #OnySakuraTranslatorResult .translateResult .OnySakuraTranslator_dict .terms{margin-left:10px;font-size:12px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig{background-color:#fff;border:2px solid #fd6848;border-radius:5px;box-shadow:5px 5px 10px gray;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator span{display:inline-block;width:100px;padding:3px 5px 3px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos label,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator label{padding:10px 15px 10px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue{margin-left:34px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue span{width:69px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue input,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue input{width:50px}`;
+    style.textContent = `#OnySakuraTranslatorParent *{font-family:'等距更纱黑体 SC','LXGW WenKai Mono','思源黑体','Source Han Sans CN',sans-serif;box-sizing:border-box;scrollbar-color:#fdebdd #fffaf6;scrollbar-width:thin}#OnySakuraTranslatorParent code{font-family:MPlus,'等距更纱黑体 SC','LXGW WenKai Mono',monospace;background-color:#fdebdd;border-radius:4px;padding:0 6px}#OnySakuraTranslatorParent .icon-enter{transform:scale(.3,.3)}#OnySakuraTranslatorParent .config-enter-active,#OnySakuraTranslatorParent .icon-enter-active,#OnySakuraTranslatorParent .result-enter-active{transition:all .1s ease-in}#OnySakuraTranslatorParent .icon-leave-to{transform:scale(0,0)}#OnySakuraTranslatorParent .config-leave-active,#OnySakuraTranslatorParent .icon-leave-active,#OnySakuraTranslatorParent .result-leave-active{transition:all .1s ease-out}#OnySakuraTranslatorParent .config-enter,#OnySakuraTranslatorParent .config-leave-to,#OnySakuraTranslatorParent .result-enter,#OnySakuraTranslatorParent .result-leave-to{transform:scale(1,0)}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon{background-color:#fff;border:2px solid #fd6848;border-radius:100%;box-shadow:3px 3px 5px grey;color:#fd6848;box-sizing:border-box;width:30px;height:30px;text-align:center;line-height:26px;font-size:17px;cursor:pointer;position:fixed;opacity:1;z-index:30000}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:hover{background-color:#fd6848;color:#fff}#OnySakuraTranslatorParent #OnySakuraTranslatorShowIcon:active{margin-top:2px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult{max-height:60vh;max-width:60vw;font-size:15px;color:#000;line-height:25px;background-color:#fffaf6;border:2px solid #fd6848;border-radius:10px;overflow:auto;padding:5px;margin:auto;position:fixed;z-index:100000001;display:flex}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent{overflow:auto}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult{margin:8px;padding-top:8px;border-top:1px solid #ffc1c1;text-align:left;display:flex}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult:first-of-type{border-top:0}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .translatorName{flex:0 0 50px;cursor:pointer;display:inline-flex;justify-content:space-between;align-content:center}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict{display:flex;margin-top:5px;min-height:15px;line-height:15px}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos{flex:0 0 50px;font-size:10px;font-style:italic;display:inline-block;text-align:right}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_1{color:#369}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_2{color:#396}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_3{color:#639}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_4{color:#693}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_5{color:#936}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .pos.pos_6{color:#963}#OnySakuraTranslatorParent #OnySakuraTranslatorResult #OnySakuraTranslatorResultContent .translateResult .OnySakuraTranslator_dict .terms{margin-left:10px;font-size:12px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig{background-color:#fff;border:2px solid #fd6848;border-radius:5px;box-shadow:5px 5px 10px grey;color:#fd6848;box-sizing:border-box;width:800px;height:360px;padding:30px;text-align:left;line-height:30px;font-size:15px;cursor:pointer;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:100000005}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem{margin-bottom:20px;margin-left:20px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.title{font-size:20px;font-weight:700;text-align:center}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator span{display:inline-block;width:100px;padding:3px 5px 3px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos label,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator label{padding:10px 15px 10px 0}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue{margin-left:34px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue span,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue span{width:69px}#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.pos .posValue input,#OnySakuraTranslatorParent #OnySakuraTranslatorConfig .configItem.translator .posValue input{width:50px}`;
     shadowRoot.appendChild(style);
     // html
     const rootDiv = document.createElement('div');
@@ -196,44 +196,55 @@
                                       `,
                                       onMousedown: (e) => e.stopPropagation()
                                   },
-                                  Object.keys(this.translatorList)
-                                      .map((key) => this.translatorList[key])
-                                      .filter((it) => it.enabled)
-                                      .map((translator) =>
-                                          h(
-                                              'div',
-                                              {
-                                                  class: 'translateResult'
-                                              },
-                                              [
+                                  [
+                                      h(
+                                          'div',
+                                          { id: 'OnySakuraTranslatorResultContent' },
+                                          Object.keys(this.translatorList)
+                                              .map((key) => this.translatorList[key])
+                                              .filter((it) => it.enabled)
+                                              .map((translator) =>
                                                   h(
-                                                      'span',
+                                                      'div',
                                                       {
-                                                          class: 'translatorName',
-                                                          style: `color: ${translator.color};`,
-                                                          onClick: () => this.showConfigModal()
+                                                          class: 'translateResult'
                                                       },
-                                                      [translator.name]
-                                                  ),
-                                                  '：',
-                                                  translator.result.confidence
-                                                      ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
-                                                      : h('span', {}, [translator.result.text]),
-                                                  translator.result.dict?.map((it) =>
-                                                      h('div', { class: 'OnySakuraTranslator_dict' }, [
+                                                      [
                                                           h(
                                                               'span',
                                                               {
-                                                                  class: 'pos pos_' + it.index
+                                                                  class: 'translatorName',
+                                                                  style: `color: ${translator.color};`,
+                                                                  onClick: () => this.showConfigModal()
                                                               },
-                                                              [it.pos]
+                                                              [h('span', {}, [translator.name]), h('span', {}, ['：'])]
                                                           ),
-                                                          h('span', { class: 'terms' }, [it.def])
-                                                      ])
+                                                          translator.result.confidence
+                                                              ? h('abbr', { title: translator.result.confidence }, [translator.result.text])
+                                                              : h('span', {}, [
+                                                                    translator.result.text
+                                                                        .split(/(`[^`]+`|```[^`]+```)/g)
+                                                                        .map((part, i) =>
+                                                                            i % 2 ? h('code', {}, part.replace(/^`+|`+$/g, '').trim()) : part
+                                                                        )
+                                                                ]),
+                                                          translator.result.dict?.map((it) =>
+                                                              h('div', { class: 'OnySakuraTranslator_dict' }, [
+                                                                  h(
+                                                                      'span',
+                                                                      {
+                                                                          class: 'pos pos_' + it.index
+                                                                      },
+                                                                      [it.pos]
+                                                                  ),
+                                                                  h('span', { class: 'terms' }, [it.def])
+                                                              ])
+                                                          )
+                                                      ]
                                                   )
-                                              ]
-                                          )
+                                              )
                                       )
+                                  ]
                               )
                           ]
                         : []
@@ -753,8 +764,11 @@
         });
     };
 
-    // deepseek
-    translatorMap.deepseek.startTranslate = function (translateText) {
+    // llm
+    translatorMap.llm.startTranslate = function (translateText) {
+        let partialText = '';
+
+        // 发起请求，开启 stream 模式
         GM_xmlhttpRequest({
             method: 'POST',
             url: this.api.url,
@@ -771,22 +785,64 @@
                         content: translateText
                     }
                 ],
-                stream: false
+                stream: true
             }),
             timeout: REQUEST_TIMEOUT,
             headers: {
                 'Authorization': 'Bearer ' + this.api.key,
                 'Content-Type': 'application/json'
             },
-            onload: (xhr) => {
-                if (isXhrSuccess(xhr)) {
-                    let json = JSON.parse(xhr.responseText);
-                    if (json.choices && json.choices.length > 0) {
-                        this.result.text = json.choices[0]?.message?.content;
-                    } else {
-                        throw Error(xhr.responseText);
-                    }
+            responseType: 'stream',
+            onloadstart: (xhr) => {
+                const reader = xhr.response.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let that = this;
+
+                // 读取流数据
+                function readStream() {
+                    reader
+                        .read()
+                        .then(({ done, value }) => {
+                            if (done) {
+                                return;
+                            }
+                            const chunk = decoder.decode(value, { stream: true });
+
+                            // 处理增量更新
+                            try {
+                                const lines = chunk.split('\n');
+                                for (const line of lines) {
+                                    if (line.trim() === '' || !line.startsWith('data:')) {
+                                        continue;
+                                    }
+
+                                    const jsonStr = line.replace(/^data:\s*/, '');
+                                    if (jsonStr === '[DONE]') {
+                                        return;
+                                    }
+
+                                    const json = JSON.parse(jsonStr);
+                                    const content = json.choices?.[0]?.delta?.content || '';
+                                    partialText += content;
+                                    that.result.text = partialText;
+                                }
+                            } catch (e) {
+                                console.error('Stream parsing error:', e);
+                            }
+
+                            // 继续读取流
+                            readStream();
+                        })
+                        .catch((error) => {
+                            console.error('Stream read error:', error);
+                        });
                 }
+
+                // 开始读取流
+                readStream();
+            },
+            onerror: (xhr) => {
+                console.error('Request failed:', xhr.statusText);
             }
         });
     };

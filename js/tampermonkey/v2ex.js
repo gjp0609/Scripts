@@ -1,38 +1,49 @@
 // ==UserScript==
-// @name         * V2EX
+// @name         * v2ex
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      1.0
-// @description  V2EX
-// @author       onysakura
-// @require      https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js
-// @include      *v2ex.com/t/*
-// @icon         https://www.google.com/s2/favicons?domain=v2ex.com
+// @version      1.1
+// @description  点击回复用户名跳转
+// @author       noif
+// @match        *://*.v2ex.com/*
 // @grant        none
+// @noframes
+// @require      file:///R:/Files/Workspace/Mine/Scripts/js/tampermonkey/v2ex.js
 // ==/UserScript==
 
 (function () {
-    let cells = $('#Wrapper').find('.content').find('#Main').find('.box').find('.cell')
-    cells.find('.reply_content').find('a').each((key, pointer) => {
-        if (pointer.href && pointer.href.indexOf('/member/') >= 0) {
-            $(pointer).attr('data', 'https://v2ex.com' + pointer.href.substr(pointer.href.indexOf('/member/')))
-            pointer.href = 'javascript:void(0);'
-            pointer.addEventListener('click', ev => {
-                let currentOffset
-                $(pointer).parents('.cell').each((key, cell) => currentOffset = cell.offsetTop)
-                cells.find('strong').find('a').each((key, member) => {
-                    $(member).parents('.cell').each((key, parent) => {
-                        if (member.innerText === pointer.innerText) {
-                            $(parent).css('background-color', '#ffefdf')
-                            if (parent.offsetTop < currentOffset) {
-                                parent.scrollIntoView()
+    setTimeout(() => {
+        let allMap = new Map();
+        document.querySelectorAll('#Main .box .cell strong a.dark').forEach((a) => {
+            const username = a.textContent;
+            if (!allMap.has(username)) {
+                allMap.set(username, []);
+            }
+            allMap.get(username).push(a);
+        });
+        document.querySelectorAll('#Main .box .cell .reply_content a').forEach((a) => {
+            if (a.previousSibling?.textContent === '@') {
+                a.href = 'javascript:void(0);';
+                a.style.textShadow = `0 0 10px #ffaa0099`;
+                a.addEventListener('click', () => {
+                    if (allMap.has(a.textContent)) {
+                        let previous;
+                        const list = allMap.get(a.textContent);
+                        for (let i = 0; i < list.length; i++) {
+                            const item = list[i];
+                            if (previous && item.getBoundingClientRect().y > a.getBoundingClientRect().y) {
+                                break;
                             }
-                        } else {
-                            $(parent).css('background-color', '')
+                            previous = item;
                         }
-                    })
-                })
-                $(pointer).parents('.cell').each((key, cell) => $(cell).css('background-color', '#dfefff'))
-            })
-        }
-    })
+                        if (previous) {
+                            [...allMap.values()].forEach((it) => it.forEach((it) => (it.closest('.cell').style.backgroundColor = null)));
+                            previous.scrollIntoView();
+                            previous.closest('.cell').style.backgroundColor = '#66ccff11';
+                            a.closest('.cell').style.backgroundColor = '#ffcc6611';
+                        }
+                    }
+                });
+            }
+        });
+    }, 500);
 })();

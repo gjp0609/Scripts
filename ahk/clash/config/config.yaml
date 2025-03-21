@@ -5,10 +5,10 @@ allow-lan: false
 mode: rule
 log-level: debug
 external-controller: "0.0.0.0:9090"
-secret: ""
+secret: "123456"
 tun:
   enable: true
-  stack: system
+  stack: gvisor
   dns-hijack:
     - 198.18.0.2:53
   auto-route: true
@@ -19,14 +19,14 @@ dns:
   listen: "0.0.0.0:53"
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  nameserver:
-    - "https://dns.alidns.com/dns-query"
-    - "https://doh.pub/dns-query"
-    - "tls://dns.rubyfish.cn:853"
-  fallback:
-    - "tls://1.0.0.1:853"
-    - "tls://8.8.4.4:853"
-    - "https://doh.opendns.com/dns-query"
+  # nameserver:
+  #   - "https://dns.alidns.com/dns-query"
+  #   - "https://doh.pub/dns-query"
+  #   - "https://dns.rubyfish.cn/dns-query"
+  # fallback:
+  #   - "tls://1.0.0.1:853"
+  #   - "tls://8.8.4.4:853"
+  #   - "https://doh.opendns.com/dns-query"
   fallback-filter:
     geoip: true
     ipcidr:
@@ -66,11 +66,11 @@ rule-providers:
     path: ./ruleset/custom-proxy.yaml
   mine-block:
     type: file
-    behavior: domain
+    behavior: classical
     path: ./ruleset/mine-block.yaml
   mine-direct:
     type: file
-    behavior: domain
+    behavior: classical
     path: ./ruleset/mine-direct.yaml
   mine-proxy:
     type: file
@@ -125,5 +125,5 @@ rules:
   - RULE-SET,third-party-applications,DIRECT
   - RULE-SET,third-party-reject,REJECT
   - RULE-SET,third-party-gfw,PROXY
-#  - RULE-SET,third-party-tld-not-cn,PROXY
-  - MATCH,DIRECT
+  - RULE-SET,third-party-tld-not-cn,PROXY
+  - MATCH,CUSTOM

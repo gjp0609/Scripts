@@ -1,2 +1,6 @@
 payload:
-  - '+.brave.com'
+  - DOMAIN-SUFFIX,brave.com
+  - DOMAIN-SUFFIX,gvt1.com
+  - DOMAIN-SUFFIX,githubusercontent.com
+  - PROCESS-NAME,jetbrains-toolbox.exe
+  - PROCESS-NAME,rustdesk.exe

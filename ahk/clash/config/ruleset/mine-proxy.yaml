@@ -1,12 +1,12 @@
 payload:
+  # LLM
   - '+.auth0.com'
-  - '+.bing.com'
   - '+.chatgpt.com'
-  - '+.codesandbox.io'
-  - '+.gofrp.org'
-  - '+.jsfiddle.net'
-  - '+.live.com'
-  - '+.netlify.app'
   - '+.openai.com'
-  - '+.tortoisesvn.net'
-  - '+.unpkg.com'
+  - '+.cursor.com'
+  - '+.cursor.sh'
+  - '+.trae.ai'
+  - 'ollama.com'
+  - '+.ollama.com'
+  # tmp
+  # - '+.ubuntu.com'

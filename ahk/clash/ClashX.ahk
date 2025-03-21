@@ -32,7 +32,15 @@ Tray.Add()
 Tray.Add('管理页面', ConfigMenuHandler)
 Tray.Add()
 Tray.Add('退出', ExitMenuHandler)
+
+SetTimer AutoStart, -30000
+
 return
+
+AutoStart() {
+    StartMenuHandler("", "", "")
+    return
+}
 
 StartMenuHandler(A_ThisMenuItem, A_ThisMenuItemPos, MyMenu) {
     if WinExist('ahk_exe clash.exe') {

@@ -5,12 +5,12 @@ allow-lan: false
 mode: rule
 log-level: debug
 external-controller: "0.0.0.0:9090"
-secret: "123456"
+secret: ""
 tun:
   enable: true
   stack: gvisor
   dns-hijack:
-    - 198.18.0.2:53
+    - any:53
   auto-route: true
   auto-detect-interface: true
 dns:
@@ -19,6 +19,12 @@ dns:
   listen: "0.0.0.0:53"
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  fake-ip-filter-mode: blacklist
+  fake-ip-filter:
+    - "*.lan"
+    - "rule-set:custom-direct"
+    - "rule-set:third-party-private"
+    - "rule-set:third-party-applications"
   # nameserver:
   #   - "https://dns.alidns.com/dns-query"
   #   - "https://doh.pub/dns-query"
@@ -32,50 +38,35 @@ dns:
     ipcidr:
       - 240.0.0.0/4
 proxy-providers:
-  XXXX:
+  Sub:
     type: http
-    url: "https://xxxxxxxx?clash=1"
+    url: ""
     interval: 864000
-    path: ./sub/XXXX.yaml
+    path: ./sub/Sub.yaml
     health-check:
       enable: true
       interval: 3600
       url: http://www.gstatic.com/generate_204
-  CustomServer:
-    type: file
-    path: ./sub/CustomServer.yaml
-    health-check:
-      enable: false
 proxy-groups:
   - name: PROXY
     type: select
     use:
-      - XXXX
-    proxies:
-      - DIRECT
-  - name: CUSTOM
-    type: select
-    use:
-      - CustomServer
+      - Sub
     proxies:
       - DIRECT
 rule-providers:
+  custom-block:
+    type: file
+    behavior: classical
+    path: ./custom/block.yaml
+  custom-direct:
+    type: file
+    behavior: classical
+    path: ./custom/direct.yaml
   custom-proxy:
     type: file
     behavior: classical
-    path: ./ruleset/custom-proxy.yaml
-  mine-block:
-    type: file
-    behavior: classical
-    path: ./ruleset/mine-block.yaml
-  mine-direct:
-    type: file
-    behavior: classical
-    path: ./ruleset/mine-direct.yaml
-  mine-proxy:
-    type: file
-    behavior: domain
-    path: ./ruleset/mine-proxy.yaml
+    path: ./custom/proxy.yaml
   third-party-lancidr: # 局域网 IP 及保留 IP 地址列表
     type: http
     behavior: ipcidr
@@ -113,17 +104,17 @@ rule-providers:
     path: ./ruleset/third-party-tld-not-cn.yaml
     interval: 86400
 rules:
-  - DST-PORT,22,DIRECT
+  - PROCESS-NAME,rustdesk,DIRECT,no-resolve
+  - PROCESS-NAME,rustdesk.exe,DIRECT,no-resolve
   - DOMAIN,clash.razord.top,DIRECT
   - DOMAIN,yacd.haishan.me,DIRECT
-  - RULE-SET,custom-proxy,CUSTOM
-  - RULE-SET,mine-block,REJECT
-  - RULE-SET,mine-direct,DIRECT
-  - RULE-SET,mine-proxy,PROXY
+  - RULE-SET,custom-direct,DIRECT
+  - RULE-SET,custom-block,REJECT
+  - RULE-SET,custom-proxy,PROXY
   - RULE-SET,third-party-lancidr,DIRECT
   - RULE-SET,third-party-private,DIRECT
   - RULE-SET,third-party-applications,DIRECT
   - RULE-SET,third-party-reject,REJECT
   - RULE-SET,third-party-gfw,PROXY
   - RULE-SET,third-party-tld-not-cn,PROXY
-  - MATCH,CUSTOM
+  - MATCH,DIRECT

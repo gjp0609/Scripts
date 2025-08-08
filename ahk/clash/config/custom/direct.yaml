@@ -1,0 +1,8 @@
+payload:
+  - DOMAIN-SUFFIX,brave.com
+  - DOMAIN-SUFFIX,time.is
+  - DOMAIN-SUFFIX,ntp.aliyun.com
+  - DOMAIN-SUFFIX,ntp.org.cn
+  - DOMAIN-SUFFIX,time.windows.com
+  - PROCESS-NAME,jetbrains-toolbox.exe
+  - PROCESS-NAME,rustdesk.exe

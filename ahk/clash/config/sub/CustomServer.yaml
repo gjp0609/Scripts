@@ -1,8 +1,0 @@
-proxies:
-  - name: 'xxx'
-    type: ss
-    server: xx.xx.xx.xx
-    port: xxxx
-    cipher: aes-256-gcm
-    password: "xxxx"
-    udp: true

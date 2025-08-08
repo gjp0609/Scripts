@@ -1,0 +1,9 @@
+payload:
+  # LLM
+  - DOMAIN-SUFFIX,augmentcode.com
+  - DOMAIN-SUFFIX,auth0.com
+  - DOMAIN-SUFFIX,chatgpt.com
+  - DOMAIN-SUFFIX,cursor.com
+  - DOMAIN-SUFFIX,cursor.sh
+  - DOMAIN-SUFFIX,openai.com
+  - DOMAIN-SUFFIX,trae.ai

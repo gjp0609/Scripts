@@ -1,0 +1,3 @@
+[submodule "private"]
+	path = private
+	url = git@github.com:gjp0609/scripts-pri.git

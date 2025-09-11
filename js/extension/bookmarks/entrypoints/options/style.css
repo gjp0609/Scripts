@@ -1,0 +1,332 @@
+/* Options页面样式 */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f8f9fa;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 暗色主题支持 */
+html.dark {
+  background: #141414;
+  color: #e5eaf3;
+}
+
+html.dark body {
+  background: #141414;
+  color: #e5eaf3;
+}
+
+/* 暗色主题下的Element Plus组件覆盖 */
+html.dark .el-card {
+  background: #1d1e1f;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .el-card__header {
+  background: #262727;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .el-header {
+  background: #1d1e1f;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .el-aside {
+  background: #1d1e1f;
+  border-color: #363637;
+}
+
+html.dark .el-main {
+  background: #141414;
+  color: #e5eaf3;
+}
+
+html.dark .el-button {
+  background: #363637;
+  border-color: #4a4a4b;
+  color: #e5eaf3;
+}
+
+html.dark .el-button:hover {
+  background: #4a4a4b;
+  border-color: #5a5a5b;
+  color: #ffffff;
+}
+
+html.dark .el-button--primary {
+  background: #409eff;
+  border-color: #409eff;
+  color: #ffffff;
+}
+
+html.dark .el-input__inner {
+  background: #262727;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .el-input__inner::placeholder {
+  color: #8b8d8f;
+}
+
+html.dark .folder-card {
+  background: #1d1e1f;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .folder-card.drag-over {
+  border-color: #52c41a;
+  background: linear-gradient(135deg, #162312 0%, #1a2f1a 100%);
+  box-shadow: 0 0 0 3px rgba(82, 196, 26, 0.3), 0 8px 25px rgba(82, 196, 26, 0.25);
+}
+
+html.dark .folder-card.drag-over::before {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(82, 196, 26, 0.5);
+}
+
+html.dark .folder-header {
+  background: #262727;
+  border-color: #363637;
+}
+
+html.dark @keyframes dropSuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); background: linear-gradient(135deg, #162312 0%, #234618 100%); }
+  100% { transform: scale(1); }
+}
+
+html.dark @keyframes dropError {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); background: linear-gradient(135deg, #2a1215 0%, #421818 100%); }
+  75% { transform: translateX(10px); }
+}
+
+html.dark .bookmark-card {
+  background: #1d1e1f;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .bookmark-card.is-dragging {
+  border-color: #409eff;
+  background: linear-gradient(135deg, #1a3a52 0%, #2d4a5c 100%);
+  box-shadow: 0 8px 25px rgba(64, 158, 255, 0.3);
+}
+
+html.dark .bookmark-card:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+}
+
+html.dark .bookmark-card:hover.is-dragging {
+  box-shadow: 0 10px 30px rgba(64, 158, 255, 0.4);
+}
+
+html.dark .bookmark-title {
+  color: #e5eaf3;
+}
+
+html.dark .bookmark-url {
+  color: #8b8d8f;
+}
+
+html.dark .el-tabs__nav-wrap::after {
+  background: #363637;
+}
+
+html.dark .el-tabs__item {
+  color: #8b8d8f;
+}
+
+html.dark .el-tabs__item.is-active {
+  color: #409eff;
+}
+
+html.dark .el-dropdown-menu {
+  background: #1d1e1f;
+  border-color: #363637;
+}
+
+html.dark .el-dropdown-menu__item {
+  color: #e5eaf3;
+}
+
+html.dark .el-dropdown-menu__item:hover {
+  background: #363637;
+}
+
+html.dark .settings {
+  background: #141414;
+}
+
+html.dark .settings-card {
+  background: #1d1e1f;
+  border-color: #363637;
+  color: #e5eaf3;
+}
+
+html.dark .setting-section h3 {
+  color: #e5eaf3;
+  border-color: #363637;
+}
+
+html.dark .setting-title {
+  color: #e5eaf3;
+}
+
+html.dark .setting-description {
+  color: #8b8d8f;
+}
+
+html.dark .stat-item {
+  background: #1d1e1f;
+  color: #e5eaf3;
+}
+
+html.dark .el-message-box {
+  background: #1d1e1f;
+  border-color: #363637;
+}
+
+html.dark .el-message-box__header {
+  color: #e5eaf3;
+}
+
+html.dark .el-message-box__content {
+  color: #e5eaf3;
+}
+
+#app {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 全屏布局样式 */
+.bookmark-manager {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.app-main {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+.app-aside {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .folders-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-aside {
+    width: 200px !important;
+  }
+
+  .folders-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    justify-content: center;
+  }
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 暗色主题滚动条 */
+html.dark ::-webkit-scrollbar-track {
+  background: #262727;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+  background: #4a4a4b;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5b;
+}
+
+/* Element Plus 组件全屏适配 */
+.el-container {
+  height: 100vh !important;
+}
+
+.el-tabs__content {
+  height: calc(100vh - 180px) !important;
+  overflow-y: auto;
+}
+
+/* 加载和空状态优化 */
+.loading-container,
+.empty-container {
+  height: calc(100vh - 300px) !important;
+  min-height: 300px;
+}
+
+/* 卡片网格优化 */
+.folders-grid {
+  padding: 20px;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+}
+
+/* 标签侧边栏优化 */
+.tag-sidebar {
+  border-right: 1px solid #e1e5e9;
+  background: #fafbfc;
+}
+
+/* 搜索框优化 */
+.search-section {
+  max-width: 600px;
+  margin: 0 auto;
+}

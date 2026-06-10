@@ -1,0 +1,27 @@
+/* ==UserStyle==
+@name         透明背景
+@namespace    https://github.com/gjp0609
+@version      1.0.0
+@description  透明背景以显示nodes
+@author       gjp0609 <gjp0609@gmail.com> (https://github.com/gjp0609)
+@homepageURL  https://github.com/gjp0609/Scripts/
+@supportURL   https://github.com/gjp0609/Scripts/issues
+@updateURL    https://github.com/gjp0609/Scripts/css/nodes-transparent.user.css
+@license      unlicense
+@preprocessor stylus
+==/UserStyle== */
+
+@-moz-document domain("github.com") {
+    [data-color-mode='light'][data-light-theme='light'],
+    [data-color-mode='auto'][data-light-theme='light'] {
+        --bgColor-default: transparent;
+    }
+}
+
+@-moz-document url-prefix("http://10.10.12.191:30000/project/1/templates/")
+{
+    .theme--light.v-application,
+    .theme--light.v-data-table {
+        background: transparent;
+    }
+}

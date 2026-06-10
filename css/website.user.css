@@ -423,3 +423,15 @@
         opacity: 0;
     }
 }
+
+@-moz-document url-prefix("https://docs.qq.com/doc/")
+{
+    #workbench-drawer > div:first-child {
+        position: fixed;
+        top: 126px;
+        left: 0 !important;
+        width: 250px;
+        transform: translateX(-20px);
+        background-color: rgb(243, 245, 247);
+    }
+}

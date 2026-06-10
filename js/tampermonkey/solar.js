@@ -6,6 +6,8 @@
 // @author       onysakura
 // @include      *
 // @grant        none
+// @noframes
+// @require      file:///R://Files/Workspace/Mine/Scripts/js/tampermonkey/solar.js
 // ==/UserScript==
 
 (function () {
@@ -16,10 +18,13 @@
     }
     const real = true; // 距离真实比例
     const randomStatus = true; // 每次随机位置
-    const planetWidth = 5; // 行星大小
+    const bodyRadiusScale = 1000; // 天体半径显示倍率
+    const scaleSunRadius = false; // 太阳是否参与天体半径倍率
+    const planetMinWidth = 2; // 最小行星显示半径
     const speed = 5; // 地球 ${speed} 秒一圈
     const position = { x: 0.9, y: 0.1 }; // 位置偏移
-    const sizeScale = 1.7; // 大小缩放
+    const sizeScale = 2; // 大小缩放
+    const kmPerDistanceUnit = 1000000; // half 的单位是百万公里
 
     let solarSystemHalfWidth = 7479.893533;
     solarSystemHalfWidth = real ? solarSystemHalfWidth : Math.log1p(solarSystemHalfWidth);
@@ -54,16 +59,17 @@
     solarCtx.lineWidth = 1;
 
     let planets = [
+        // half 单位：百万公里；radius 单位：公里
         // { color: '#ffffff', type: 'other', half: 7479.893533, isNotPlanet: true }, // a 古柏断涯
-        { color: '#8caaca', type: 'planet', half: 4503.443661, roundTime: 60327.624 }, // ♆ 海王星
-        { color: '#addee3', type: 'planet', half: 2876.679082, roundTime: 30799.095 }, // ⛢ 天王星
-        { color: '#dfc384', type: 'planet', half: 1433.44937, roundTime: 10759 }, // ♄ 土星
-        { color: '#ceba9b', type: 'planet', half: 778.5472, roundTime: 4332.59 }, // ♃ 木星
-        { color: '#fd906c', type: 'planet', half: 227.9366, roundTime: 686.98 }, // ♂ 火星
-        { color: '#7fb5d7', type: 'planet', half: 149.598023, roundTime: 365.256363004 }, // ♁ 地球
-        { color: '#d9c4a9', type: 'planet', half: 108.208, roundTime: 224.701 }, // ♀ 金星
-        { color: '#b9b8b8', type: 'planet', half: 57.9091, roundTime: 87.9691 }, // ☿ 水星
-        { color: 'rgba(247,161,69,0.08)', type: 'sun', half: 1.392, isNotPlanet: true } // ☉ Sun
+        { color: '#8caaca', type: 'planet', half: 4503.443661, radius: 24622, roundTime: 60327.624 }, // ♆ 海王星
+        { color: '#addee3', type: 'planet', half: 2876.679082, radius: 25362, roundTime: 30799.095 }, // ⛢ 天王星
+        { color: '#dfc384', type: 'planet', half: 1433.44937, radius: 58232, roundTime: 10759 }, // ♄ 土星
+        { color: '#ceba9b', type: 'planet', half: 778.5472, radius: 69911, roundTime: 4332.59 }, // ♃ 木星
+        { color: '#fd906c', type: 'planet', half: 227.9366, radius: 3389.5, roundTime: 686.98 }, // ♂ 火星
+        { color: '#7fb5d7', type: 'planet', half: 149.598023, radius: 6371, roundTime: 365.256363004 }, // ♁ 地球
+        { color: '#d9c4a9', type: 'planet', half: 108.208, radius: 6051.8, roundTime: 224.701 }, // ♀ 金星
+        { color: '#b9b8b8', type: 'planet', half: 57.9091, radius: 2439.7, roundTime: 87.9691 }, // ☿ 水星
+        { color: 'rgba(247,161,69,0.08)', type: 'sun', half: 0, radius: 696340 }, // ☉ Sun
     ];
 
     for (let planet of planets) {
@@ -72,7 +78,8 @@
         solarCtx.shadowColor = planet.color;
         solarCtx.beginPath();
         let half = real ? planet.half : Math.log1p(planet.half);
-        solarCtx.arc(centerPoint.x, centerPoint.y, half * scale, 0, Math.PI * 2, true); // 绘制
+        let radius = planet.type === 'sun' ? getBodyRadius(planet) : half * scale;
+        solarCtx.arc(centerPoint.x, centerPoint.y, radius, 0, Math.PI * 2, true); // 绘制
         if (planet.type === 'planet') {
             solarCtx.stroke();
         } else {
@@ -107,10 +114,15 @@
                 let x = centerPoint.x + half * scale * Math.cos(round);
                 let y = centerPoint.y + half * scale * Math.sin(round);
                 planetCtx.beginPath();
-                planetCtx.arc(x, y, planetWidth, 0, Math.PI * 2, true); // 绘制
+                planetCtx.arc(x, y, Math.max(planetMinWidth, getBodyRadius(planet)), 0, Math.PI * 2, true); // 绘制
                 planetCtx.fill();
             }
         }
         window.requestAnimationFrame(drawPlanet);
+    }
+
+    function getBodyRadius(planet) {
+        let radiusScale = planet.type === 'sun' && !scaleSunRadius ? 1 : bodyRadiusScale;
+        return (planet.radius / kmPerDistanceUnit) * scale * radiusScale;
     }
 })();

@@ -2,6 +2,10 @@
 *.iml
 /.idea/
 
+# ahk
+
+
+
 # js
 /node_modules/
 
@@ -17,8 +21,3 @@
 # tampermonkey
 /js/tampermonkey/**/dist.js
 /js/tampermonkey/**/dist.css
-
-# clash
-ahk/clash/config/cache.db
-ahk/clash/config/Country.mmdb
-ahk/clash/config/ruleset/*.yaml

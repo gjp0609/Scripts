@@ -1,5 +1,4 @@
 import { defineConfig, devices } from '@playwright/test';
-import * as path from 'path';
 
 export default defineConfig({
     testDir: './js/playwright/tests',
@@ -11,7 +10,7 @@ export default defineConfig({
     use: {
         actionTimeout: 0,
         trace: 'on-first-retry',
-        // headless: false,
+        headless: false,
         viewport: {
             height: 1080,
             width: 1920

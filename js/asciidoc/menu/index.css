@@ -1,0 +1,33 @@
+#toc {
+    overflow-y: auto;
+    .sectlevel1 {
+        & > li {
+            position: relative;
+            & > a {
+                position: relative;
+                z-index: 1;
+            }
+            & > div.expand {
+                position: absolute;
+                top: 0;
+                right: 0;
+                z-index: 0;
+                width: 100%;
+                overflow: hidden;
+                text-align: right;
+                cursor: pointer;
+                user-select: none;
+                &:hover {
+                    & > span {
+                        color: #ba3925;
+                    }
+                }
+                & span {
+                    display: inline-block;
+                    transform: rotate(-90deg);
+                    transition-duration: 200ms;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,36 @@
+extends: default
+font:
+  catalog:
+    merge: true
+    Sarasa Mono SC:
+      normal: SarasaMonoSC-Regular.ttf
+      bold: SarasaMonoSC-Bold.ttf
+      italic: SarasaMonoSC-Italic.ttf
+      bold_italic: SarasaMonoSC-BoldItalic.ttf
+  fallbacks:
+    - Sarasa Mono SC
+base:
+  font-family: Sarasa Mono SC
+  font-size: 11.5
+  line-height: 1.55
+heading:
+  font-family: Sarasa Mono SC
+title-page:
+  title:
+    font-family: Sarasa Mono SC
+  subtitle:
+    font-family: Sarasa Mono SC
+  authors:
+    font-family: Sarasa Mono SC
+  revision:
+    font-family: Sarasa Mono SC
+literal:
+  font-family: Sarasa Mono SC
+  font-size: 10
+code:
+  font-family: Sarasa Mono SC
+  font-size: 10
+header:
+  font-family: Sarasa Mono SC
+footer:
+  font-family: Sarasa Mono SC

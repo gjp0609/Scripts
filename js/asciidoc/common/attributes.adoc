@@ -1,0 +1,21 @@
+:toc: right
+:toc-title: 目录
+:toclevels: 3
+:sectnums:
+:doctype: book
+:!chapter-signifier:
+:!chapter-label:
+:source-highlighter: rouge
+:toc-collapse:
+:image-preview:
+:code-optimize:
+:!webfonts:
+:data-uri:
+:nofooter:
+:tip-caption: ⓘ
+:warning-caption: ⚠
+:pdf-theme: cjk-theme.yml
+:pdf-fontsdir: C:/Windows/Fonts
+:pdf-themesdir: R:/Files/Workspace/Mine/Scripts/js/asciidoc/pdf-font
+:plantumlconfig: R:/Files/Workspace/Mine/Scripts/plantuml/theme/uml.puml
+:scripts: cjk

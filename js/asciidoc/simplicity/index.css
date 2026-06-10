@@ -1,0 +1,31 @@
+body {
+    #header, #content, #footnotes, #footer {
+        margin-left: 0;
+        font-size: 14px;
+        line-height: 1.7;
+    }
+    h1 {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 18px 0 22px;
+    }
+    h2 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 26px 0 12px;
+    }
+    h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 18px 0 8px;
+    }
+    h4, h5, h6 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 14px 0 6px;
+    }
+    p,
+    li {
+        font-size: 14px;
+    }
+}

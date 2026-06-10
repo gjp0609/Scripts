@@ -1,0 +1,35 @@
+pre {
+    background-color: #f4f9ff;
+}
+
+pre code {
+    max-height: 300px;
+}
+
+/** {*/
+/*    scrollbar-color: rgb(144, 206, 236) rgb(214, 214, 214);*/
+/*    scrollbar-width: thin;*/
+/*}*/
+
+/**::-webkit-scrollbar {*/
+/*    width: 6px;*/
+/*    height: 6px;*/
+/*    background-color: rgb(224, 224, 224);*/
+/*}*/
+
+/**::-webkit-scrollbar-thumb {*/
+/*    background-color: rgb(162, 216, 238);*/
+/*    border-radius: 6px;*/
+/*}*/
+
+/**::-webkit-scrollbar-thumb:hover {*/
+/*    background-color: rgb(100, 200, 250);*/
+/*}*/
+
+/**::-webkit-scrollbar-thumb:active {*/
+/*    background-color: rgb(75, 175, 225);*/
+/*}*/
+
+/**::-webkit-scrollbar-corner {*/
+/*    background-color: rgb(214, 214, 214);*/
+/*}*/

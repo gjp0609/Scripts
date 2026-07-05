@@ -1,0 +1,945 @@
+[
+  {
+    "title": "Work",
+    "items": [
+      {
+        "title": "周计划",
+        "url": "https://docs.qq.com/sheet/DU2ZVaHV2SXhXVGxB",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "电力交易产品线工作周报",
+        "url": "https://docs.qq.com/sheet/DSmZxblRuZ0dnaGpw?tab=t3845l",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "禅道",
+        "url": "http://10.8.8.1:88/zentao/",
+        "favicon": "https://www.zentao.net/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Sprixin CRM",
+        "url": "http://www.crmsprixin.com:863/seeyon/main.do?method=main",
+        "favicon": "https://www.sprixin.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "iTalent",
+        "url": "https://www.italent.cn",
+        "favicon": "https://www.beisen.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "日报",
+        "url": "http://39.107.56.29:8888/text?p=%2FWebDAV%2FJoplin%2F31f4fa59e5d940698c5ec3672f5e7310.md&id=nK1JiG",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Mail",
+        "url": "http://mail.sprixin.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Proj",
+    "items": [
+      {
+        "title": "电力交易",
+        "url": "https://trade.sprixin.com/SPPP-web/index",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "山西华电",
+        "url": "http://218.61.196.128:31584/chd-web/index",
+        "favicon": "https://www.chdtp.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "河北华电",
+        "url": "http://124.237.43.239:18089/chd-web/",
+        "favicon": "https://www.chdtp.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "江西联合能源",
+        "url": "http://218.87.163.47:18080/SPPP-web/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "电力交易 灰度",
+        "url": "http://powertrade.sprixin.com:8090/SPPP-web/index",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "电力交易 测试",
+        "url": "http://10.10.12.121:8080/SPPP-web/index",
+        "favicon": "https://powertrade.sprixin.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "华电 测试",
+        "url": "http://10.10.12.191:8090/chd-web/index",
+        "favicon": "https://www.chdtp.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Ansible",
+        "url": "http://10.10.12.121:30000",
+        "favicon": "https://www.ansible-semaphore.com/",
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Vue Libs",
+    "items": [
+      {
+        "title": "Naive UI",
+        "url": "https://www.naiveui.com/zh-CN/os-theme/components/button",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Element Plus",
+        "url": "https://element-plus.org/zh-CN/component/button.html",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Ant Design Vue",
+        "url": "https://antdv.com/components/table-cn#API",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Arco Design",
+        "url": "https://arco.design/vue/component/button",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "vxe table",
+        "url": "https://vxetable.cn/#/table/grid/group",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "ECharts",
+        "url": "https://echarts.apache.org/zh/cheat-sheet.html",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "AI",
+    "items": [
+      {
+        "title": "Gemini",
+        "url": "https://aistudio.google.com/app/prompts/new_chat",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "ChatGPT",
+        "url": "https://chatgpt.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Claude",
+        "url": "https://claude.ai/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "deepseek",
+        "url": "https://chat.deepseek.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Grok",
+        "url": "https://grok.com/chat/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "POE",
+        "url": "https://poe.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "KIMI",
+        "url": "https://kimi.moonshot.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "ChatGLM",
+        "url": "https://chatglm.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "通义千问",
+        "url": "https://tongyi.aliyun.com/qianwen/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "元宝",
+        "url": "https://yuanbao.tencent.com/chat/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "豆包",
+        "url": "https://www.doubao.com/chat/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "BBS",
+    "items": [
+      {
+        "title": "V2EX",
+        "url": "https://www.v2ex.com",
+        "favicon": null,
+        "tags": [
+          "search",
+          "bbs"
+        ],
+        "description": null
+      },
+      {
+        "title": "NGA",
+        "url": "https://bbs.nga.cn/",
+        "favicon": null,
+        "tags": [
+          "bbs"
+        ],
+        "description": null
+      },
+      {
+        "title": "XDA",
+        "url": "https://forum.xda-developers.com/",
+        "favicon": null,
+        "tags": [
+          "bbs"
+        ],
+        "description": null
+      },
+      {
+        "title": "Muchong",
+        "url": "http://muchong.com/bbs/",
+        "favicon": null,
+        "tags": [
+          "bbs"
+        ],
+        "description": null
+      },
+      {
+        "title": "PC beta",
+        "url": "https://bbs.pcbeta.com/",
+        "favicon": null,
+        "tags": [
+          "bbs"
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Developments",
+    "items": [
+      {
+        "title": "Github",
+        "url": "https://github.com/",
+        "favicon": null,
+        "tags": [
+          "search"
+        ],
+        "description": null
+      },
+      {
+        "title": "Gitee",
+        "url": "https://gitee.com/",
+        "favicon": null,
+        "tags": [
+          "git",
+          "gitee"
+        ],
+        "description": null
+      },
+      {
+        "title": "MDN",
+        "url": "https://developer.mozilla.org/zh-CN/docs/Web",
+        "favicon": null,
+        "tags": [
+          "search",
+          "mdn",
+          "html",
+          "css",
+          "js"
+        ],
+        "description": null
+      },
+      {
+        "title": "Java API",
+        "url": "https://docs.oracle.com/en/java/javase/17/docs/api/index.html",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Java Specification",
+        "url": "https://docs.oracle.com/javase/specs/index.html",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Video",
+    "items": [
+      {
+        "title": "Bilibili",
+        "url": "https://www.bilibili.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Bangumi",
+        "url": "https://bangumi.tv/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Dmhy",
+        "url": "https://share.dmhy.org/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Tools",
+    "items": [
+      {
+        "title": "Check IP",
+        "url": "https://checkip.amazonaws.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Pastebin",
+        "url": "https://pastebin.ubuntu.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Tsinghua Mirror",
+        "url": "https://mirrors.tuna.tsinghua.edu.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Github Proxy",
+        "url": "https://mirror.ghproxy.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "GoProxy",
+        "url": "https://goproxy.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Minifier",
+        "url": "https://www.minifier.org/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": "Make your website smaller and faster to load by minifying the JS and CSS code."
+      },
+      {
+        "title": "PlantUML",
+        "url": "https://plantuml.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": "Open-source tool that uses simple textual descriptions to draw beautiful UML diagrams."
+      },
+      {
+        "title": "SVG Path Editor",
+        "url": "https://yqnn.github.io/svg-path-editor/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Interesting",
+    "items": [
+      {
+        "title": "Microsoft Azure TTS",
+        "url": "https://azure.microsoft.com/en-us/services/cognitive-services/text-to-speech/#overview",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Unicode Tools",
+        "url": "https://qwerty.dev/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": "Unicode tools to help you stand out online!"
+      },
+      {
+        "title": "ASCII Tools",
+        "url": "https://ascii.co.uk/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": "The place for all things textual."
+      },
+      {
+        "title": "让我帮你百度一下",
+        "url": "https://btfy.vercel.app/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Server",
+    "items": [
+      {
+        "title": "Cloudflare",
+        "url": "https://dash.cloudflare.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Tencent Cloud",
+        "url": "https://console.cloud.tencent.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "DNSPod",
+        "url": "https://console.dnspod.cn/dns/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "NetDisk",
+    "items": [
+      {
+        "title": "阿里云盘",
+        "url": "https://www.aliyundrive.com/drive",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "腾讯微云",
+        "url": "https://www.weiyun.com/disk",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "百度网盘",
+        "url": "https://pan.baidu.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "天翼云盘",
+        "url": "https://cloud.189.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "OneDrive",
+        "url": "https://onedrive.live.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Google 云端硬盘",
+        "url": "https://drive.google.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Mega",
+        "url": "https://mega.nz/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "SpeedTest",
+    "items": [
+      {
+        "title": "Speedtest by Ookla",
+        "url": "https://www.speedtest.net/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "测速网",
+        "url": "https://www.speedtest.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Cloudflare",
+        "url": "https://speed.cloudflare.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "中国科学技术大学",
+        "url": "https://test.ustc.edu.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "华东师范大学",
+        "url": "https://speedtest.ecnu.edu.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "东北大学",
+        "url": "https://speed4.neu6.edu.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Mail",
+    "items": [
+      {
+        "title": "Google Mail",
+        "url": "https://mail.google.com/",
+        "favicon": null,
+        "tags": [
+          "gmail"
+        ],
+        "description": null
+      },
+      {
+        "title": "QQ Mail",
+        "url": "https://mail.qq.com/",
+        "favicon": null,
+        "tags": [
+          "tencent"
+        ],
+        "description": null
+      },
+      {
+        "title": "163 Mail",
+        "url": "https://mail.163.com/",
+        "favicon": null,
+        "tags": [
+          "netease"
+        ],
+        "description": null
+      },
+      {
+        "title": "126 Mail",
+        "url": "https://mail.126.com/",
+        "favicon": null,
+        "tags": [
+          "netease"
+        ],
+        "description": null
+      },
+      {
+        "title": "ExMail",
+        "url": "https://exmail.qq.com/",
+        "favicon": null,
+        "tags": [
+          "tencent"
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Translation",
+    "items": [
+      {
+        "title": "I18n Translation",
+        "url": "https://i18ns.com/zh/index.html",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Google Translate",
+        "url": "https://translate.google.com/?sl=auto&tl=zh-CN",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Bing Translate",
+        "url": "https://cn.bing.com/translator/?to=zh-Hans",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Sogou Translate",
+        "url": "https://fanyi.sogou.com/text?model=general&transfrom=auto&transto=zh-CHS",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Baidu Translate",
+        "url": "https://fanyi.baidu.com/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Haici Translate",
+        "url": "https://dict.cn/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "DeepL Translate",
+        "url": "https://www.deepl.com/zh/translator",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Search",
+    "items": [
+      {
+        "title": null,
+        "url": null,
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Google",
+        "url": "https://www.google.com/ncr",
+        "favicon": null,
+        "tags": [
+          "search"
+        ],
+        "description": null
+      },
+      {
+        "title": "Bing",
+        "url": "https://cn.bing.com/",
+        "favicon": null,
+        "tags": [
+          "search",
+          "microsoft"
+        ],
+        "description": null
+      },
+      {
+        "title": "Baidu",
+        "url": "https://www.baidu.com/",
+        "favicon": null,
+        "tags": [
+          "search"
+        ],
+        "description": null
+      },
+      {
+        "title": "Duckduckgo",
+        "url": "https://duckduckgo.com/?t=h_",
+        "favicon": null,
+        "tags": [
+          "search"
+        ],
+        "description": null
+      },
+      {
+        "title": "FSou",
+        "url": "https://fsoufsou.com/",
+        "favicon": null,
+        "tags": [
+          "search",
+          "fsou"
+        ],
+        "description": null
+      }
+    ]
+  },
+  {
+    "title": "Icon",
+    "items": [
+      {
+        "title": null,
+        "url": null,
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Favicon Yandex",
+        "url": "https://favicon.yandex.net/favicon/${keyword}/",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Favicon Google",
+        "url": "https://www.google.com/s2/favicons?sz=64&domain_url=${keyword}",
+        "favicon": null,
+        "tags": [
+          null
+        ],
+        "description": null
+      },
+      {
+        "title": "Favicon Duckduckgo",
+        "url": "https://icons.duckduckgo.com/ip2/${keyword}.ico",
+        "favicon": null,
+        "tags": [
+          "favicon"
+        ],
+        "description": null
+      }
+    ]
+  }
+]

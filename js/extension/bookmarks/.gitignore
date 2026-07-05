@@ -8,6 +8,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+dist
+.tmp-edge*
+verify-*.png
 .output
 stats.html
 stats-*.json

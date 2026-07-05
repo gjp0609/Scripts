@@ -32,19 +32,27 @@ Compatibility requirements:
 
 - No runtime extension code exists yet.
 - No manifest exists yet.
-- No storage engine has been selected in code.
+- Storage route selected for implementation: IndexedDB primary backend with a portable search index.
+- SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox backend after Firefox probe failure.
 - No UI has been rebuilt.
-- No verified History Trends Unlimited export fixture is present.
+- A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
 
 ## Blockers Before Coding Compatibility
 
-- A real History Trends Unlimited export sample is required.
 - If multiple HTU versions produce different formats, each format needs a fixture.
 - Import/export tests must be written before parser implementation is considered complete.
+- IndexedDB bulk import throughput must be validated against the external backup size before building the UI around it.
 
 ## Working Assumptions
 
-- Existing old code suggests one HTU-like TSV shape: `url`, `U<lastVisitTime>`, `typedCount`, `title`.
-- That shape is not yet treated as the full specification.
+- HTU 1.8.9 exports backup/transfer TSV as 4 columns: `URL`, `U<visit_time>`, `transition_id`, `title`.
+- HTU 1.8.9 exports analysis/search/trends TSV as 8 columns: `URL`, `host`, `domain`, `visit_time`, `local_time`, `weekday`, `transition_text`, `title`.
+- Import compatibility must accept HTU 3-column, 4-column, and 8-column TSV variants.
 - Firefox compatibility is a hard requirement, so the architecture cannot depend on Chrome-only extension APIs.
 
+## Next Work
+
+1. Implement HTU TSV parser/serializer as an isolated module.
+2. Add tests for 3-column, 4-column, and 8-column import/export formats.
+3. Run parser/serializer round-trip tests against the external full backup file.
+4. Prototype IndexedDB bulk import and portable search index throughput.

@@ -43,12 +43,20 @@ Recommended tables:
 
 HTU 1.8.9 uses SQLite WASM and FTS5. That is the closest behavior match and gives a strong reference model for queries, import/export, and statistics.
 
-The rewrite should evaluate two candidates before implementation:
+Local probes changed the storage decision:
 
-- SQLite WASM + OPFS where supported, matching HTU most closely.
-- IndexedDB plus a dedicated search index if Firefox support for the SQLite stack is not acceptable.
+- Chrome extension pages can run SQLite WASM 3.46.1 with OPFS and FTS5.
+- Firefox 140.5.0esr extension pages can load SQLite WASM, but the tested context does not provide `SharedArrayBuffer` or `crossOriginIsolated`, and SQLite OPFS VFS is not enabled.
+- Therefore SQLite WASM + OPFS cannot be the required common storage engine for Chrome + Firefox.
 
 Do not store a growing SQLite database as a single blob in `chrome.storage.local`. Exporting and rewriting the entire DB on every visit will become slow as history grows.
+
+Chosen primary route:
+
+- Use IndexedDB as the cross-browser durable storage backend.
+- Keep a storage adapter boundary so a Chrome-only SQLite OPFS backend can be added later without changing import/export or UI code.
+- Implement search as a portable index over IndexedDB data instead of depending on SQLite FTS5.
+- Keep HTU SQLite/FTS5 behavior as a compatibility reference, not as a hard runtime dependency.
 
 The chosen data layer must support:
 
@@ -59,6 +67,16 @@ The chosen data layer must support:
 - import/export scans over large data sets
 - Chrome MV3 service-worker constraints
 - Firefox background/runtime constraints
+
+Recommended IndexedDB object stores:
+
+- `pages`: key by stable page id; unique index on normalized URL.
+- `visits`: key by visit id; indexes on page id, visit time, transition, day, month, weekday, and hour.
+- `terms`: search term dictionary.
+- `postings`: inverted index entries keyed by term and page/visit references.
+- `stats_daily`: materialized day-level aggregates.
+- `stats_domain`: materialized host/domain aggregates.
+- `jobs`: resumable import/export/sync job state.
 
 ## Search Strategy
 
@@ -75,12 +93,14 @@ HTU-compatible search should start from the HTU model:
 - domain filter over host/subdomain
 - transition filter
 
-Improved search index design:
+Improved portable search index design:
 
 - normalize title, URL, hostname, path, query, and decoded URL text
 - tokenize ASCII words, URL segments, and CJK n-grams
 - keep an exact substring fallback for compatibility
 - rank by recency, token coverage, field weight, typed count, and visit count
+- execute candidate retrieval through IndexedDB term postings and apply final matching in workers
+- keep search jobs cancellable and chunked so large histories do not block the UI
 
 The old `%keyword%` SQL pattern is acceptable for small data sets but not enough for hundreds of thousands of rows.
 

@@ -43,6 +43,47 @@ Implementation implication:
 - SQLite WASM + FTS5 remains the closest compatibility target.
 - Firefox must be tested before committing to this storage route.
 
+## Browser Storage Probe
+
+Probe:
+
+- Local ignored probe directory: `probes/opfs-sqlite/`.
+- SQLite WASM version: `3.46.1`.
+- The probe checks extension-page worker startup, `navigator.storage.getDirectory`, SQLite WASM initialization, OPFS VFS availability, FTS5 table creation, and simple persistence.
+
+Chrome result:
+
+- Browser: Playwright Chromium cache `chromium-1187`.
+- Manifest: MV3 service worker with COOP/COEP.
+- `navigator.storage.getDirectory`: yes.
+- `SharedArrayBuffer`: yes.
+- `crossOriginIsolated`: yes.
+- SQLite WASM loaded: yes.
+- SQLite OPFS VFS enabled: yes.
+- FTS5 virtual table creation: yes.
+- Persistent reopen check: `persistedCount = 1`.
+- FTS match check: `ftsMatchCount = 1`.
+- Overall result: PASS.
+
+Firefox result:
+
+- Browser: Firefox `140.5.0esr`.
+- Manifest: Firefox-compatible background scripts.
+- `navigator.storage.getDirectory`: yes.
+- `SharedArrayBuffer`: no.
+- `crossOriginIsolated`: no.
+- SQLite WASM loaded: yes.
+- SQLite OPFS VFS enabled: no.
+- FTS5 virtual table creation: no; opening `vfs: 'opfs'` failed with SQLite3Error.
+- Overall result: FAIL for SQLite OPFS as a shared storage route.
+
+Implementation implication:
+
+- SQLite WASM + OPFS is viable for Chrome but not viable as the required Chrome + Firefox common storage engine in the tested Firefox extension context.
+- The primary implementation should use a cross-browser IndexedDB-backed storage layer.
+- SQLite OPFS may remain a Chrome-only experimental/performance backend later, but it must not be required for compatibility or core functionality.
+- Search must be implemented above the storage layer with a portable index instead of depending on SQLite FTS5.
+
 ## External HTU Backup Fixture
 
 Source file:
@@ -97,15 +138,7 @@ Implementation implication:
 
 ## Next Verification Steps
 
-1. Build a minimal extension probe that runs in Chrome and Firefox.
-2. In the probe, test:
-   - `navigator.storage.getDirectory`
-   - SQLite WASM initialization
-   - database persistence across extension reload
-   - FTS5 virtual table creation
-   - worker/background execution model
-3. Use a temporary Chrome profile.
-4. Use the installed Firefox ESR profile isolation or a temporary profile.
-5. Decide between:
-   - SQLite WASM + OPFS as primary storage
-   - IndexedDB plus custom search index as fallback
+1. Validate IndexedDB bulk import throughput against the external HTU backup file.
+2. Validate a portable search index strategy on representative URL/title samples without logging private values.
+3. Lock parser/serializer fixtures for HTU 3-column, 4-column, and 8-column TSV variants.
+4. Implement the first import/export compatibility module before UI work.

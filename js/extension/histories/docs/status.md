@@ -32,8 +32,9 @@ Compatibility requirements:
 
 - No runtime extension code exists yet.
 - No manifest exists yet.
-- Storage route selected for implementation: IndexedDB primary backend with a portable search index.
-- SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox backend after Firefox probe failure.
+- Storage route selected for implementation: IndexedDB primary backend for structured history data and time indexes.
+- Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
+- SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
 - No UI has been rebuilt.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
 
@@ -41,7 +42,8 @@ Compatibility requirements:
 
 - If multiple HTU versions produce different formats, each format needs a fixture.
 - Import/export tests must be written before parser implementation is considered complete.
-- IndexedDB bulk import throughput must be validated against the external backup size before building the UI around it.
+- Extension-context IndexedDB quota must be validated for the SQLite FTS snapshot size.
+- Structured time indexes must be prototyped before building trend/statistics UI.
 
 ## Working Assumptions
 
@@ -55,4 +57,5 @@ Compatibility requirements:
 1. Implement HTU TSV parser/serializer as an isolated module.
 2. Add tests for 3-column, 4-column, and 8-column import/export formats.
 3. Run parser/serializer round-trip tests against the external full backup file.
-4. Prototype IndexedDB bulk import and portable search index throughput.
+4. Prototype IndexedDB time indexes and aggregate stores.
+5. Promote SQLite WASM FTS snapshot search into production search modules.

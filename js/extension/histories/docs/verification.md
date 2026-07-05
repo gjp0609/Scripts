@@ -80,9 +80,9 @@ Firefox result:
 Implementation implication:
 
 - SQLite WASM + OPFS is viable for Chrome but not viable as the required Chrome + Firefox common storage engine in the tested Firefox extension context.
-- The primary implementation should use a cross-browser IndexedDB-backed storage layer.
-- SQLite OPFS may remain a Chrome-only experimental/performance backend later, but it must not be required for compatibility or core functionality.
-- Search must be implemented above the storage layer with a portable index instead of depending on SQLite FTS5.
+- SQLite WASM itself is viable in both Chrome and Firefox.
+- The primary durable data store should remain cross-browser IndexedDB.
+- Search can use SQLite WASM `:memory:` plus FTS5 when the SQLite database is restored from an IndexedDB snapshot instead of OPFS.
 
 ## External HTU Backup Fixture
 
@@ -183,9 +183,68 @@ Implementation implication:
 - Final matching and ranking should remain worker-side so compatibility and improved-search modes can share the same storage.
 - Production import must reduce index build cost, likely by chunking differently, reducing per-page token volume, and avoiding unnecessary visit writes for search-only workflows.
 
+## SQLite WASM FTS Snapshot Probe
+
+Probe:
+
+- Local ignored probe directory: `probes/sqlite-memory-fts/`.
+- Engine: SQLite WASM `3.46.1`.
+- Storage mode: SQLite `:memory:` database.
+- Search index: FTS5 `trigram` tokenizer.
+- Persistence: export SQLite database bytes and store the snapshot in IndexedDB; reload by creating a MEMFS file from the snapshot bytes.
+- Indexed fields: one normalized `search_text` column containing title plus URL text; URL/title/count/time metadata are stored as unindexed FTS columns in the probe.
+- OPFS is not used.
+
+Search behavior verified:
+
+- `title + url` substring search works through FTS5 trigram.
+- Queries such as `yifeng`, `yifen`, and `ifen` can match longer strings such as `ruanyifeng`.
+- Firefox search sample: `MATCH`, 765 matches, 50 returned, `10.00 ms`.
+
+Chrome probe results:
+
+| stage | result |
+| --- | ---: |
+| visits parsed | 887,561 |
+| pages indexed | 384,065 |
+| initial 3-column FTS build | 139,527 ms |
+| optimized single-index-column FTS build | 79,528 ms |
+| snapshot size | 559.4 MB |
+| snapshot save | 2,299 ms |
+| snapshot load | 1,251 ms |
+
+Firefox probe results:
+
+| stage | result |
+| --- | ---: |
+| visits parsed | 887,550 |
+| pages indexed | 384,055 |
+| optimized single-index-column FTS build | 33,789 ms |
+| FTS insert portion | 30,802 ms |
+| snapshot size | 558 MB |
+| snapshot save | 3,770 ms |
+| snapshot load | 2,638 ms |
+
+Import bottleneck:
+
+- TSV parsing and page aggregation are not the bottleneck; parsing took about 1.1-1.2 seconds.
+- FTS insertion dominates first-build time.
+- Snapshot load is fast enough for normal startup if quota permits storing the snapshot.
+
+Implementation implication:
+
+- Use IndexedDB for durable structured data, time indexes, visits, pages, aggregates, import/export state, and the SQLite FTS snapshot.
+- Use SQLite WASM `:memory:` + FTS5 trigram for title/URL search after loading the snapshot from IndexedDB.
+- Do not use IndexedDB `multiEntry` grams as the production full-text search engine.
+- Do not depend on SQLite OPFS for Firefox compatibility.
+- First import/rebuild can be slower; normal startup should load the SQLite snapshot.
+- Time filters and statistics should not depend on FTS. They need their own IndexedDB indexes/materialized stores.
+- Combined keyword plus time-range search must intersect SQLite FTS page-id candidates with IndexedDB visit-time ranges.
+
 ## Next Verification Steps
 
-1. Optimize IndexedDB bulk import and index build throughput against the external HTU backup file.
-2. Add CJK substring/ngram search cases to the IndexedDB probe.
-3. Lock parser/serializer fixtures for HTU 3-column, 4-column, and 8-column TSV variants.
-4. Promote the proven probe design into production storage/search modules.
+1. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
+2. Prototype structured IndexedDB time indexes for `visit_time`, day, month, weekday, hour, transition, page id, host, and domain.
+3. Test combined searches such as keyword plus arbitrary time range.
+4. Reduce snapshot size by minimizing indexed text and moving result metadata to IndexedDB.
+5. Lock parser/serializer fixtures for HTU 3-column, 4-column, and 8-column TSV variants.

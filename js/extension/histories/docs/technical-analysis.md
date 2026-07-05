@@ -51,18 +51,19 @@ Local probes changed the storage decision:
 
 Do not store a growing SQLite database as a single blob in `chrome.storage.local`. Exporting and rewriting the entire DB on every visit will become slow as history grows.
 
-Chosen primary route:
+Chosen primary route after search probes:
 
-- Use IndexedDB as the cross-browser durable storage backend.
+- Use IndexedDB as the cross-browser durable structured storage backend.
 - Keep a storage adapter boundary so a Chrome-only SQLite OPFS backend can be added later without changing import/export or UI code.
-- Implement search as a portable index over IndexedDB data instead of depending on SQLite FTS5.
-- Keep HTU SQLite/FTS5 behavior as a compatibility reference, not as a hard runtime dependency.
+- Use SQLite WASM `:memory:` plus FTS5 `trigram` as the title/URL search engine.
+- Persist the SQLite FTS database as an IndexedDB snapshot, not through OPFS.
+- Keep HTU SQLite/FTS5 behavior as a compatibility reference and use FTS5 where it has been verified without OPFS.
 
 The chosen data layer must support:
 
 - one row per visit
 - URL-level metadata
-- FTS-like search over URL and title
+- SQLite FTS-backed search over URL and title
 - materialized fields for date/year/month/month day/week day/hour
 - import/export scans over large data sets
 - Chrome MV3 service-worker constraints
@@ -71,12 +72,22 @@ The chosen data layer must support:
 Recommended IndexedDB object stores:
 
 - `pages`: key by stable page id; unique index on normalized URL.
-- `visits`: key by visit id; indexes on page id, visit time, transition, day, month, weekday, and hour.
-- `terms`: search term dictionary.
-- `postings`: inverted index entries keyed by term and page/visit references.
+- `visits`: key by visit id; indexes on page id, visit time, transition, day, month, weekday, hour, host, and domain.
 - `stats_daily`: materialized day-level aggregates.
 - `stats_domain`: materialized host/domain aggregates.
+- `stats_hourly`: materialized hour-of-day and weekday/hour aggregates for HTU-style trend views.
 - `jobs`: resumable import/export/sync job state.
+- `search_snapshot`: SQLite FTS snapshot bytes plus version/schema metadata.
+
+Required time indexes:
+
+- `visit_time` for range filtering and export ordering.
+- `day` for daily grouping and date filters.
+- `month` and `month_day` for monthly trend views.
+- `weekday` and `hour` for HTU-style weekday/hour charts.
+- `[page_id, visit_time]` for page detail timelines.
+- `[host, visit_time]` and `[domain, visit_time]` for domain filters.
+- `[transition, visit_time]` for transition filters.
 
 ## Search Strategy
 
@@ -93,14 +104,25 @@ HTU-compatible search should start from the HTU model:
 - domain filter over host/subdomain
 - transition filter
 
-Improved portable search index design:
+Improved search design:
 
 - normalize title, URL, hostname, path, query, and decoded URL text
-- tokenize ASCII words, URL segments, and CJK n-grams
-- keep an exact substring fallback for compatibility
+- index title and URL text with SQLite FTS5 `trigram`
+- support substring matches such as `ifen` matching `ruanyifeng`
 - rank by recency, token coverage, field weight, typed count, and visit count
-- execute candidate retrieval through IndexedDB term postings and apply final matching in workers
+- execute FTS inside a worker using a SQLite WASM `:memory:` database restored from IndexedDB snapshot
+- combine FTS page ids with IndexedDB time/domain/transition filters when filters are active
 - keep search jobs cancellable and chunked so large histories do not block the UI
+
+Combined keyword/time query strategy:
+
+- Keyword-only query: run SQLite FTS first, rank page-level results, then fetch page metadata.
+- Time-only query: scan IndexedDB `visits.visit_time` range and aggregate by page/domain/time bucket.
+- Keyword plus broad time range: run SQLite FTS for candidate page ids, then query IndexedDB visits by `[page_id, visit_time]` or page id batches and apply the time range.
+- Keyword plus narrow time range: scan IndexedDB `visits.visit_time` range first, collect page ids, then intersect with SQLite FTS candidate page ids.
+- Domain/transition/time filters should be applied in IndexedDB after or before FTS depending on selectivity.
+- The query planner should estimate selectivity from stats stores, for example day counts, domain counts, and last known FTS result size.
+- Search result rows should represent visits when time filters are active and pages when no visit-level filter is active.
 
 The old `%keyword%` SQL pattern is acceptable for small data sets but not enough for hundreds of thousands of rows.
 

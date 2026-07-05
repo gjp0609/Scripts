@@ -19,7 +19,7 @@ Non-goals:
 
 ## Current Phase
 
-This directory is intentionally documentation-first. Implementation should start only after the data format and browser architecture decisions in `docs/` are accepted.
+The documentation and compatibility analysis are in place. Runtime implementation has started with a WXT skeleton, background adapter, options page, and IndexedDB schema bootstrap.
 
 Read in order:
 

@@ -18,8 +18,10 @@ Current committed runtime code:
 
 - HTU TSV parser/serializer module.
 - HTU TSV tests.
-
-Runtime extension code has not started yet.
+- WXT extension skeleton.
+- Background runtime adapter.
+- Options page shell.
+- IndexedDB schema bootstrap and basic status readout.
 
 ## Milestone 1: Project Skeleton
 
@@ -35,10 +37,10 @@ Deliverables:
 
 Acceptance:
 
-- Chrome package builds.
-- Firefox package builds.
-- Both load as unpacked/temporary extensions.
-- A placeholder history page can message the background/runtime layer.
+- Chrome package builds. Done.
+- Firefox package builds. Done.
+- Both load as unpacked/temporary extensions. Pending manual browser load check.
+- A placeholder history page can message the background/runtime layer. Done in the options page.
 
 ## Milestone 2: Core Storage
 

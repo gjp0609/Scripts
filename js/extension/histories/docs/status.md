@@ -30,13 +30,16 @@ Compatibility requirements:
 
 ## Current Implementation State
 
-- No runtime extension code exists yet.
-- No manifest exists yet.
+- WXT runtime skeleton exists.
+- Chrome MV3 manifest generation has been verified.
+- Firefox MV3 manifest generation has been verified.
+- The options page can message the background/runtime layer.
+- The options page opens the IndexedDB database and reports basic store counts.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
-- No UI has been rebuilt.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
+- The search engine module is still a placeholder; SQLite WASM has not been promoted from probe code into runtime code.
 
 ## Blockers Before Coding Compatibility
 
@@ -54,8 +57,8 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Implement HTU TSV parser/serializer as an isolated module.
-2. Add tests for 3-column, 4-column, and 8-column import/export formats.
-3. Run parser/serializer round-trip tests against the external full backup file.
-4. Prototype IndexedDB minimal visit-time indexes.
-5. Promote SQLite WASM FTS snapshot search into production search modules.
+1. Implement core IndexedDB write/read helpers for pages, visits, jobs, and search snapshots.
+2. Add storage tests around schema migrations and indexed range scans.
+3. Build the HTU import worker on top of the existing parser/serializer.
+4. Promote SQLite WASM FTS snapshot search into production search modules.
+5. Implement keyword plus time-range search planning.

@@ -243,8 +243,36 @@ Implementation implication:
 
 ## Next Verification Steps
 
-1. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-2. Prototype structured IndexedDB time indexes for `visit_time`, day, month, weekday, hour, transition, page id, host, and domain.
-3. Test combined searches such as keyword plus arbitrary time range.
-4. Reduce snapshot size by minimizing indexed text and moving result metadata to IndexedDB.
-5. Lock parser/serializer fixtures for HTU 3-column, 4-column, and 8-column TSV variants.
+## WXT Skeleton Build
+
+Commands:
+
+- `npx wxt build js/extension/histories --browser chrome --mv3`
+- `npx wxt build js/extension/histories --browser firefox --mv3`
+
+Result:
+
+- Chrome MV3 build passed.
+- Firefox MV3 build passed.
+- Firefox manifest includes `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]` because this extension is designed to keep history data local and not transmit collected data outside the browser/extension.
+- The options page bundle includes runtime ping and IndexedDB schema bootstrap.
+
+## Latest Automated Tests
+
+Commands:
+
+- `node --test js\extension\histories\tests\htu-tsv.test.mjs`
+- `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
+
+Result:
+
+- Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
+- External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
+
+## Next Verification Steps
+
+1. Manually load the generated Chrome and Firefox unpacked extension outputs.
+2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
+3. Add automated storage tests for `visit_time`, `[page_id, visit_time]`, and `[transition, visit_time]`.
+4. Test combined searches such as keyword plus arbitrary time range.
+5. Reduce snapshot size by minimizing indexed text and moving result metadata to IndexedDB.

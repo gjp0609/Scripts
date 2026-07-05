@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Histories</title>
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <main id="app" class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">H</span>
+          <div>
+            <h1>Histories</h1>
+            <p>History search workspace</p>
+          </div>
+        </div>
+        <nav class="nav">
+          <button class="nav-item active" type="button">Search</button>
+          <button class="nav-item" type="button" disabled>Import</button>
+          <button class="nav-item" type="button" disabled>Export</button>
+          <button class="nav-item" type="button" disabled>Stats</button>
+        </nav>
+      </aside>
+
+      <section class="workspace">
+        <header class="toolbar">
+          <label class="search-box">
+            <span>Keyword</span>
+            <input id="keyword" type="search" placeholder="Search title or URL" autocomplete="off" />
+          </label>
+          <label>
+            <span>From</span>
+            <input id="fromTime" type="datetime-local" />
+          </label>
+          <label>
+            <span>To</span>
+            <input id="toTime" type="datetime-local" />
+          </label>
+          <button id="searchButton" type="button">Search</button>
+        </header>
+
+        <section class="status-grid" aria-label="status">
+          <article>
+            <span>Runtime</span>
+            <strong id="runtimeStatus">Checking</strong>
+          </article>
+          <article>
+            <span>Storage</span>
+            <strong id="storageStatus">Checking</strong>
+          </article>
+          <article>
+            <span>Search Snapshot</span>
+            <strong id="snapshotStatus">Checking</strong>
+          </article>
+        </section>
+
+        <section class="results-panel">
+          <div class="panel-head">
+            <h2>Results</h2>
+            <span id="resultSummary">Skeleton ready</span>
+          </div>
+          <div id="results" class="empty-state">
+            No query has been run.
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>

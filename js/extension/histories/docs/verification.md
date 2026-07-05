@@ -270,18 +270,33 @@ Result:
 - Browser smoke test passed with local Chrome.
 - The test bundles `src/storage/database.ts` for a real browser context, starts a temporary local HTTP server, writes to browser IndexedDB, then deletes the test database.
 - Covered behavior: page upsert by normalized URL, visit bulk writes, `visit_time` scans, `[page_id, visit_time]` scans, `[transition, visit_time]` scans, reverse limited scans, job round-trip, search snapshot round-trip, and database summary counts.
+- The same browser smoke also covers a small HTU import through `importHtuText`, including parse, page aggregation, chunked visit writes, and progress stages.
+
+## HTU Import Core
+
+Commands:
+
+- `node --test js\extension\histories\tests\htu-import.test.mjs`
+
+Result:
+
+- Import planner test passed.
+- Covered behavior: normalized URL page aggregation, latest-page representative URL/title selection, visit draft creation, and deterministic HTU visit ids.
+- Full external-backup browser import has not been run yet; this remains the next import verification step.
 
 ## Latest Automated Tests
 
 Commands:
 
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
+- `node --test js\extension\histories\tests\htu-import.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
 
 Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
+- HTU import planner: 2 passed.
 - Storage smoke: 1 passed in local Chrome.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 

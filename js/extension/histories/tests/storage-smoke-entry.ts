@@ -15,6 +15,7 @@ import {
   upsertPage
 } from '../src/storage/database';
 import { DATABASE_NAME } from '../src/storage/schema';
+import { importHtuText } from '../src/import/htu-import';
 
 type SmokeResult = {
   pageCount: number;
@@ -23,6 +24,9 @@ type SmokeResult = {
   pageRangeIds: string[];
   transitionRangeIds: string[];
   reverseIds: string[];
+  importRows: number;
+  importPages: number;
+  importVisits: number;
 };
 
 declare global {
@@ -136,17 +140,51 @@ window.runHistoriesStorageSmoke = async () => {
   const db = await openHistoriesDatabase();
   db.close();
 
-  await deleteDatabase(DATABASE_NAME);
-
   return {
     pageCount: summary.pages,
     visitCount: summary.visits,
     rangeIds: timeRange.map((visit) => visit.id),
     pageRangeIds: pageRange.map((visit) => visit.id),
     transitionRangeIds: transitionRange.map((visit) => visit.id),
-    reverseIds: reverse.map((visit) => visit.id)
+    reverseIds: reverse.map((visit) => visit.id),
+    ...(await runImportSmoke())
   };
 };
+
+async function runImportSmoke() {
+  await deleteDatabase(DATABASE_NAME);
+
+  const progressStages: string[] = [];
+  const source = [
+    'https://example.com/imported#old\tU1000\t0\tOld imported title',
+    'https://example.com/imported\tU3000\t1\tNew imported title',
+    'https://example.org/other\tU2000\t8\tOther imported title',
+    ''
+  ].join('\r\n');
+  const result = await importHtuText(source, {
+    visitChunkSize: 2,
+    onProgress(progress) {
+      progressStages.push(progress.stage);
+    }
+  });
+  ensureIds(progressStages, ['parsed', 'pages', 'visits', 'visits', 'done'], 'import progress order');
+
+  const summary = await getDatabaseSummary();
+  ensure(summary.pages === 2, 'import should write aggregated pages');
+  ensure(summary.visits === 3, 'import should write visits');
+  ensure(result.rows === 3, 'import result rows should match parsed rows');
+  ensure(result.pages === 2, 'import result pages should match aggregated pages');
+  ensure(result.visits === 3, 'import result visits should match planned visits');
+  ensure(result.writtenVisits === 3, 'import result written visits should match storage writes');
+
+  await deleteDatabase(DATABASE_NAME);
+
+  return {
+    importRows: result.rows,
+    importPages: result.pages,
+    importVisits: result.visits
+  };
+}
 
 function ensure(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -168,4 +206,3 @@ function deleteDatabase(name: string): Promise<void> {
     request.onblocked = () => reject(new Error(`deleteDatabase blocked: ${name}`));
   });
 }
-

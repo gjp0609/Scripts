@@ -23,6 +23,7 @@ Current committed runtime code:
 - Options page shell.
 - IndexedDB schema bootstrap and basic status readout.
 - IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
+- HTU import core for parse, aggregate, bulk page upsert, chunked visit writes, deterministic visit ids, and progress callbacks.
 
 ## Milestone 1: Project Skeleton
 
@@ -74,10 +75,10 @@ Deliverables:
 
 Acceptance:
 
-- Imports the external backup without URL/title logging.
-- Preserves all 4-column rows structurally.
-- Writes expected page and visit counts.
-- Can resume or restart safely after cancellation.
+- Imports the external backup without URL/title logging. Pending full-browser run.
+- Preserves all 4-column rows structurally. Parser/export round-trip done.
+- Writes expected page and visit counts. Small browser smoke done; full-backup run pending.
+- Can resume or restart safely after cancellation. Pending worker job state.
 
 ## Milestone 4: SQLite FTS Search Module
 

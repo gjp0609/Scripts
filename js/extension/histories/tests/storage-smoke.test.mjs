@@ -53,6 +53,9 @@ test('browser IndexedDB storage APIs support pages, visits, jobs, and snapshots'
         assert.deepEqual(result.pageRangeIds, ['v-1000-link', 'v-2000-typed']);
         assert.deepEqual(result.transitionRangeIds, ['v-1000-link', 'v-3000-link']);
         assert.deepEqual(result.reverseIds, ['v-4000-reload', 'v-3000-link']);
+        assert.equal(result.importRows, 3);
+        assert.equal(result.importPages, 2);
+        assert.equal(result.importVisits, 3);
       } finally {
         await browser.close();
       }

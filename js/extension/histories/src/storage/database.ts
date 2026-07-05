@@ -27,56 +27,75 @@ export function openHistoriesDatabase(): Promise<HistoriesDatabase> {
 }
 
 export async function upsertPage(input: PageInput): Promise<PageRecord> {
+  const [record] = await upsertPages([input]);
+  return record;
+}
+
+export async function upsertPages(inputs: PageInput[]): Promise<PageRecord[]> {
+  if (inputs.length === 0) return [];
+
+  const mergedInputs = mergePageInputs(inputs);
   const db = await openHistoriesDatabase();
 
   try {
-    const normalizedUrl = input.normalizedUrl ?? normalizeHistoryUrl(input.url);
     const now = Date.now();
     const transaction = db.transaction('pages', 'readwrite');
     const store = transaction.objectStore('pages');
     const index = store.index('normalizedUrl');
-    const existing = (await requestToPromise(index.get(normalizedUrl))) as PageRecord | undefined;
-    const urlParts = parseUrlParts(input.url);
+    const existingRecords = await Promise.all(
+      mergedInputs.map((input) =>
+        requestToPromise(index.get(input.normalizedUrl ?? normalizeHistoryUrl(input.url)))
+      )
+    );
+    const results: PageRecord[] = [];
 
-    if (existing) {
-      const nextRecord: PageRecord = {
-        ...existing,
+    for (let indexOffset = 0; indexOffset < mergedInputs.length; indexOffset += 1) {
+      const input = mergedInputs[indexOffset];
+      const normalizedUrl = input.normalizedUrl ?? normalizeHistoryUrl(input.url);
+      const urlParts = parseUrlParts(input.url);
+      const existing = existingRecords[indexOffset] as PageRecord | undefined;
+
+      if (existing) {
+        const nextRecord: PageRecord = {
+          ...existing,
+          url: input.url,
+          normalizedUrl,
+          title: input.title ?? existing.title,
+          host: urlParts.host,
+          domain: urlParts.domain,
+          visitCount: input.visitCount ?? existing.visitCount,
+          lastVisitTime:
+            input.lastVisitTime === undefined
+              ? existing.lastVisitTime
+              : Math.max(existing.lastVisitTime, input.lastVisitTime),
+          updatedAt: now
+        };
+
+        store.put(nextRecord);
+        results.push(nextRecord);
+        continue;
+      }
+
+      const recordWithoutId = {
         url: input.url,
         normalizedUrl,
-        title: input.title ?? existing.title,
+        title: input.title ?? '',
         host: urlParts.host,
         domain: urlParts.domain,
-        visitCount: input.visitCount ?? existing.visitCount,
-        lastVisitTime:
-          input.lastVisitTime === undefined
-            ? existing.lastVisitTime
-            : Math.max(existing.lastVisitTime, input.lastVisitTime),
+        visitCount: input.visitCount ?? 0,
+        lastVisitTime: input.lastVisitTime ?? 0,
+        createdAt: now,
         updatedAt: now
       };
-
-      store.put(nextRecord);
-      await transactionDone(transaction);
-      return nextRecord;
+      const id = Number(await requestToPromise(store.add(recordWithoutId)));
+      results.push({
+        id,
+        ...recordWithoutId
+      });
     }
 
-    const recordWithoutId = {
-      url: input.url,
-      normalizedUrl,
-      title: input.title ?? '',
-      host: urlParts.host,
-      domain: urlParts.domain,
-      visitCount: input.visitCount ?? 0,
-      lastVisitTime: input.lastVisitTime ?? 0,
-      createdAt: now,
-      updatedAt: now
-    };
-    const id = Number(await requestToPromise(store.add(recordWithoutId)));
     await transactionDone(transaction);
-
-    return {
-      id,
-      ...recordWithoutId
-    };
+    return results;
   } finally {
     db.close();
   }
@@ -318,6 +337,37 @@ function readCursor<T>(
 
 function timeKeyRange(query: VisitRangeQuery): IDBKeyRange {
   return IDBKeyRange.bound(query.startTime ?? 0, query.endTime ?? MAX_TIME);
+}
+
+function mergePageInputs(inputs: PageInput[]): PageInput[] {
+  const byNormalizedUrl = new Map<string, PageInput>();
+
+  for (const input of inputs) {
+    const normalizedUrl = input.normalizedUrl ?? normalizeHistoryUrl(input.url);
+    const existing = byNormalizedUrl.get(normalizedUrl);
+
+    if (!existing) {
+      byNormalizedUrl.set(normalizedUrl, {
+        ...input,
+        normalizedUrl
+      });
+      continue;
+    }
+
+    byNormalizedUrl.set(normalizedUrl, {
+      ...existing,
+      url: input.url,
+      title: input.title ?? existing.title,
+      visitCount: input.visitCount ?? existing.visitCount,
+      lastVisitTime:
+        input.lastVisitTime === undefined
+          ? existing.lastVisitTime
+          : Math.max(existing.lastVisitTime ?? 0, input.lastVisitTime),
+      normalizedUrl
+    });
+  }
+
+  return [...byNormalizedUrl.values()];
 }
 
 export function normalizeHistoryUrl(url: string): string {

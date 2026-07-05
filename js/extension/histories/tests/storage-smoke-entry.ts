@@ -162,12 +162,17 @@ async function runImportSmoke() {
     ''
   ].join('\r\n');
   const result = await importHtuText(source, {
+    pageChunkSize: 1,
     visitChunkSize: 2,
     onProgress(progress) {
       progressStages.push(progress.stage);
     }
   });
-  ensureIds(progressStages, ['parsed', 'pages', 'visits', 'visits', 'done'], 'import progress order');
+  ensureIds(
+    progressStages,
+    ['parsed', 'pages', 'pages', 'visits', 'visits', 'done'],
+    'import progress order'
+  );
 
   const summary = await getDatabaseSummary();
   ensure(summary.pages === 2, 'import should write aggregated pages');

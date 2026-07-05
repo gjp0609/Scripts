@@ -270,7 +270,7 @@ Result:
 - Browser smoke test passed with local Chrome.
 - The test bundles `src/storage/database.ts` for a real browser context, starts a temporary local HTTP server, writes to browser IndexedDB, then deletes the test database.
 - Covered behavior: page upsert by normalized URL, visit bulk writes, `visit_time` scans, `[page_id, visit_time]` scans, `[transition, visit_time]` scans, reverse limited scans, job round-trip, search snapshot round-trip, and database summary counts.
-- The same browser smoke also covers a small HTU import through `importHtuText`, including parse, page aggregation, chunked visit writes, and progress stages.
+- The same browser smoke also covers a small HTU import through `importHtuText`, including parse, page aggregation, chunked page writes, chunked visit writes, and progress stages.
 
 ## HTU Import Core
 

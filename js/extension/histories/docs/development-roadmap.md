@@ -23,7 +23,7 @@ Current committed runtime code:
 - Options page shell.
 - IndexedDB schema bootstrap and basic status readout.
 - IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
-- HTU import core for parse, aggregate, bulk page upsert, chunked visit writes, deterministic visit ids, and progress callbacks.
+- HTU import core for parse, aggregate, chunked page upsert, chunked visit writes, deterministic visit ids, and progress callbacks.
 
 ## Milestone 1: Project Skeleton
 

@@ -7,6 +7,7 @@ import {
 import type { PageInput, VisitInput } from '../storage/schema';
 
 const DEFAULT_VISIT_CHUNK_SIZE = 5000;
+const DEFAULT_PAGE_CHUNK_SIZE = 5000;
 
 export type HtuImportRow = {
   url: string;
@@ -32,6 +33,7 @@ export type HtuImportProgress = {
   rows: number;
   pages: number;
   visits: number;
+  writtenPages: number;
   writtenVisits: number;
 };
 
@@ -40,6 +42,7 @@ export type HtuImportResult = HtuImportProgress & {
 };
 
 export type HtuImportOptions = {
+  pageChunkSize?: number;
   visitChunkSize?: number;
   onProgress?: (progress: HtuImportProgress) => void | Promise<void>;
 };
@@ -59,21 +62,32 @@ export async function importHtuText(
     rows: parsed.rows.length,
     pages: plan.pages.length,
     visits: plan.visits.length,
+    writtenPages: 0,
     writtenVisits: 0
   });
 
-  const pages = await upsertPages(plan.pages);
-  const pageIds = new Map(pages.map((page) => [page.normalizedUrl, page.id]));
-  await emitProgress(options, {
-    stage: 'pages',
-    rows: parsed.rows.length,
-    pages: plan.pages.length,
-    visits: plan.visits.length,
-    writtenVisits: 0
-  });
+  const pageIds = new Map<string, number>();
+  const pageChunkSize = normalizeChunkSize(options.pageChunkSize, DEFAULT_PAGE_CHUNK_SIZE);
+  let writtenPages = 0;
+
+  for (let start = 0; start < plan.pages.length; start += pageChunkSize) {
+    const pages = await upsertPages(plan.pages.slice(start, start + pageChunkSize));
+    for (const page of pages) {
+      pageIds.set(page.normalizedUrl, page.id);
+    }
+    writtenPages += pages.length;
+    await emitProgress(options, {
+      stage: 'pages',
+      rows: parsed.rows.length,
+      pages: plan.pages.length,
+      visits: plan.visits.length,
+      writtenPages,
+      writtenVisits: 0
+    });
+  }
 
   let writtenVisits = 0;
-  const chunkSize = options.visitChunkSize ?? DEFAULT_VISIT_CHUNK_SIZE;
+  const chunkSize = normalizeChunkSize(options.visitChunkSize, DEFAULT_VISIT_CHUNK_SIZE);
 
   for (let start = 0; start < plan.visits.length; start += chunkSize) {
     const chunk = plan.visits.slice(start, start + chunkSize).map((visit): VisitInput => {
@@ -96,6 +110,7 @@ export async function importHtuText(
       rows: parsed.rows.length,
       pages: plan.pages.length,
       visits: plan.visits.length,
+      writtenPages,
       writtenVisits
     });
   }
@@ -105,6 +120,7 @@ export async function importHtuText(
     rows: parsed.rows.length,
     pages: plan.pages.length,
     visits: plan.visits.length,
+    writtenPages,
     writtenVisits,
     errors: 0
   };
@@ -166,4 +182,9 @@ export function makeHtuVisitId(
 
 async function emitProgress(options: HtuImportOptions, progress: HtuImportProgress) {
   await options.onProgress?.(progress);
+}
+
+function normalizeChunkSize(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value) || value < 1) return fallback;
+  return Math.floor(value);
 }

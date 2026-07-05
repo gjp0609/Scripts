@@ -37,7 +37,7 @@ Compatibility requirements:
 - The options page opens the IndexedDB database and reports basic store counts.
 - Core IndexedDB helper APIs now exist for page upsert, visit bulk writes, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
 - Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, and search snapshots.
-- HTU import core now parses HTU TSV text, aggregates pages, plans deterministic visit ids, writes pages in bulk, writes visits in chunks, and reports import progress.
+- HTU import core now parses HTU TSV text, aggregates pages, plans deterministic visit ids, writes pages in chunks, writes visits in chunks, and reports import progress.
 - Browser-level smoke test covers a small HTU import into IndexedDB.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.

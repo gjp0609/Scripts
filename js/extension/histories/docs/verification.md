@@ -139,9 +139,53 @@ Implementation implication:
 - The first parser/serializer milestone must preserve this 4-column backup file byte-for-byte when no data changes are made.
 - Import tests should use this file as an external local fixture path, not as a repository fixture.
 
+## IndexedDB Search Probe
+
+Probe:
+
+- Local ignored probe directory: `probes/indexeddb-search/`.
+- Storage: IndexedDB object stores for `pages`, `visits`, and `meta`.
+- Search index: page-level `tokens` multiEntry index, with worker-side final matching and scoring.
+- Data source: external HTU backup file listed above.
+- Data privacy: query results are local browser state only; verification records aggregate timing and counts, not URL/title values.
+
+Initial import result:
+
+- Visits imported: `887,561`.
+- Pages indexed: `384,065`.
+- Import and index build time: `574,298 ms`.
+- Interpretation: search latency is acceptable for the tested scale, but import/index build time needs optimization before production use.
+
+Search result after exact-token candidate lookup:
+
+| query | candidates | matches | returned | time |
+| --- | ---: | ---: | ---: | ---: |
+| `ruanyifeng` | 648 | 648 | 50 | 24.80 ms |
+| `ruan` | 9 | 9 | 9 | 2.80 ms |
+
+Problem found:
+
+- Exact token lookup did not treat `ruan` as a prefix of longer tokens such as `ruanyifeng`.
+- This is the kind of fuzzy/prefix behavior the rewrite must improve over HTU.
+
+Search result after prefix-range lookup:
+
+| query | candidates | matches | returned | time |
+| --- | ---: | ---: | ---: | ---: |
+| `ruan` | 789 | 789 | 50 | 34.80 ms |
+| `ruanyifeng` | 648 | 648 | 50 | 14.60 ms |
+| `feng` | 72 | 72 | 50 | 10.60 ms |
+
+Implementation implication:
+
+- IndexedDB `multiEntry` token indexes are viable for page-level candidate retrieval at the tested data size.
+- ASCII prefix lookup should use an IndexedDB range query, for example `IDBKeyRange.bound(term, term + "\uffff")`.
+- Final matching and ranking should remain worker-side so compatibility and improved-search modes can share the same storage.
+- Production import must reduce index build cost, likely by chunking differently, reducing per-page token volume, and avoiding unnecessary visit writes for search-only workflows.
+
 ## Next Verification Steps
 
-1. Validate IndexedDB bulk import throughput against the external HTU backup file.
-2. Validate a portable search index strategy on representative URL/title samples without logging private values.
+1. Optimize IndexedDB bulk import and index build throughput against the external HTU backup file.
+2. Add CJK substring/ngram search cases to the IndexedDB probe.
 3. Lock parser/serializer fixtures for HTU 3-column, 4-column, and 8-column TSV variants.
-4. Implement the first import/export compatibility module before UI work.
+4. Promote the proven probe design into production storage/search modules.

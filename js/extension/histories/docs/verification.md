@@ -130,6 +130,9 @@ Round-trip check:
 - Source SHA-256: `12f73bee44a8f72e51a86151ff67417e082e5759ca7c68e49354ae1a57ee8fe4`.
 - Re-serialized SHA-256: `12f73bee44a8f72e51a86151ff67417e082e5759ca7c68e49354ae1a57ee8fe4`.
 - Exact byte-compatible round trip: yes.
+- Automated parser/serializer test: `node --test js\extension\histories\tests\htu-tsv.test.mjs`.
+- External full-backup test command: set `HISTORIES_HTU_BACKUP` to the source file path before running the same test command.
+- Latest external round-trip test result: 7 passing tests, full backup round-trip completed in about 2.0 seconds.
 
 Implementation implication:
 

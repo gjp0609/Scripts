@@ -24,7 +24,10 @@ This directory is intentionally documentation-first. Implementation should start
 Read in order:
 
 1. `docs/status.md`
-2. `docs/technical-analysis.md`
-3. `docs/htu-compatibility.md`
-4. `docs/htu-source-analysis.md`
-5. `docs/implementation-plan.md`
+2. `docs/architecture-design.md`
+3. `docs/development-roadmap.md`
+4. `docs/technical-analysis.md`
+5. `docs/verification.md`
+6. `docs/htu-compatibility.md`
+7. `docs/htu-source-analysis.md`
+8. `docs/implementation-plan.md`

@@ -12,7 +12,7 @@ const searchButton = document.querySelector<HTMLButtonElement>('#searchButton');
 
 async function boot() {
   try {
-    const response = await runtime.sendMessage({ type: 'histories:ping' });
+    const response = await runtime.sendMessage<{ version?: string }>({ type: 'histories:ping' });
     if (runtimeStatus) {
       runtimeStatus.textContent = response?.version ? `Connected ${response.version}` : 'Connected';
     }

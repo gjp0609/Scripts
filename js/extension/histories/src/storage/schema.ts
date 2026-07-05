@@ -14,12 +14,22 @@ export type PageRecord = {
   updatedAt: number;
 };
 
+export type PageInput = {
+  url: string;
+  normalizedUrl?: string;
+  title?: string;
+  visitCount?: number;
+  lastVisitTime?: number;
+};
+
 export type VisitRecord = {
   id: string;
   pageId: number;
   visitTime: number;
   transition: string;
 };
+
+export type VisitInput = VisitRecord;
 
 export type SearchSnapshotRecord = {
   key: 'latest';

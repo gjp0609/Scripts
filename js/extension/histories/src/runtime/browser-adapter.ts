@@ -5,9 +5,13 @@ type RuntimeMessage = {
 
 type MessageHandler = (message: RuntimeMessage, sender?: unknown) => unknown | Promise<unknown>;
 
+type ManifestLike = {
+  version?: string;
+};
+
 type BrowserLike = {
   runtime: {
-    getManifest(): chrome.runtime.Manifest;
+    getManifest(): ManifestLike;
     openOptionsPage(callback?: () => void): void;
     onInstalled: {
       addListener(callback: () => void): void;

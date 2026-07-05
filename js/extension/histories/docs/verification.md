@@ -256,6 +256,8 @@ Result:
 - Firefox MV3 build passed.
 - Firefox manifest includes `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]` because this extension is designed to keep history data local and not transmit collected data outside the browser/extension.
 - The options page bundle includes runtime ping and IndexedDB schema bootstrap.
+- TypeScript check passed with WXT generated project config: `npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json`.
+- After adding storage helper APIs, Chrome and Firefox MV3 builds still pass.
 
 ## Latest Automated Tests
 
@@ -272,7 +274,7 @@ Result:
 ## Next Verification Steps
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
-2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-3. Add automated storage tests for `visit_time`, `[page_id, visit_time]`, and `[transition, visit_time]`.
+2. Add a browser-level IndexedDB smoke test for page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, and `[transition, visit_time]`.
+3. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
 4. Test combined searches such as keyword plus arbitrary time range.
 5. Reduce snapshot size by minimizing indexed text and moving result metadata to IndexedDB.

@@ -22,6 +22,7 @@ Current committed runtime code:
 - Background runtime adapter.
 - Options page shell.
 - IndexedDB schema bootstrap and basic status readout.
+- IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
 
 ## Milestone 1: Project Skeleton
 
@@ -55,10 +56,10 @@ Deliverables:
 
 Acceptance:
 
-- Can write/read pages and visits in Chrome and Firefox.
-- Can range-scan `visits.visit_time`.
-- Can query `[page_id, visit_time]`.
-- Can recover from interrupted job state.
+- Can write/read pages and visits in Chrome and Firefox. API added; browser smoke test pending.
+- Can range-scan `visits.visit_time`. API added; browser smoke test pending.
+- Can query `[page_id, visit_time]`. API added; browser smoke test pending.
+- Can recover from interrupted job state. API added; resume semantics pending import/sync jobs.
 
 ## Milestone 3: HTU Import Pipeline
 

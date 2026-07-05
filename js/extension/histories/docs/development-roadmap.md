@@ -56,9 +56,10 @@ Deliverables:
 
 Acceptance:
 
-- Can write/read pages and visits in Chrome and Firefox. API added; browser smoke test pending.
-- Can range-scan `visits.visit_time`. API added; browser smoke test pending.
-- Can query `[page_id, visit_time]`. API added; browser smoke test pending.
+- Can write/read pages and visits in a browser IndexedDB context. Done in Chrome/Edge smoke test harness.
+- Can range-scan `visits.visit_time`. Done in browser smoke test.
+- Can query `[page_id, visit_time]`. Done in browser smoke test.
+- Can query `[transition, visit_time]`. Done in browser smoke test.
 - Can recover from interrupted job state. API added; resume semantics pending import/sync jobs.
 
 ## Milestone 3: HTU Import Pipeline

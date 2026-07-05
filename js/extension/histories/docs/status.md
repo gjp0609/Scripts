@@ -36,12 +36,13 @@ Compatibility requirements:
 - The options page can message the background/runtime layer.
 - The options page opens the IndexedDB database and reports basic store counts.
 - Core IndexedDB helper APIs now exist for page upsert, visit bulk writes, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
+- Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, and search snapshots.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
 - The search engine module is still a placeholder; SQLite WASM has not been promoted from probe code into runtime code.
-- Browser-level IndexedDB storage smoke tests have not been added yet.
+- The HTU import worker has not been implemented yet.
 
 ## Blockers Before Coding Compatibility
 
@@ -59,8 +60,8 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Add browser-level storage tests around schema migrations and indexed range scans.
-2. Build the HTU import worker on top of the existing parser/serializer.
+1. Build the HTU import worker on top of the existing parser/serializer and storage APIs.
+2. Add import progress and restart/cancel job state.
 3. Promote SQLite WASM FTS snapshot search into production search modules.
 4. Implement keyword plus time-range search planning.
 5. Add browser history sync after import/search storage paths are stable.

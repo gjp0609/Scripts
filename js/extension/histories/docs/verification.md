@@ -259,22 +259,36 @@ Result:
 - TypeScript check passed with WXT generated project config: `npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json`.
 - After adding storage helper APIs, Chrome and Firefox MV3 builds still pass.
 
+## IndexedDB Storage Smoke Test
+
+Command:
+
+- `node --test js\extension\histories\tests\storage-smoke.test.mjs`
+
+Result:
+
+- Browser smoke test passed with local Chrome.
+- The test bundles `src/storage/database.ts` for a real browser context, starts a temporary local HTTP server, writes to browser IndexedDB, then deletes the test database.
+- Covered behavior: page upsert by normalized URL, visit bulk writes, `visit_time` scans, `[page_id, visit_time]` scans, `[transition, visit_time]` scans, reverse limited scans, job round-trip, search snapshot round-trip, and database summary counts.
+
 ## Latest Automated Tests
 
 Commands:
 
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
+- `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
 
 Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
+- Storage smoke: 1 passed in local Chrome.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 
 ## Next Verification Steps
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
-2. Add a browser-level IndexedDB smoke test for page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, and `[transition, visit_time]`.
-3. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
+2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
+3. Build and test the HTU import worker against the external backup.
 4. Test combined searches such as keyword plus arbitrary time range.
 5. Reduce snapshot size by minimizing indexed text and moving result metadata to IndexedDB.

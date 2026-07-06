@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue';
 import Macy from 'macy';
-import { useMagicKeys, whenever } from '@vueuse/core';
+import { useMagicKeys, whenever, onClickOutside } from '@vueuse/core';
 import {
   ArrowDown,
   ArrowUp,
@@ -16,7 +16,6 @@ import {
   Plus,
   RefreshLeft,
   Search,
-  Setting,
 } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { InputInstance } from 'element-plus';
@@ -45,6 +44,9 @@ type BookmarkForm = {
   description: string;
 };
 
+type SearchTarget = BookmarkItem;
+type SelectableItem = { group?: BookmarkGroup; item: BookmarkItem };
+
 const STORAGE_KEY = 'bookmarks-workbench-state-v1';
 const defaultEngine = {
   id: 'google',
@@ -65,10 +67,42 @@ const editingBookmarkId = ref('');
 const form = ref<BookmarkForm>({ title: '', url: '', tags: '', description: '' });
 const folderTitle = ref('');
 const searchInputRef = ref<InputInstance>();
+const searchWrapRef = ref<HTMLElement>();
 const boardRef = ref<HTMLElement>();
 const macy = ref<ReturnType<typeof Macy> | null>(null);
 const undoStack = ref<Array<{ label: string; groups: BookmarkGroup[] }>>([]);
+const themeColor = ref(localStorage.getItem('bookmarks-theme-color') || '#2f746d');
 const suppressPersistence = ref(false);
+
+function hexToHsl(hex: string): [number, number, number] {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, Math.round(l * 100)];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  const h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6
+           : max === g ? ((b - r) / d + 2) / 6
+                       : ((r - g) / d + 4) / 6;
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+function applyThemeColor(hex: string) {
+  const [h, s, l] = hexToHsl(hex);
+  const root = document.documentElement;
+  root.style.setProperty('--ph', String(h));
+  root.style.setProperty('--ps', `${s}%`);
+  root.style.setProperty('--pl', `${l}%`);
+}
+
+function onThemeColorChange(event: Event) {
+  const hex = (event.target as HTMLInputElement).value;
+  themeColor.value = hex;
+  localStorage.setItem('bookmarks-theme-color', hex);
+  applyThemeColor(hex);
+}
 let reflowFrame = 0;
 let reflowTimer = 0;
 let dragSnapshot: { label: string; groups: BookmarkGroup[]; signature: string } | null = null;
@@ -80,10 +114,27 @@ const engines = [
   { id: 'github', name: 'GitHub', url: 'https://github.com/search?q={keyword}' },
 ];
 
+const siteSearchTargets: SearchTarget[] = [
+  { id: 'site-v2ex', title: 'V2EX', url: 'https://www.v2ex.com/search?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-github', title: 'GitHub', url: 'https://github.com/search?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-mdn', title: 'MDN', url: 'https://developer.mozilla.org/search?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-google', title: 'Google', url: 'https://www.google.com/search?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-bing', title: 'Bing', url: 'https://cn.bing.com/search?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-baidu', title: 'Baidu', url: 'https://www.baidu.com/s?wd={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-duckduckgo', title: 'DuckDuckGo', url: 'https://duckduckgo.com/?q={keyword}', tags: [], dateAdded: 0 },
+  { id: 'site-fsou', title: 'FSou', url: 'https://fsoufsou.com/search?q={keyword}', tags: [], dateAdded: 0 },
+];
+
 const groups = ref<BookmarkGroup[]>(loadGroups());
 
 const totalCount = computed(() => groups.value.reduce((sum, group) => sum + group.items.length, 0));
-const recentIds = computed(() => new Set(flatBookmarks.value.slice(-12).map(({ item }) => item.id)));
+// H-3: 按 dateAdded 降序取前 12；mock 导入项 dateAdded=0，UI 新增项有真实时间戳
+const recentIds = computed(() => {
+  const sorted = flatBookmarks.value
+    .slice()
+    .sort((a, b) => b.item.dateAdded - a.item.dateAdded);
+  return new Set(sorted.slice(0, 12).map(({ item }) => item.id));
+});
 const flatBookmarks = computed(() =>
   groups.value.flatMap((group) => group.items.map((item) => ({ group, item }))),
 );
@@ -121,12 +172,12 @@ const boardGroups = computed(() => (
     ? groups.value.map((group) => ({ group, items: group.items }))
     : visibleGroups.value
 ));
-const quickSearchItems = computed(() =>
-  flatBookmarks.value
-    .filter(({ item }) => item.tags.includes('search') || item.url.includes('{keyword}') || item.url.includes('${keyword}'))
-    .slice(0, 8),
-);
-const selectedItems = computed(() => (isQuickSearch.value ? quickSearchItems.value : visibleGroups.value.flatMap(({ group, items }) => items.map((item) => ({ group, item })))));
+const quickSearchItems = computed<SelectableItem[]>(() => siteSearchTargets.map((item) => ({ item })));
+const selectedItems = computed<SelectableItem[]>(() => (
+  isQuickSearch.value
+    ? quickSearchItems.value
+    : visibleGroups.value.flatMap(({ group, items }) => items.map((item) => ({ group, item })))
+));
 const currentSelection = computed(() => (selectedIndex.value >= 0 ? selectedItems.value[selectedIndex.value] : undefined));
 
 function normalize(raw: unknown): BookmarkGroup[] {
@@ -145,6 +196,7 @@ function normalize(raw: unknown): BookmarkGroup[] {
         favicon: String(item.favicon || ''),
         tags: Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [],
         description: String(item.description || ''),
+        dateAdded: typeof (item as Record<string, unknown>).dateAdded === 'number' ? (item as Record<string, unknown>).dateAdded as number : 0,
       })),
     };
   });
@@ -240,6 +292,7 @@ function destroyMacy() {
     card.style.left = '';
     card.style.top = '';
     card.style.width = '';
+    card.style.transform = '';  // L-4: Macy 可能留下 transform，一并清除
   });
 }
 
@@ -310,14 +363,22 @@ function toggleGroup(group: BookmarkGroup) {
 }
 
 function favicon(item: BookmarkItem) {
-  if (item.favicon) return item.favicon;
+  // 原型阶段用 Google favicon service；
+  // 扩展阶段 Chrome 可换成 chrome://favicon2/?pageUrl=…，Firefox 保留此方案或换其他服务
+  const raw = item.favicon || item.url;
   try {
-    const url = new URL(item.url);
-    if (url.protocol === 'http:' || url.protocol === 'https:') return `${url.origin}/favicon.ico`;
-  } catch {
-    return '';
-  }
+    const u = new URL(raw);
+    if (u.protocol === 'http:' || u.protocol === 'https:') {
+      return `https://www.google.com/s2/favicons?sz=32&domain_url=${encodeURIComponent(u.origin)}`;
+    }
+  } catch { /* 无效 URL */ }
   return '';
+}
+
+function onFaviconError(event: Event) {
+  // 加载失败时隐藏 img 元素，不显示破图框
+  (event.target as HTMLImageElement).style.display = 'none';
+  reflow();
 }
 
 function normalizeUrl(url: string) {
@@ -336,8 +397,9 @@ function openUrl(url: string) {
   window.open(normalized, '_blank', 'noopener');
 }
 
+// H-5: 移除无效的 event.detail > 1 防护（双击第一次 click detail=1 仍会触发）
 function openBookmarkClick(url: string, event: MouseEvent) {
-  if (mode.value !== 'browse' || event.detail > 1) return;
+  if (mode.value !== 'browse') return;
   openUrl(url);
 }
 
@@ -346,23 +408,80 @@ function openSearch(keyword: string) {
   openUrl(engine.url.replace('{keyword}', encodeURIComponent(keyword)));
 }
 
+function buildKeywordUrl(template: string, keyword: string) {
+  const encoded = encodeURIComponent(keyword);
+  return template.replaceAll('{keyword}', encoded).replaceAll('${keyword}', encoded);
+}
+
+function openSiteSearch(item: SearchTarget) {
+  const keyword = quickKeyword.value;
+  if (!keyword) {
+    ElMessage.info('请输入站内搜索关键词');
+    return;
+  }
+  if (!item.url.includes('{keyword}') && !item.url.includes('${keyword}')) {
+    ElMessage.warning('该站点没有配置站内搜索模板');
+    return;
+  }
+  openUrl(buildKeywordUrl(item.url, keyword));
+}
+
+function quickSearchLabel(item: BookmarkItem) {
+  const keyword = quickKeyword.value;
+  return keyword ? `在 ${item.title} 中搜索 "${keyword}"` : '站内搜索';
+}
+
+function quickSearchHost(item: BookmarkItem) {
+  try {
+    return new URL(item.url.replace('{keyword}', '').replace('${keyword}', '')).hostname.replace(/^www\./, '');
+  } catch {
+    return item.url;
+  }
+}
+
+// 反引号 ` 正向轮询切换引擎，~（Shift+`）反向切换。搜索框内即时生效，不插入字符。
+function cycleEngine(dir: 1 | -1) {
+  const index = engines.findIndex((item) => item.id === selectedEngine.value);
+  const base = index < 0 ? 0 : index;
+  const next = engines[(base + dir + engines.length) % engines.length];
+  selectedEngine.value = next.id;
+}
+
+// 统一的搜索框键盘事件处理
+function onSearchKeydown(event: KeyboardEvent) {
+  if (event.code === 'Backquote') {
+    event.preventDefault();
+    event.stopPropagation();
+    cycleEngine(event.shiftKey ? -1 : 1);
+  }
+}
+
+// 过滤掉输入的反引号字符
+function onSearchInput() {
+  if (searchText.value.includes('`') || searchText.value.includes('~')) {
+    searchText.value = searchText.value.replace(/[`~]/g, '');
+  }
+}
+
+// H-4: Enter 始终触发搜索引擎；Ctrl+Enter 打开高亮书签（或搜索）
 function openSelected(forceEngine = false) {
   const value = searchText.value.trim();
-  if (forceEngine && value) {
-    openSearch(isQuickSearch.value ? quickKeyword.value : value);
+
+  // 站内搜索模式（! 前缀）：Enter 打开当前高亮的站点
+  if (isQuickSearch.value) {
+    const target = currentSelection.value ?? quickSearchItems.value[0];
+    if (target) openSiteSearch(target.item);
     return;
   }
 
-  const selected = currentSelection.value;
-  if (selected && (isQuickSearch.value || selectedIndex.value >= 0)) {
-    const url = isQuickSearch.value
-      ? selected.item.url.replace('{keyword}', encodeURIComponent(quickKeyword.value)).replace('${keyword}', encodeURIComponent(quickKeyword.value))
-      : selected.item.url;
-    openUrl(url);
+  // Ctrl+Enter：打开高亮书签（有高亮时），否则也走搜索引擎
+  if (forceEngine && currentSelection.value) {
+    openUrl(currentSelection.value.item.url);
     return;
   }
 
-  if (value) openSearch(isQuickSearch.value ? quickKeyword.value : value);
+  // 普通 Enter：始终用搜索引擎
+  if (value) openSearch(value);
 }
 
 function copyUrl(item: BookmarkItem) {
@@ -458,6 +577,7 @@ function saveEditor() {
         url: form.value.url.trim(),
         tags,
         description: form.value.description.trim(),
+        dateAdded: Date.now(),
       });
       group.collapsed = false;
     }
@@ -542,6 +662,11 @@ function isEditableTarget(target: EventTarget | null) {
   return Boolean(target.closest('input, textarea, [contenteditable="true"], .el-dialog'));
 }
 
+// M-4: 点击 search-wrap 外部时关闭 quick-panel
+onClickOutside(searchWrapRef, () => {
+  if (isQuickSearch.value) searchText.value = '';
+});
+
 const keys = useMagicKeys();
 whenever(keys.ctrl_k, focusSearch);
 whenever(keys.ctrl_e, () => setMode(mode.value === 'browse' ? 'organize' : 'browse'));
@@ -549,6 +674,7 @@ whenever(keys.ctrl_z, () => {
   if (!isEditableTarget(document.activeElement)) undo();
 });
 
+// M-1: 移除 deep watch 重复写入；所有写操作已在各函数末尾显式调用 saveGroups()
 watch([searchText, filter], () => {
   selectedIndex.value = -1;
   reflow();
@@ -556,9 +682,10 @@ watch([searchText, filter], () => {
 watch(mode, (value) => {
   if (value === 'browse') reflow();
 });
-watch(groups, saveGroups, { deep: true });
+// watch(groups, saveGroups, { deep: true }) 已移除：各写操作末尾已显式调用 saveGroups()
 
 onMounted(() => {
+  applyThemeColor(themeColor.value);
   reflow();
   window.addEventListener('resize', reflow);
   focusSearch();
@@ -582,7 +709,7 @@ onBeforeUnmount(() => {
           <span>全部</span><b>{{ totalCount }}</b>
         </button>
         <button class="side-row" :class="{ active: filter.type === 'recent' }" @click="setFilter({ type: 'recent' })">
-          <span>后 12</span><b>{{ Math.min(12, totalCount) }}</b>
+          <span>最近添加</span><b>{{ Math.min(12, totalCount) }}</b>
         </button>
         <div class="side-title">标签</div>
         <button
@@ -594,6 +721,16 @@ onBeforeUnmount(() => {
         >
           <span>{{ tag }}</span><b>{{ count }}</b>
         </button>
+        <div class="theme-picker-wrap">
+          <label for="theme-color-input">主题色</label>
+          <input
+            id="theme-color-input"
+            type="color"
+            class="theme-color-input"
+            :value="themeColor"
+            @input="onThemeColorChange"
+          />
+        </div>
         <button class="side-foot" @click="resetData">
           <el-icon><RefreshLeft /></el-icon>
           <span>重置原型</span>
@@ -602,37 +739,50 @@ onBeforeUnmount(() => {
 
       <main class="main">
         <header class="topbar">
-          <div class="search-wrap">
-            <el-input
-              ref="searchInputRef"
-              v-model="searchText"
-              class="search-input"
-              clearable
-              placeholder="搜索书签，输入 ! 进行站内搜索"
-              :prefix-icon="Search"
-              @keydown.down.prevent="moveSelection(1)"
-              @keydown.up.prevent="moveSelection(-1)"
-              @keydown.enter.prevent="openSelected($event.ctrlKey || $event.metaKey)"
-              @keydown.esc.prevent="searchText = ''"
-            >
-              <template #prepend>
-                <el-select v-model="selectedEngine" class="engine-select" :suffix-icon="ArrowDown">
-                  <el-option v-for="engine in engines" :key="engine.id" :label="engine.name" :value="engine.id" />
-                </el-select>
-              </template>
-            </el-input>
+          <div ref="searchWrapRef" class="search-wrap">
+            <div class="search-bar">
+              <el-select v-model="selectedEngine" class="engine-select">
+                <el-option v-for="engine in engines" :key="engine.id" :label="engine.name" :value="engine.id" />
+              </el-select>
+              <span class="search-sep"></span>
+              <el-icon class="search-icon"><Search /></el-icon>
+              <el-input
+                ref="searchInputRef"
+                v-model="searchText"
+                class="search-input"
+                clearable
+                placeholder="搜索书签；回车使用当前搜索引擎；输入 ! 站内搜索"
+                @keydown="onSearchKeydown"
+                @input="onSearchInput"
+                @keydown.down.prevent="moveSelection(1)"
+                @keydown.up.prevent="moveSelection(-1)"
+                @keydown.enter.prevent="openSelected($event.ctrlKey || $event.metaKey)"
+                @keydown.esc.prevent="searchText = ''"
+              />
+            </div>
             <div v-if="isQuickSearch" class="quick-panel">
+              <div class="quick-panel-head">
+                <span>站内搜索</span>
+                <strong>↑↓ 选择 · Enter 打开</strong>
+              </div>
               <button
                 v-for="({ item }, index) in quickSearchItems"
                 :key="item.id"
                 class="quick-row"
                 :class="{ selected: selectedIndex === index }"
-                @click="openUrl(item.url.replace('{keyword}', encodeURIComponent(quickKeyword)).replace('${keyword}', encodeURIComponent(quickKeyword)))"
+                :aria-selected="selectedIndex === index"
+                @click="openSiteSearch(item)"
               >
                 <img :src="favicon(item)" alt="" />
-                <strong>{{ item.title }}</strong>
-                <small>{{ quickKeyword || '站内搜索' }}</small>
+                <span class="quick-copy">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ quickSearchLabel(item) }} · {{ quickSearchHost(item) }}</small>
+                </span>
+                <small class="quick-action">Enter</small>
               </button>
+              <div v-if="quickSearchItems.length === 0" class="quick-empty">
+                没有可用的站内搜索书签
+              </div>
             </div>
           </div>
           <div class="top-actions">
@@ -722,7 +872,7 @@ onBeforeUnmount(() => {
                   @keydown.delete.prevent="removeBookmark(entry.group, item)"
                 >
                   <el-icon v-if="mode === 'organize'" class="bookmark-handle"><Menu /></el-icon>
-                  <img :src="favicon(item)" alt="" draggable="false" @load="reflow" @error="reflow" />
+                  <img :src="favicon(item)" alt="" draggable="false" @load="reflow" @error="onFaviconError" />
                   <strong class="bookmark-title" @click.stop="openBookmarkClick(item.url, $event)" @dblclick.stop>{{ item.title }}</strong>
                   <small class="bookmark-url" :title="item.url" @click.stop="openBookmarkClick(item.url, $event)" @dblclick.stop>{{ item.url }}</small>
                   <el-tag v-if="item.tags[0]" class="no-drag" effect="plain" size="small">{{ item.tags[0] }}</el-tag>
@@ -742,7 +892,7 @@ onBeforeUnmount(() => {
                   tabindex="0"
                   @keydown.enter.prevent="openUrl(item.url)"
                 >
-                  <img :src="favicon(item)" alt="" draggable="false" @load="reflow" @error="reflow" />
+                  <img :src="favicon(item)" alt="" draggable="false" @load="reflow" @error="onFaviconError" />
                   <strong class="bookmark-title" @click.stop="openBookmarkClick(item.url, $event)" @dblclick.stop>{{ item.title }}</strong>
                   <small class="bookmark-url" :title="item.url" @click.stop="openBookmarkClick(item.url, $event)" @dblclick.stop>{{ item.url }}</small>
                   <el-tag v-if="item.tags[0]" class="no-drag" effect="plain" size="small">{{ item.tags[0] }}</el-tag>

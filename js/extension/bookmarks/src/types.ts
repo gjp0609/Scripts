@@ -5,6 +5,8 @@ export type BookmarkItem = {
   favicon?: string;
   tags: string[];
   description?: string;
+  /** 添加时间戳（ms）；mock 数据导入项为 0，原型内新增项有真实时间 */
+  dateAdded: number;
 };
 
 export type BookmarkGroup = {

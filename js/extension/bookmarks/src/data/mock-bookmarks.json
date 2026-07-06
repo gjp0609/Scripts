@@ -844,15 +844,6 @@
     "title": "Search",
     "items": [
       {
-        "title": null,
-        "url": null,
-        "favicon": null,
-        "tags": [
-          null
-        ],
-        "description": null
-      },
-      {
         "title": "Google",
         "url": "https://www.google.com/ncr",
         "favicon": null,
@@ -904,15 +895,6 @@
   {
     "title": "Icon",
     "items": [
-      {
-        "title": null,
-        "url": null,
-        "favicon": null,
-        "tags": [
-          null
-        ],
-        "description": null
-      },
       {
         "title": "Favicon Yandex",
         "url": "https://favicon.yandex.net/favicon/${keyword}/",

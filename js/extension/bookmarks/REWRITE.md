@@ -165,6 +165,11 @@
 - 搜索栏支持普通书签过滤。
 - 输入关键词并按 Enter 可用默认搜索引擎搜索。
 - 输入 `! ` 或 `！ ` 进入特殊搜索模式。
+- 特殊搜索必须参考旧页面 `R:\Files\Workspace\Mine\pages\docs\single\bookmarks\index.html` 的行为：先用 `!` 后的站点关键词匹配带 `searchUrl` 的书签，再用空格后的关键词替换该书签的 `searchUrl` 中的 `${keyword}`。
+- `searchUrl` 是特殊搜索的唯一可靠数据来源，来自参考原型的 `bookmarks.json` 或后续插件额外数据；不能凭站点名称臆造搜索 URL。
+- 例如参考原型中 V2EX 的特殊搜索不是 V2EX 自有搜索入口，而是 `https://www.google.com/search?q=site%3av2ex.com+${keyword}`。
+- 没有 `searchUrl` 的普通书签不能作为特殊搜索目标，只能作为普通书签搜索/打开结果。
+- 普通网络搜索和特殊搜索必须在数据模型与 UI 文案上区分：普通网络搜索使用当前搜索引擎；特殊搜索使用选中书签的 `searchUrl`。
 - 主区域按目录分组展示书签。
 - 标签筛选弱化展示，不抢主视觉。
 - 编辑、删除、拖拽入口默认弱化，仅在 hover 或整理模式出现。

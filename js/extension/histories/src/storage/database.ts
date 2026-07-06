@@ -2,9 +2,11 @@ import {
   DATABASE_NAME,
   DATABASE_VERSION,
   type JobRecord,
+  type PageChunkRecord,
   type PageInput,
   type PageRecord,
   type SearchSnapshotRecord,
+  type VisitChunkRecord,
   type VisitInput,
   type VisitRecord
 } from './schema';
@@ -31,6 +33,56 @@ export async function upsertPage(input: PageInput): Promise<PageRecord> {
   return record;
 }
 
+export async function addPages(inputs: PageInput[]): Promise<PageRecord[]> {
+  if (inputs.length === 0) return [];
+
+  const mergedInputs = mergePageInputs(inputs);
+  const db = await openHistoriesDatabase();
+
+  try {
+    const now = Date.now();
+    const transaction = db.transaction('pages', 'readwrite');
+    const store = transaction.objectStore('pages');
+    const pendingAdds: Array<{
+      recordWithoutId: Omit<PageRecord, 'id'>;
+      idPromise: Promise<IDBValidKey>;
+    }> = [];
+
+    for (const input of mergedInputs) {
+      const normalizedUrl = input.normalizedUrl ?? normalizeHistoryUrl(input.url);
+      const urlParts = parseUrlParts(input.url);
+      const recordWithoutId = {
+        url: input.url,
+        normalizedUrl,
+        title: input.title ?? '',
+        host: urlParts.host,
+        domain: urlParts.domain,
+        visitCount: input.visitCount ?? 0,
+        lastVisitTime: input.lastVisitTime ?? 0,
+        createdAt: now,
+        updatedAt: now
+      };
+      pendingAdds.push({
+        recordWithoutId,
+        idPromise: requestToPromise(store.add(recordWithoutId))
+      });
+    }
+
+    const results: PageRecord[] = [];
+    for (const pendingAdd of pendingAdds) {
+      results.push({
+        id: Number(await pendingAdd.idPromise),
+        ...pendingAdd.recordWithoutId
+      });
+    }
+
+    await transactionDone(transaction);
+    return results;
+  } finally {
+    db.close();
+  }
+}
+
 export async function upsertPages(inputs: PageInput[]): Promise<PageRecord[]> {
   if (inputs.length === 0) return [];
 
@@ -48,6 +100,11 @@ export async function upsertPages(inputs: PageInput[]): Promise<PageRecord[]> {
       )
     );
     const results: PageRecord[] = [];
+    const pendingAdds: Array<{
+      recordWithoutId: Omit<PageRecord, 'id'>;
+      idPromise: Promise<IDBValidKey>;
+      resultIndex: number;
+    }> = [];
 
     for (let indexOffset = 0; indexOffset < mergedInputs.length; indexOffset += 1) {
       const input = mergedInputs[indexOffset];
@@ -87,15 +144,44 @@ export async function upsertPages(inputs: PageInput[]): Promise<PageRecord[]> {
         createdAt: now,
         updatedAt: now
       };
-      const id = Number(await requestToPromise(store.add(recordWithoutId)));
-      results.push({
-        id,
-        ...recordWithoutId
+      const resultIndex = results.length;
+      results.push(undefined as unknown as PageRecord);
+      pendingAdds.push({
+        recordWithoutId,
+        idPromise: requestToPromise(store.add(recordWithoutId)),
+        resultIndex
       });
+    }
+
+    for (const pendingAdd of pendingAdds) {
+      const id = Number(await pendingAdd.idPromise);
+      results[pendingAdd.resultIndex] = {
+        id,
+        ...pendingAdd.recordWithoutId
+      };
     }
 
     await transactionDone(transaction);
     return results;
+  } finally {
+    db.close();
+  }
+}
+
+export async function replacePageChunks(chunks: PageChunkRecord[]): Promise<number> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('pageChunks', 'readwrite');
+    const store = transaction.objectStore('pageChunks');
+    store.clear();
+
+    for (const chunk of chunks) {
+      store.put(chunk);
+    }
+
+    await transactionDone(transaction);
+    return chunks.reduce((total, chunk) => total + chunk.count, 0);
   } finally {
     db.close();
   }
@@ -135,11 +221,34 @@ export async function putVisits(visits: VisitInput[]): Promise<number> {
     const store = transaction.objectStore('visits');
 
     for (const visit of visits) {
-      store.put(visit);
+      if (visit.id === undefined) {
+        store.add(visit);
+      } else {
+        store.put(visit);
+      }
     }
 
     await transactionDone(transaction);
     return visits.length;
+  } finally {
+    db.close();
+  }
+}
+
+export async function replaceVisitChunks(chunks: VisitChunkRecord[]): Promise<number> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('visitChunks', 'readwrite');
+    const store = transaction.objectStore('visitChunks');
+    store.clear();
+
+    for (const chunk of chunks) {
+      store.put(chunk);
+    }
+
+    await transactionDone(transaction);
+    return chunks.reduce((total, chunk) => total + chunk.count, 0);
   } finally {
     db.close();
   }
@@ -256,7 +365,9 @@ export async function getLatestSearchSnapshot(): Promise<SearchSnapshotRecord | 
 
 export type DatabaseSummary = {
   pages: number;
+  pageChunks: number;
   visits: number;
+  visitChunks: number;
   jobs: number;
   hasSearchSnapshot: boolean;
 };
@@ -265,16 +376,20 @@ export async function getDatabaseSummary(): Promise<DatabaseSummary> {
   const db = await openHistoriesDatabase();
 
   try {
-    const [pages, visits, jobs, snapshots] = await Promise.all([
+    const [pages, pageChunkSummary, visits, chunkSummary, jobs, snapshots] = await Promise.all([
       countStore(db, 'pages'),
+      getPageChunkSummary(db),
       countStore(db, 'visits'),
+      getVisitChunkSummary(db),
       countStore(db, 'jobs'),
       countStore(db, 'searchSnapshot')
     ]);
 
     return {
-      pages,
-      visits,
+      pages: pages + pageChunkSummary.pages,
+      pageChunks: pageChunkSummary.chunks,
+      visits: visits + chunkSummary.visits,
+      visitChunks: chunkSummary.chunks,
       jobs,
       hasSearchSnapshot: snapshots > 0
     };
@@ -289,6 +404,60 @@ function countStore(db: IDBDatabase, storeName: string): Promise<number> {
     const request = transaction.objectStore(storeName).count();
 
     request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getPageChunkSummary(db: IDBDatabase): Promise<{ chunks: number; pages: number }> {
+  if (!db.objectStoreNames.contains('pageChunks')) {
+    return Promise.resolve({ chunks: 0, pages: 0 });
+  }
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('pageChunks', 'readonly');
+    const request = transaction.objectStore('pageChunks').openCursor();
+    let chunks = 0;
+    let pages = 0;
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve({ chunks, pages });
+        return;
+      }
+
+      const chunk = cursor.value as PageChunkRecord;
+      chunks += 1;
+      pages += chunk.count;
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getVisitChunkSummary(db: IDBDatabase): Promise<{ chunks: number; visits: number }> {
+  if (!db.objectStoreNames.contains('visitChunks')) {
+    return Promise.resolve({ chunks: 0, visits: 0 });
+  }
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction('visitChunks', 'readonly');
+    const request = transaction.objectStore('visitChunks').openCursor();
+    let chunks = 0;
+    let visits = 0;
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve({ chunks, visits });
+        return;
+      }
+
+      const chunk = cursor.value as VisitChunkRecord;
+      chunks += 1;
+      visits += chunk.count;
+      cursor.continue();
+    };
     request.onerror = () => reject(request.error);
   });
 }
@@ -393,21 +562,9 @@ function parseUrlParts(url: string): { host: string; domain: string } {
 
 function migrate(db: IDBDatabase, oldVersion: number) {
   if (oldVersion < 1) {
-    const pages = db.createObjectStore('pages', {
-      keyPath: 'id',
-      autoIncrement: true
-    });
-    pages.createIndex('normalizedUrl', 'normalizedUrl', { unique: true });
-    pages.createIndex('host', 'host');
-    pages.createIndex('domain', 'domain');
-    pages.createIndex('lastVisitTime', 'lastVisitTime');
+    createPagesStore(db);
 
-    const visits = db.createObjectStore('visits', {
-      keyPath: 'id'
-    });
-    visits.createIndex('visitTime', 'visitTime');
-    visits.createIndex('pageTime', ['pageId', 'visitTime']);
-    visits.createIndex('transitionTime', ['transition', 'visitTime']);
+    createVisitsStore(db);
 
     db.createObjectStore('jobs', {
       keyPath: 'id'
@@ -416,5 +573,50 @@ function migrate(db: IDBDatabase, oldVersion: number) {
     db.createObjectStore('searchSnapshot', {
       keyPath: 'key'
     });
+  } else if (oldVersion < 2) {
+    if (db.objectStoreNames.contains('visits')) {
+      db.deleteObjectStore('visits');
+    }
+    createVisitsStore(db);
   }
+
+  if (oldVersion < 3 && !db.objectStoreNames.contains('visitChunks')) {
+    const visitChunks = db.createObjectStore('visitChunks', {
+      keyPath: 'id'
+    });
+    visitChunks.createIndex('minVisitTime', 'minVisitTime');
+    visitChunks.createIndex('maxVisitTime', 'maxVisitTime');
+  }
+
+  if (oldVersion >= 1 && oldVersion < 4) {
+    if (db.objectStoreNames.contains('pages')) {
+      db.deleteObjectStore('pages');
+    }
+    createPagesStore(db);
+  }
+
+  if (oldVersion < 5 && !db.objectStoreNames.contains('pageChunks')) {
+    const pageChunks = db.createObjectStore('pageChunks', {
+      keyPath: 'id'
+    });
+    pageChunks.createIndex('firstPageId', 'firstPageId');
+  }
+}
+
+function createPagesStore(db: IDBDatabase) {
+  const pages = db.createObjectStore('pages', {
+    keyPath: 'id',
+    autoIncrement: true
+  });
+  pages.createIndex('normalizedUrl', 'normalizedUrl', { unique: true });
+}
+
+function createVisitsStore(db: IDBDatabase) {
+  const visits = db.createObjectStore('visits', {
+    keyPath: 'id',
+    autoIncrement: true
+  });
+  visits.createIndex('visitTime', 'visitTime');
+  visits.createIndex('pageTime', ['pageId', 'visitTime']);
+  visits.createIndex('transitionTime', ['transition', 'visitTime']);
 }

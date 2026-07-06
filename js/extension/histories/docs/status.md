@@ -1,6 +1,6 @@
 # Histories Status
 
-Updated: 2026-07-05
+Updated: 2026-07-06
 
 ## Decision
 
@@ -35,16 +35,17 @@ Compatibility requirements:
 - Firefox MV3 manifest generation has been verified.
 - The options page can message the background/runtime layer.
 - The options page opens the IndexedDB database and reports basic store counts.
-- Core IndexedDB helper APIs now exist for page upsert, visit bulk writes, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
+- Core IndexedDB helper APIs now exist for page upsert, page chunks, visit bulk writes, visit chunks, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
 - Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, and search snapshots.
-- HTU import core now parses HTU TSV text, aggregates pages, plans deterministic visit ids, writes pages in chunks, writes visits in chunks, and reports import progress.
+- HTU import core now parses HTU TSV text, aggregates pages by exact HTU URL, writes page chunks, writes visit chunks, and reports import progress.
 - Browser-level smoke test covers a small HTU import into IndexedDB.
+- Browser-level full backup import benchmark passed against the external HTU file: `887,561` rows, `384,065` pages, `887,561` visits, about `2.6s` import time and `3.2s` total browser-side time after fetch.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
 - The search engine module is still a placeholder; SQLite WASM has not been promoted from probe code into runtime code.
-- The HTU import worker and full-backup browser import performance test have not been implemented yet.
+- The HTU import worker has not been implemented yet.
 
 ## Blockers Before Coding Compatibility
 
@@ -63,7 +64,7 @@ Compatibility requirements:
 ## Next Work
 
 1. Move HTU import into a worker-facing job API with progress, cancellation, and restart state.
-2. Run full-backup browser import against the external HTU file and record timings.
+2. Add chunk readers needed by export, search snapshot build, and time-range search.
 3. Promote SQLite WASM FTS snapshot search into production search modules.
 4. Implement keyword plus time-range search planning.
 5. Add browser history sync after import/search storage paths are stable.

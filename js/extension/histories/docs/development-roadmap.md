@@ -1,6 +1,6 @@
 # Histories Development Roadmap
 
-Updated: 2026-07-05
+Updated: 2026-07-06
 
 ## Current Baseline
 
@@ -12,7 +12,7 @@ Verified:
 - SQLite WASM itself works in Chrome and Firefox.
 - SQLite WASM `:memory:` + FTS5 `trigram` works for title/URL substring search.
 - SQLite FTS snapshot can be saved to and loaded from IndexedDB.
-- Minimal visit rows are preferred over storing statistics fields on every visit.
+- HTU bulk import uses chunked page and visit storage; per-record IndexedDB writes are too slow at the full backup scale.
 
 Current committed runtime code:
 
@@ -23,7 +23,7 @@ Current committed runtime code:
 - Options page shell.
 - IndexedDB schema bootstrap and basic status readout.
 - IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
-- HTU import core for parse, aggregate, chunked page upsert, chunked visit writes, deterministic visit ids, and progress callbacks.
+- HTU import core for parse, exact-URL page aggregation, page chunks, visit chunks, and progress callbacks.
 
 ## Milestone 1: Project Skeleton
 
@@ -50,7 +50,9 @@ Deliverables:
 
 - IndexedDB wrapper with schema migrations.
 - `pages` store.
+- `page_chunks` store for bulk imports.
 - minimal `visits` store.
+- `visit_chunks` store for bulk imports and time scans.
 - `jobs` store.
 - `search_snapshot` store.
 - browser API compatibility adapter.
@@ -75,9 +77,9 @@ Deliverables:
 
 Acceptance:
 
-- Imports the external backup without URL/title logging. Pending full-browser run.
+- Imports the external backup without URL/title logging. Done in full-browser benchmark.
 - Preserves all 4-column rows structurally. Parser/export round-trip done.
-- Writes expected page and visit counts. Small browser smoke done; full-backup run pending.
+- Writes expected page and visit counts. Done: `887,561` visits and `384,065` exact-URL pages.
 - Can resume or restart safely after cancellation. Pending worker job state.
 
 ## Milestone 4: SQLite FTS Search Module

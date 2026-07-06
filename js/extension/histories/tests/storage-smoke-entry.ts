@@ -20,10 +20,10 @@ import { importHtuText } from '../src/import/htu-import';
 type SmokeResult = {
   pageCount: number;
   visitCount: number;
-  rangeIds: string[];
-  pageRangeIds: string[];
-  transitionRangeIds: string[];
-  reverseIds: string[];
+  rangeIds: IDBValidKey[];
+  pageRangeIds: IDBValidKey[];
+  transitionRangeIds: IDBValidKey[];
+  reverseIds: IDBValidKey[];
   importRows: number;
   importPages: number;
   importVisits: number;
@@ -156,7 +156,7 @@ async function runImportSmoke() {
 
   const progressStages: string[] = [];
   const source = [
-    'https://example.com/imported#old\tU1000\t0\tOld imported title',
+    'https://example.com/imported\tU1000\t0\tOld imported title',
     'https://example.com/imported\tU3000\t1\tNew imported title',
     'https://example.org/other\tU2000\t8\tOther imported title',
     ''
@@ -170,13 +170,15 @@ async function runImportSmoke() {
   });
   ensureIds(
     progressStages,
-    ['parsed', 'pages', 'pages', 'visits', 'visits', 'done'],
+    ['parsed', 'pages', 'visits', 'done'],
     'import progress order'
   );
 
   const summary = await getDatabaseSummary();
   ensure(summary.pages === 2, 'import should write aggregated pages');
+  ensure(summary.pageChunks === 1, 'import should write page chunks');
   ensure(summary.visits === 3, 'import should write visits');
+  ensure(summary.visitChunks === 1, 'import should write visit chunks');
   ensure(result.rows === 3, 'import result rows should match parsed rows');
   ensure(result.pages === 2, 'import result pages should match aggregated pages');
   ensure(result.visits === 3, 'import result visits should match planned visits');
@@ -195,7 +197,7 @@ function ensure(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
 }
 
-function ensureIds(actual: string[], expected: string[], message: string) {
+function ensureIds(actual: IDBValidKey[], expected: IDBValidKey[], message: string) {
   ensure(actual.length === expected.length, `${message}: length mismatch`);
 
   for (let index = 0; index < expected.length; index += 1) {

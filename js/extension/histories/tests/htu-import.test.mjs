@@ -14,7 +14,7 @@ const ESBUILD = path.join(ROOT, 'node_modules/esbuild/bin/esbuild');
 test('plans HTU rows into aggregated pages and visit drafts', async () => {
   const { planHtuImport } = await loadImportModule();
   const source = [
-    'https://example.com/a#one\tU1000\t0\tOld title',
+    'https://example.com/a\tU1000\t0\tOld title',
     'https://example.com/a\tU3000\t1\tNew title',
     'https://sub.example.org/path\tU2000\t8\tOther title',
     ''
@@ -44,6 +44,62 @@ test('plans HTU rows into aggregated pages and visit drafts', async () => {
 test('creates deterministic HTU visit ids', async () => {
   const { makeHtuVisitId } = await loadImportModule();
   assert.equal(makeHtuVisitId(12, 1700000000123, 'reload', 4), 'htu:12:1700000000123:reload:4');
+});
+
+test('builds time-sorted typed-array visit chunks', async () => {
+  const { buildVisitChunks } = await loadImportModule();
+  const pageIds = new Map([
+    ['https://a.example/', 1],
+    ['https://b.example/', 2]
+  ]);
+  const chunks = buildVisitChunks(
+    [
+      { normalizedUrl: 'https://b.example/', visitTime: 3000, transition: 'reload', sourceIndex: 2 },
+      { normalizedUrl: 'https://a.example/', visitTime: 1000, transition: 'link', sourceIndex: 0 },
+      { normalizedUrl: 'https://a.example/', visitTime: 2000, transition: 'typed', sourceIndex: 1 }
+    ],
+    pageIds,
+    2
+  );
+
+  assert.equal(chunks.length, 2);
+  assert.equal(chunks[0].minVisitTime, 1000);
+  assert.equal(chunks[0].maxVisitTime, 2000);
+  assert.deepEqual([...chunks[0].pageIds], [1, 1]);
+  assert.deepEqual([...chunks[0].visitTimes], [1000, 2000]);
+  assert.deepEqual([...chunks[0].transitionCodes], [0, 1]);
+  assert.deepEqual([...chunks[0].sourceIndexes], [0, 1]);
+  assert.equal(chunks[1].minVisitTime, 3000);
+});
+
+test('builds page chunks with stable page ids', async () => {
+  const { buildPageChunks } = await loadImportModule();
+  const chunks = buildPageChunks(
+    [
+      {
+        url: 'https://a.example/',
+        normalizedUrl: 'https://a.example/',
+        title: 'A',
+        visitCount: 2,
+        lastVisitTime: 2000
+      },
+      {
+        url: 'https://b.example/',
+        normalizedUrl: 'https://b.example/',
+        title: 'B',
+        visitCount: 1,
+        lastVisitTime: 1000
+      }
+    ],
+    1
+  );
+
+  assert.equal(chunks.length, 2);
+  assert.equal(chunks[0].firstPageId, 1);
+  assert.equal(chunks[0].count, 1);
+  assert.deepEqual(chunks[0].urls, ['https://a.example/']);
+  assert.deepEqual([...chunks[0].visitCounts], [2]);
+  assert.equal(chunks[1].firstPageId, 2);
 });
 
 let loadedModule;

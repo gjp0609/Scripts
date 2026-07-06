@@ -1,5 +1,5 @@
 export const DATABASE_NAME = 'histories';
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 5;
 
 export type PageRecord = {
   id: number;
@@ -22,14 +22,38 @@ export type PageInput = {
   lastVisitTime?: number;
 };
 
-export type VisitRecord = {
+export type PageChunkRecord = {
   id: string;
+  firstPageId: number;
+  count: number;
+  urls: string[];
+  normalizedUrls: string[];
+  titles: string[];
+  visitCounts: Uint32Array;
+  lastVisitTimes: Float64Array;
+};
+
+export type VisitRecord = {
+  id: IDBValidKey;
   pageId: number;
   visitTime: number;
   transition: string;
 };
 
-export type VisitInput = VisitRecord;
+export type VisitInput = Omit<VisitRecord, 'id'> & {
+  id?: IDBValidKey;
+};
+
+export type VisitChunkRecord = {
+  id: string;
+  minVisitTime: number;
+  maxVisitTime: number;
+  count: number;
+  pageIds: Uint32Array;
+  visitTimes: Float64Array;
+  transitionCodes: Uint8Array;
+  sourceIndexes: Uint32Array;
+};
 
 export type SearchSnapshotRecord = {
   key: 'latest';

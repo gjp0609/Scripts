@@ -296,6 +296,18 @@ Result:
 - Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword search binding, page-level time filter binding, and result row mapping.
 - The test uses an injected fake SQLite runtime; real SQLite WASM browser execution remains a separate verification step.
 
+## Search Engine Browser SQLite WASM Smoke
+
+Command:
+
+- `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
+
+Result:
+
+- Real-browser SQLite WASM smoke test passed with local Chrome.
+- Covered behavior: loading `sqlite/sqlite3.js` from the bundled asset path, wasm resolution to `sqlite/sqlite3.wasm`, rebuilding FTS from IndexedDB page chunks, saving/loading the SQLite snapshot through IndexedDB, and executing trigram MATCH searches with and without page-level time filters.
+- The current runtime adapter is validated for browser page contexts. Worker-context loading is still a separate task.
+
 ## HTU Full Browser Import Benchmark
 
 Command:
@@ -327,6 +339,7 @@ Commands:
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
+- `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
@@ -336,8 +349,10 @@ Result:
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 4 passed.
 - Search engine core: 3 passed.
+- Search engine browser SQLite WASM smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
 - TypeScript check passed.
+- Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js` and `sqlite/sqlite3.wasm`.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 - External full backup latest run: 7 passed, full backup round-trip completed in about `2.37s`.
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
@@ -346,7 +361,7 @@ Result:
 ## Next Verification Steps
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
-2. Wire and verify the real SQLite WASM runtime adapter against the search engine core.
-3. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-4. Build and test the HTU import/search rebuild workers against the external backup.
+2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
+3. Build and test the HTU import/search rebuild workers against the external backup.
+4. Add a worker-compatible SQLite WASM loader path.
 5. Test combined searches such as keyword plus arbitrary time range.

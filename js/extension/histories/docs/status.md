@@ -45,8 +45,10 @@ Compatibility requirements:
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
-- The search engine module now has a production-facing SQLite FTS contract, page-chunk rebuild flow, snapshot save/load flow, keyword search API, and IndexedDB storage adapter.
-- The real SQLite WASM loader has not been wired into runtime code yet; current search engine tests use an injected fake SQLite runtime.
+- The search engine module now has a production-facing SQLite FTS contract, page-chunk rebuild flow, snapshot save/load flow, keyword search API, IndexedDB storage adapter, and a real browser-page SQLite WASM runtime adapter.
+- SQLite runtime assets are now bundled under `public/sqlite/` and confirmed in Chrome/Firefox WXT outputs.
+- Real-browser SQLite WASM smoke coverage now verifies rebuild, snapshot load, and trigram search through the production adapter.
+- Search rebuild/search worker integration is still pending; the current runtime adapter targets browser page contexts, not worker contexts.
 - HTU import chunk size options now apply to chunk storage as well as record storage.
 - The HTU import worker has not been implemented yet.
 
@@ -66,8 +68,8 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Wire the real SQLite WASM loader/runtime adapter into the search engine.
-2. Move HTU import and search rebuild into worker-facing job APIs with progress, cancellation, and restart state.
+1. Move HTU import and search rebuild into worker-facing job APIs with progress, cancellation, and restart state.
+2. Wrap SQLite WASM loading for worker contexts without breaking `sqlite3.wasm` asset resolution.
 3. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
 4. Implement HTU export from chunk storage.
 5. Add browser history sync after import/search storage paths are stable.

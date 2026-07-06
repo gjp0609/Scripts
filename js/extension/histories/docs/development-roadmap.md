@@ -26,6 +26,7 @@ Current committed runtime code:
 - HTU import core for parse, exact-URL page aggregation, page chunks, visit chunks, and progress callbacks.
 - Chunk reader APIs for page chunk decoding, stable page-id lookup, visit chunk decoding, and time-range visit scans.
 - Search engine core for SQLite FTS schema setup, page-chunk rebuild, snapshot save/load, keyword search, and IndexedDB snapshot storage adapter.
+- Browser-page SQLite WASM runtime adapter with bundled `sqlite3.js/sqlite3.wasm` assets and real browser smoke coverage.
 
 ## Milestone 1: Project Skeleton
 
@@ -91,6 +92,7 @@ Acceptance:
 Deliverables:
 
 - SQLite WASM loader.
+- Browser-page SQLite WASM loader. Done.
 - FTS5 trigram schema. Done in search engine core.
 - Build FTS from page chunks. Done in search engine core.
 - Save FTS snapshot to IndexedDB. Done through the storage adapter contract.
@@ -105,6 +107,8 @@ Acceptance:
 - Typical query time stays under target on the external backup scale.
 - Snapshot corruption triggers rebuild, not data loss.
 - Runtime adapter can be tested without SQLite WASM by injecting a fake runtime. Done.
+- Real browser-page SQLite WASM runtime path is verified. Done.
+- Worker-context SQLite loader remains pending because the upstream sqlite3 glue expects script-relative wasm resolution. Pending.
 
 ## Milestone 5: Keyword + Time Search
 

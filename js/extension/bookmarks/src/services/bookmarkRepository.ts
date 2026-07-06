@@ -1,6 +1,6 @@
 import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
-import { createBookmark, getDefaultBookmarkRoot, getTree, moveNode, updateBookmark } from './bookmarkApi';
-import { cleanupExtras, getExtras, saveExtra } from './extraStore';
+import { createBookmark, getDefaultBookmarkRoot, getTree, moveNode, removeBookmark, updateBookmark } from './bookmarkApi';
+import { cleanupExtras, getExtras, removeExtra, saveExtra } from './extraStore';
 import { getFaviconSources } from './favicon';
 
 const accents = ['#4F6EF7', '#06B6D4', '#22C55E', '#E8853D', '#EF4444', '#8B5CF6', '#F59E0B'];
@@ -97,4 +97,9 @@ export async function saveBookmarkDetails(input: {
   });
 
   return node;
+}
+
+export async function deleteBookmarkDetails(bookmarkId: string): Promise<void> {
+  await removeBookmark(bookmarkId);
+  await removeExtra(bookmarkId);
 }

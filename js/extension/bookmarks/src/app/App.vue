@@ -3,8 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue';
 import { ChevronDown, Folder } from 'lucide-vue-next';
 import type { BookmarkView, QuickSearchTarget, SearchResultItem } from '../types/bookmark';
-import { createBookmark, removeBookmark } from '../services/bookmarkApi';
-import { saveBookmarkDetails } from '../services/bookmarkRepository';
+import { createBookmark } from '../services/bookmarkApi';
+import { deleteBookmarkDetails, saveBookmarkDetails } from '../services/bookmarkRepository';
 import { buildQuickSearchUrl, getQuickSearchTargets, parseQuickSearch, searchBookmarks } from '../services/searchService';
 import { openUrl } from '../services/extensionRuntime';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
@@ -154,7 +154,7 @@ async function saveFolder(title: string) {
 
 async function deleteBookmark(bookmark: BookmarkView) {
   if (!confirm(`删除书签“${bookmark.title}”？`)) return;
-  await removeBookmark(bookmark.id);
+  await deleteBookmarkDetails(bookmark.id);
   await workspace.reload();
 }
 

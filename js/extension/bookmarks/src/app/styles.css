@@ -24,9 +24,10 @@
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
   --sidebar-width: 240px;
   --header-height: 56px;
+  --font-family-ui: "Sarasa Mono SC", "Sarasa Mono Slab SC", "Sarasa UI SC", "Noto Sans Mono CJK SC", "JetBrains Mono", "SF Mono", "Microsoft YaHei UI", monospace;
   color: var(--color-text-primary);
   background: var(--color-bg);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  font-family: var(--font-family-ui);
   font-size: 14px;
 }
 
@@ -39,6 +40,7 @@ body {
   min-width: 360px;
   min-height: 100vh;
   background: var(--color-bg);
+  font-family: var(--font-family-ui);
 }
 
 button,
@@ -316,7 +318,6 @@ button {
 .bookmark-card {
   position: relative;
   display: block;
-  min-height: 84px;
   padding: 14px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -383,43 +384,62 @@ button {
 }
 
 .card-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  display: grid;
+  gap: 6px;
   min-width: 0;
 }
 
-.favicon-badge {
+.card-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 16px;
+  min-width: 0;
+}
+
+.site-favicon,
+.overlay-favicon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
-  border-radius: 8px;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  color: var(--favicon-accent);
+}
+
+.site-favicon__image {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.site-favicon__fallback {
   font-size: 10px;
   font-weight: 800;
+  line-height: 1;
 }
 
-.card-text {
-  min-width: 0;
-}
-
-.card-text h3 {
+.card-heading h3 {
   overflow: hidden;
+  min-width: 0;
+  flex: 1;
   margin: 0;
   color: var(--color-text-primary);
   font-size: 13.5px;
   font-weight: 600;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.card-text p {
+.card-url {
   overflow: hidden;
-  margin: 5px 0 0;
+  margin: 0;
   color: var(--color-text-tertiary);
-  font-family: "JetBrains Mono", "SF Mono", monospace;
+  font-family: var(--font-family-ui);
   font-size: 11px;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -434,8 +454,7 @@ button {
 }
 
 .bookmark-card:not(.has-tags) {
-  min-height: 72px;
-  padding-bottom: 12px;
+  padding-bottom: 14px;
 }
 
 .tag-row span {
@@ -482,7 +501,7 @@ button {
 .search-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   padding: 8px 12px;
   border-radius: var(--radius-md);
@@ -494,16 +513,9 @@ button {
   background: var(--color-primary-light);
 }
 
-.result-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  color: var(--color-text-inverse);
-  font-size: 10px;
-  font-weight: 800;
+.overlay-favicon {
+  width: 16px;
+  height: 16px;
 }
 
 .result-text {

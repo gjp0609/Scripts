@@ -20,6 +20,7 @@ export type BookmarkView = BrowserBookmarkNode & {
   extra: BookmarkExtra;
   domain: string;
   accent: string;
+  faviconUrls: string[];
 };
 
 export type FolderView = {
@@ -47,6 +48,7 @@ export type SearchResultItem =
       folderTitle: string;
       tags: string[];
       accent: string;
+      faviconUrls: string[];
     }
   | {
       type: 'engine';
@@ -56,6 +58,7 @@ export type SearchResultItem =
       domain: string;
       tags: string[];
       accent: string;
+      faviconUrls: string[];
     };
 
 export type QuickSearchTarget = {
@@ -64,6 +67,7 @@ export type QuickSearchTarget = {
   domain: string;
   searchUrl: string;
   accent: string;
+  faviconUrls: string[];
 };
 
 export type FullExportData = {

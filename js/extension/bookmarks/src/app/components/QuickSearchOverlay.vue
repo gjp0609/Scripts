@@ -2,6 +2,7 @@
 import type { CSSProperties } from 'vue';
 import { Search } from 'lucide-vue-next';
 import type { QuickSearchTarget } from '../../types/bookmark';
+import SiteFavicon from './SiteFavicon.vue';
 
 defineProps<{
   targets: QuickSearchTarget[];
@@ -22,7 +23,7 @@ const emit = defineEmits<{
     </div>
 
     <button v-for="target in targets" :key="target.bookmarkId" class="search-row" type="button" @click="emit('open', target)">
-      <span class="result-icon" :style="{ background: target.accent }">{{ target.title.slice(0, 1).toUpperCase() }}</span>
+      <SiteFavicon class="overlay-favicon" :title="target.title" :accent="target.accent" :sources="target.faviconUrls" />
       <span class="result-text">
         <strong>{{ target.title }}</strong>
         <small>{{ target.domain }} · {{ keyword || '输入关键词' }}</small>

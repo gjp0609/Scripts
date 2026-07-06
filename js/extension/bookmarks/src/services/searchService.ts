@@ -36,7 +36,8 @@ export function searchBookmarks(folders: FolderView[], keyword: string, engine: 
         domain: bookmark.domain,
         folderTitle: folder.title,
         tags: bookmark.extra.tags,
-        accent: bookmark.accent
+        accent: bookmark.accent,
+        faviconUrls: bookmark.faviconUrls
       }))
   );
 
@@ -47,7 +48,8 @@ export function searchBookmarks(folders: FolderView[], keyword: string, engine: 
     url: getSearchEngineUrl(engine, keyword),
     domain: engine === 'google' ? 'google.com' : 'bing.com',
     tags: ['搜索引擎'],
-    accent: engine === 'google' ? '#4285F4' : '#008373'
+    accent: engine === 'google' ? '#4285F4' : '#008373',
+    faviconUrls: []
   };
 
   return [
@@ -70,7 +72,8 @@ export function getQuickSearchTargets(folders: FolderView[], keyword: string): Q
       title: bookmark.title,
       domain: bookmark.domain,
       searchUrl: bookmark.extra.searchUrl ?? '',
-      accent: bookmark.accent
+      accent: bookmark.accent,
+      faviconUrls: bookmark.faviconUrls
     }))
     .slice(0, 8);
 }

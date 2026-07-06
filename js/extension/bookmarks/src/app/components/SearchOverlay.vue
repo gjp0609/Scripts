@@ -2,6 +2,7 @@
 import type { CSSProperties } from 'vue';
 import { CornerDownLeft } from 'lucide-vue-next';
 import type { SearchResultItem } from '../../types/bookmark';
+import SiteFavicon from './SiteFavicon.vue';
 
 defineProps<{
   query: string;
@@ -22,7 +23,7 @@ const emit = defineEmits<{
     </div>
 
     <button v-for="result in results" :key="`${result.type}-${result.id}`" class="search-row" type="button" @click="emit('open', result)">
-      <span class="result-icon" :style="{ background: result.accent }">{{ result.title.slice(0, 1).toUpperCase() }}</span>
+      <SiteFavicon class="overlay-favicon" :title="result.title" :accent="result.accent" :sources="result.faviconUrls" />
       <span class="result-text">
         <strong>{{ result.title }}</strong>
         <small>{{ result.domain }}</small>

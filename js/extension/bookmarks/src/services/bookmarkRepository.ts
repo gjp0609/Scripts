@@ -1,6 +1,7 @@
 import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
 import { createBookmark, getDefaultBookmarkRoot, getTree, moveNode, updateBookmark } from './bookmarkApi';
 import { cleanupExtras, getExtras, saveExtra } from './extraStore';
+import { getFaviconSources } from './favicon';
 
 const accents = ['#4F6EF7', '#06B6D4', '#22C55E', '#E8853D', '#EF4444', '#8B5CF6', '#F59E0B'];
 
@@ -27,11 +28,16 @@ function accentForId(id: string): string {
 }
 
 function toBookmarkView(node: BrowserBookmarkNode, extras: Record<string, BookmarkExtra>): BookmarkView {
+  const extra = extras[node.id] ?? emptyExtra(node.id);
   return {
     ...node,
-    extra: extras[node.id] ?? emptyExtra(node.id),
+    extra,
     domain: getDomain(node.url),
-    accent: extras[node.id]?.faviconOverride ?? accentForId(node.id)
+    accent: accentForId(node.id),
+    faviconUrls: getFaviconSources({
+      url: node.url,
+      override: extra.faviconOverride
+    })
   };
 }
 

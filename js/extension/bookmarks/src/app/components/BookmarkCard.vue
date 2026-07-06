@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Copy, GripVertical, MoreVertical, Pencil, Trash2 } from 'lucide-vue-next';
 import type { BookmarkView } from '../../types/bookmark';
+import SiteFavicon from './SiteFavicon.vue';
 
 defineProps<{
   bookmark: BookmarkView;
@@ -37,13 +38,11 @@ const emit = defineEmits<{
     </div>
 
     <div class="card-main">
-      <div class="favicon-badge" :style="{ background: `${bookmark.accent}1A`, color: bookmark.accent }">
-        {{ bookmark.title.slice(0, 2).toUpperCase() }}
-      </div>
-      <div class="card-text">
+      <div class="card-heading">
+        <SiteFavicon :title="bookmark.title" :accent="bookmark.accent" :sources="bookmark.faviconUrls" />
         <h3 :title="bookmark.title">{{ bookmark.title }}</h3>
-        <p :title="bookmark.url || bookmark.domain">{{ bookmark.url || bookmark.domain }}</p>
       </div>
+      <p class="card-url" :title="bookmark.url || bookmark.domain">{{ bookmark.url || bookmark.domain }}</p>
     </div>
 
     <div v-if="bookmark.extra.tags.length" class="tag-row">

@@ -16,6 +16,7 @@ const emit = defineEmits<{
   'add-bookmark': [];
   'add-folder': [];
   'search-box-ready': [element: HTMLDivElement];
+  'search-keydown': [event: KeyboardEvent];
 }>();
 
 const searchBoxEl = ref<HTMLDivElement | null>(null);
@@ -42,6 +43,7 @@ onMounted(() => {
         placeholder="搜索书签... Ctrl K"
         autofocus
         @input="emit('update:query', ($event.target as HTMLInputElement).value)"
+        @keydown="emit('search-keydown', $event)"
       />
       <button class="engine-button" type="button" @click="emit('update:engine', engine === 'google' ? 'bing' : 'google')">
         <Globe2 :size="14" />

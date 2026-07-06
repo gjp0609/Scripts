@@ -509,7 +509,7 @@ button {
   text-align: left;
 }
 
-.search-row:first-of-type {
+.search-row.active {
   background: var(--color-primary-light);
 }
 

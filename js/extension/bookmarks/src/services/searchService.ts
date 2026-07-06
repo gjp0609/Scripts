@@ -53,8 +53,8 @@ export function searchBookmarks(folders: FolderView[], keyword: string, engine: 
   };
 
   return [
-    ...bookmarkResults,
-    engineResult
+    engineResult,
+    ...bookmarkResults
   ].slice(0, 10);
 }
 
@@ -82,12 +82,24 @@ export function buildQuickSearchUrl(template: string, keyword: string): string {
   return template.replace(/\$\{keyword\}|\{keyword\}/g, encodeURIComponent(keyword));
 }
 
-export function parseQuickSearch(input: string): { siteQuery: string; keyword: string } | undefined {
+export function parseQuickSearch(input: string): { siteQuery: string; keyword: string; hasKeyword: boolean } | undefined {
   if (!input.startsWith('!') && !input.startsWith('！')) return undefined;
-  const body = input.slice(1).trim();
-  const [siteQuery = '', ...keywordParts] = body.split(/\s+/);
+  const body = input.slice(1);
+  const firstWhitespaceIndex = body.search(/\s/);
+
+  if (firstWhitespaceIndex === -1) {
+    return {
+      siteQuery: body.trim(),
+      keyword: '',
+      hasKeyword: false
+    };
+  }
+
+  const siteQuery = body.slice(0, firstWhitespaceIndex).trim();
+  const keyword = body.slice(firstWhitespaceIndex + 1).trim();
   return {
     siteQuery,
-    keyword: keywordParts.join(' ')
+    keyword,
+    hasKeyword: keyword.length > 0
   };
 }

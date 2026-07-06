@@ -7,6 +7,7 @@ import SiteFavicon from './SiteFavicon.vue';
 defineProps<{
   targets: QuickSearchTarget[];
   keyword: string;
+  activeIndex?: number;
   overlayStyle?: CSSProperties;
 }>();
 
@@ -22,7 +23,15 @@ const emit = defineEmits<{
       <span>{{ targets.length }} 个站点</span>
     </div>
 
-    <button v-for="target in targets" :key="target.bookmarkId" class="search-row" type="button" @click="emit('open', target)">
+    <button
+      v-for="(target, index) in targets"
+      :key="target.bookmarkId"
+      class="search-row"
+      :class="{ active: index === activeIndex }"
+      type="button"
+      :aria-selected="index === activeIndex"
+      @click="emit('open', target)"
+    >
       <SiteFavicon class="overlay-favicon" :title="target.title" :accent="target.accent" :sources="target.faviconUrls" />
       <span class="result-text">
         <strong>{{ target.title }}</strong>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { ChevronDown, Folder } from 'lucide-vue-next';
 import type { BookmarkView, QuickSearchTarget, SearchResultItem } from '../types/bookmark';
@@ -30,6 +30,8 @@ const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
 const quickSearch = computed(() => parseQuickSearch(query.value));
 const quickTargets = computed(() => getQuickSearchTargets(workspace.folders.value, quickSearch.value?.siteQuery ?? ''));
 const searchResults = computed(() => searchBookmarks(workspace.folders.value, query.value, workspace.searchEngine.value));
+const activeSearchIndex = ref(0);
+const activeQuickIndex = ref(0);
 const visibleFolders = computed(() => {
   if (!query.value.trim() || quickSearch.value) return workspace.folders.value;
   const ids = new Set(searchResults.value.filter((item) => item.type === 'bookmark').map((item) => item.id));
@@ -52,6 +54,79 @@ function openSearchResult(result: SearchResultItem) {
 function openQuickSearch(target: QuickSearchTarget) {
   const url = buildQuickSearchUrl(target.searchUrl, quickSearch.value?.keyword ?? '');
   void openUrl(url);
+}
+
+function normalizeIndex(current: number, total: number): number {
+  if (!total) return 0;
+  return ((current % total) + total) % total;
+}
+
+function moveSearchSelection(delta: number) {
+  const total = searchResults.value.length;
+  if (!total) return;
+  activeSearchIndex.value = normalizeIndex(activeSearchIndex.value + delta, total);
+}
+
+function moveQuickSelection(delta: number) {
+  const total = quickTargets.value.length;
+  if (!total) return;
+  activeQuickIndex.value = normalizeIndex(activeQuickIndex.value + delta, total);
+}
+
+function handleSearchKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && query.value) {
+    event.preventDefault();
+    query.value = '';
+    return;
+  }
+
+  if (quickSearch.value) {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveQuickSelection(1);
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveQuickSelection(-1);
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      if (!quickSearch.value.hasKeyword) {
+        event.preventDefault();
+        return;
+      }
+
+      const target = quickTargets.value[activeQuickIndex.value];
+      if (!target) return;
+      event.preventDefault();
+      openQuickSearch(target);
+    }
+    return;
+  }
+
+  if (!query.value.trim()) return;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    moveSearchSelection(1);
+    return;
+  }
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    moveSearchSelection(-1);
+    return;
+  }
+
+  if (event.key === 'Enter') {
+    const result = searchResults.value[activeSearchIndex.value];
+    if (!result) return;
+    event.preventDefault();
+    openSearchResult(result);
+  }
 }
 
 function startAddBookmark() {
@@ -121,6 +196,19 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateOverlayPosition);
   window.removeEventListener('scroll', updateOverlayPosition);
 });
+
+watch(query, () => {
+  activeSearchIndex.value = 0;
+  activeQuickIndex.value = 0;
+});
+
+watch(searchResults, (results) => {
+  activeSearchIndex.value = normalizeIndex(activeSearchIndex.value, results.length);
+});
+
+watch(quickTargets, (targets) => {
+  activeQuickIndex.value = normalizeIndex(activeQuickIndex.value, targets.length);
+});
 </script>
 
 <template>
@@ -135,6 +223,7 @@ onBeforeUnmount(() => {
       @update:engine="workspace.setSearchEngine($event)"
       @add-bookmark="startAddBookmark"
       @add-folder="folderModalOpen = true"
+      @search-keydown="handleSearchKeydown"
       @search-box-ready="setSearchBoxElement"
     />
 
@@ -183,10 +272,18 @@ onBeforeUnmount(() => {
       v-if="quickSearch"
       :targets="quickTargets"
       :keyword="quickSearch.keyword"
+      :active-index="activeQuickIndex"
       :overlay-style="overlayStyle"
       @open="openQuickSearch"
     />
-    <SearchOverlay v-else :query="query" :results="searchResults" :overlay-style="overlayStyle" @open="openSearchResult" />
+    <SearchOverlay
+      v-else
+      :query="query"
+      :results="searchResults"
+      :active-index="activeSearchIndex"
+      :overlay-style="overlayStyle"
+      @open="openSearchResult"
+    />
 
     <BookmarkModal
       :open="bookmarkModalOpen"

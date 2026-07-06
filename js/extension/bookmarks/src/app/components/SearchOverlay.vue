@@ -7,6 +7,7 @@ import SiteFavicon from './SiteFavicon.vue';
 defineProps<{
   query: string;
   results: SearchResultItem[];
+  activeIndex?: number;
   overlayStyle?: CSSProperties;
 }>();
 
@@ -22,7 +23,15 @@ const emit = defineEmits<{
       <span>{{ results.length }} 个结果</span>
     </div>
 
-    <button v-for="result in results" :key="`${result.type}-${result.id}`" class="search-row" type="button" @click="emit('open', result)">
+    <button
+      v-for="(result, index) in results"
+      :key="`${result.type}-${result.id}`"
+      class="search-row"
+      :class="{ active: index === activeIndex }"
+      type="button"
+      :aria-selected="index === activeIndex"
+      @click="emit('open', result)"
+    >
       <SiteFavicon class="overlay-favicon" :title="result.title" :accent="result.accent" :sources="result.faviconUrls" />
       <span class="result-text">
         <strong>{{ result.title }}</strong>

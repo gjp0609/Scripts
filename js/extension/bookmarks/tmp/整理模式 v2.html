@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkHub</title>
+    <style id="theme-vars">
+/* Bookmark Manager — Brand CSS */
+/* Tone: Clean efficiency, tool-focused, neutral-cool palette */
+
+:root {
+  /* ── Color System ── */
+  --color-primary: #4F6EF7;
+  --color-primary-hover: #3B5AE0;
+  --color-primary-light: #EEF1FE;
+  --color-primary-muted: rgba(79, 110, 247, 0.12);
+
+  --color-bg: #F7F8FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-inset: #F0F1F4;
+  --color-bg-hover: #ECEEF3;
+
+  --color-text-primary: #1A1D26;
+  --color-text-secondary: #5F6578;
+  --color-text-tertiary: #9499A8;
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #4F6EF7;
+
+  --color-border: #E3E5EA;
+  --color-border-light: #F0F1F4;
+  --color-divider: #E8EAEE;
+
+  /* ── State Colors ── */
+  --state-success: #22C55E;
+  --state-warning: #F59E0B;
+  --state-error: #EF4444;
+  --state-info: #3B82F6;
+
+  /* ── Shape System ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Surface Depth ── */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Layout ── */
+  --sidebar-width: 240px;
+  --header-height: 56px;
+}
+
+/* ── Typography Classes ── */
+.font-sans { font-family: var(--font-sans); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-xs { font-size: var(--text-xs); line-height: var(--leading-tight); }
+.text-sm { font-size: var(--text-sm); line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-md { font-size: var(--text-md); line-height: var(--leading-normal); }
+.text-lg { font-size: var(--text-lg); line-height: var(--leading-tight); }
+.text-xl { font-size: var(--text-xl); line-height: var(--leading-tight); }
+.text-2xl { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-brand { color: var(--color-primary); }
+.text-success { color: var(--state-success); }
+.text-error { color: var(--state-error); }
+.text-warning { color: var(--state-warning); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* ── Organize v2 card hover controls ── */
+      .org-card {
+        position: relative;
+        transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+      }
+      .org-card:hover {
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+      }
+      .org-card .card-drag-handle,
+      .org-card .card-actions {
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+      }
+      .org-card:hover .card-drag-handle,
+      .org-card:hover .card-actions {
+        opacity: 1;
+      }
+
+      /* ── Group header hover controls ── */
+      .group-row:hover .group-drag-handle,
+      .group-row:hover .group-actions {
+        opacity: 1 !important;
+      }
+
+      /* ── Reduced motion ── */
+      @media (prefers-reduced-motion: reduce) {
+        .org-card, .org-card:hover { transition-duration: 0.01ms; transform: none; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--color-bg);">
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 bottom-0 z-10 flex flex-col" style="width: var(--sidebar-width); background: var(--color-bg-elevated); border-right: 1px solid var(--color-border);">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: var(--space-4) var(--space-4) var(--space-3);">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--color-primary);">
+          <path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/>
+        </svg>
+        <span class="font-sans text-base font-semibold" style="color: var(--color-text-primary);">MarkHub</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto no-scrollbar" style="padding: 0 var(--space-2);">
+
+        <!-- Main nav items -->
+        <div class="flex flex-col gap-0.5">
+          <!-- Active: 全部书签 -->
+          <a href="#" data-nav-key="bookmarks-all" data-active="true" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); background: var(--color-primary-muted); color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/></svg>
+            <span class="flex-1 truncate">全部书签</span>
+            <span class="shrink-0 rounded-full px-1.5 text-xs font-medium" style="font-size: 11px; min-width: 20px; text-align: center; background: var(--color-primary-light); color: var(--color-primary);">128</span>
+          </a>
+          <a href="#" data-nav-key="bookmarks-recent" data-active="false" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            <span class="flex-1 truncate">最近添加</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">12</span>
+          </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="my-2" style="height: 1px; background: var(--color-border-light);"></div>
+
+        <!-- Tags section -->
+        <div class="mb-1" style="padding: var(--space-2) var(--space-2) var(--space-1);">
+          <span class="text-xs font-medium uppercase tracking-wide" style="font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.05em;">标签</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <a href="#" data-nav-key="tag-frontend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #4F6EF7;"></span>
+            <span class="flex-1 truncate">前端开发</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">24</span>
+          </a>
+          <a href="#" data-nav-key="tag-design" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #E8853D;"></span>
+            <span class="flex-1 truncate">设计资源</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">18</span>
+          </a>
+          <a href="#" data-nav-key="tag-tools" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #22C55E;"></span>
+            <span class="flex-1 truncate">工具效率</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">31</span>
+          </a>
+          <a href="#" data-nav-key="tag-backend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #8B5CF6;"></span>
+            <span class="flex-1 truncate">后端技术</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">15</span>
+          </a>
+          <a href="#" data-nav-key="tag-reading" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #F59E0B;"></span>
+            <span class="flex-1 truncate">阅读收藏</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">14</span>
+          </a>
+          <a href="#" data-nav-key="tag-opensource" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #06B6D4;"></span>
+            <span class="flex-1 truncate">开源项目</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">26</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Bottom settings -->
+      <div class="shrink-0" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border-light);">
+        <a href="#" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-tertiary); font-size: var(--text-sm); transition: color var(--transition-fast);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M13.4 9.9a1.1 1.1 0 0 0 .2 1.2l.1.1a1.3 1.3 0 1 1-1.9 1.9l-.1-.1a1.1 1.1 0 0 0-1.2-.2 1.1 1.1 0 0 0-.7 1.1V14a1.3 1.3 0 1 1-2.6 0v-.1a1.1 1.1 0 0 0-.7-1.1 1.1 1.1 0 0 0-1.2.2l-.1.1a1.3 1.3 0 1 1-1.9-1.9l.1-.1a1.1 1.1 0 0 0 .2-1.2 1.1 1.1 0 0 0-1.1-.7H2a1.3 1.3 0 1 1 0-2.6h.1a1.1 1.1 0 0 0 1.1-.7 1.1 1.1 0 0 0-.2-1.2l-.1-.1a1.3 1.3 0 1 1 1.9-1.9l.1.1a1.1 1.1 0 0 0 1.2.2h.1a1.1 1.1 0 0 0 .6-1.1V2a1.3 1.3 0 1 1 2.6 0v.1a1.1 1.1 0 0 0 .7 1.1 1.1 1.1 0 0 0 1.2-.2l.1-.1a1.3 1.3 0 1 1 1.9 1.9l-.1.1a1.1 1.1 0 0 0-.2 1.2v.1a1.1 1.1 0 0 0 1.1.6H14a1.3 1.3 0 1 1 0 2.6h-.1a1.1 1.1 0 0 0-1.1.7z" stroke="currentColor" stroke-width="1.1" fill="none"/></svg>
+          <span class="flex-1 truncate">主题设置</span>
+        </a>
+      </div>
+
+    </aside>
+
+    <!-- Header bar — organize mode active -->
+    <header class="fixed top-0 z-20 flex items-center" style="left: var(--sidebar-width); right: 0; height: var(--header-height); background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border);">
+
+      <!-- Left: mode toggle — "整理" active -->
+      <div class="flex items-center shrink-0" style="padding: 0 var(--space-6);">
+        <button data-dom-id="toggle-browse" data-tab-key="browse" data-active="false" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-text-secondary); transition: color var(--transition-fast);">
+          浏览
+        </button>
+        <button data-tab-key="organize" data-active="true" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-primary); transition: color var(--transition-fast);">
+          整理
+          <span class="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full" style="width: 16px; height: 2px; background: var(--color-primary);"></span>
+        </button>
+      </div>
+
+      <!-- Center: search input -->
+      <div class="flex-1 flex justify-center" style="padding: 0 var(--space-4);">
+        <div class="relative flex items-center w-full" style="max-width: 480px; height: 36px; background: var(--color-bg-inset); border: 1px solid var(--color-border); border-radius: var(--radius-md); transition: border-color var(--transition-fast), box-shadow var(--transition-fast);">
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-left: var(--space-3); color: var(--color-text-tertiary);">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+          <input type="text" placeholder="搜索书签... ⌘K" class="flex-1 bg-transparent outline-none" style="padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--color-text-primary); font-family: var(--font-sans);">
+          <button class="shrink-0 flex items-center gap-1 rounded px-1.5" style="margin-right: var(--space-1); height: 24px; color: var(--color-text-secondary); font-size: 11px; transition: background var(--transition-fast);" aria-label="Search engine selector">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-tertiary);">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+              <path d="M2 8h12M8 2c2.5 2.5 4 5 4 6s-1.5 3.5-4 6c-2.5-2.5-4-5-4-6s1.5-3.5 4-6z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: action buttons -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: 0 var(--space-6);">
+        <button data-dom-id="org-btn-add-bookmark" class="inline-flex items-center gap-1.5 font-medium" style="height: 32px; padding: 0 14px; background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), transform var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <span>添加书签</span>
+        </button>
+        <button data-dom-id="org-btn-add-folder" class="inline-flex items-center gap-1.5 font-medium" style="height: 32px; padding: 0 14px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 0 1 1-1h3l1.5 2H13a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+          <span>添加目录</span>
+        </button>
+        <button class="inline-flex items-center justify-center" style="width: 32px; height: 32px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-tertiary); border-radius: var(--radius-md); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Quick search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- Main content area -->
+    <main class="content-area" style="margin-left: var(--sidebar-width); padding-top: var(--header-height); min-height: 100vh;">
+
+      <!-- ═══════ Top action bar (sticky) ═══════ -->
+      <div class="sticky z-10 flex items-center justify-between" style="top: var(--header-height); height: 44px; padding: 0 var(--space-6); background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border-light);">
+        <!-- Left: mode label + selection count -->
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="font-medium" style="font-size: var(--text-sm); color: var(--color-text-primary);">整理模式</span>
+          <span style="width: 1px; height: 12px; background: var(--color-divider);"></span>
+          <span style="font-size: var(--text-sm); color: var(--color-text-tertiary);">已选 <strong style="color: var(--color-text-secondary); font-weight: 600;">0</strong> 项</span>
+        </div>
+        <!-- Right: action pills -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button class="inline-flex items-center gap-1 font-medium" style="height: 28px; padding: 0 14px; background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast);">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+            添加书签
+          </button>
+          <button class="inline-flex items-center gap-1 font-medium" style="height: 28px; padding: 0 14px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 0 1 1-1h3l1.5 2H13a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+            添加目录
+          </button>
+          <button class="inline-flex items-center gap-1 font-medium" style="height: 28px; padding: 0 14px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+            完成
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════ Card grid content ═══════ -->
+      <div style="padding: var(--space-5) var(--space-6) var(--space-8);">
+
+        <!-- ── Group 1: 前端开发 ── -->
+        <div style="margin-bottom: var(--space-6);">
+
+          <!-- Group header -->
+          <div class="group-row flex items-center gap-2" style="padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3);">
+            <!-- Drag handle (hover) -->
+            <div class="group-drag-handle flex items-center justify-center shrink-0 cursor-grab" style="width: 16px; height: 16px; color: var(--color-text-tertiary); opacity: 0; transition: opacity var(--transition-fast);">
+              <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+              </svg>
+            </div>
+            <!-- Folder icon -->
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color: var(--color-primary); flex-shrink: 0;">
+              <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h2.086a1.5 1.5 0 0 1 1.06.44L7.828 3.612A.5.5 0 0 0 8.172 3.75H12.5A1.5 1.5 0 0 1 14 5.25V6H2V3.5z" fill="currentColor" opacity="0.15"/>
+              <path d="M2 6h12v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12.5V6z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <span class="font-medium" style="font-size: var(--text-sm); color: var(--color-text-primary);">前端开发</span>
+            <span style="font-size: 11px; color: var(--color-text-tertiary);">24</span>
+            <!-- Spacer -->
+            <span class="flex-1"></span>
+            <!-- Group actions (hover) -->
+            <div class="group-actions flex items-center gap-1" style="opacity: 0; transition: opacity var(--transition-fast);">
+              <button class="inline-flex items-center justify-center" style="width: 24px; height: 24px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit group">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+              <button class="inline-flex items-center justify-center" style="width: 24px; height: 24px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete group">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3-column card grid -->
+          <div class="grid grid-cols-3 gap-4" style="align-items: stretch;">
+
+            <!-- Card 1: React 官方文档 -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <!-- Drag handle (top-left, on hover) -->
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <!-- Actions (top-right, on hover) -->
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <!-- Card body -->
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(79,110,247,0.1); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-primary);">R</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">React 官方文档</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">react.dev</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">React</span>
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">框架</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: DRAG PLACEHOLDER -->
+            <div style="background: var(--color-bg-inset); border: 1.5px dashed var(--color-border); border-radius: 10px; padding: var(--space-4); opacity: 0.4; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 120px;">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-tertiary); margin-bottom: var(--space-2);">
+                <path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+              <span style="font-size: var(--text-xs); color: var(--color-text-tertiary);">拖放到这里</span>
+            </div>
+
+            <!-- Card 3: Tailwind CSS -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(6,182,212,0.1); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #06B6D4;">T</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Tailwind CSS</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">tailwindcss.com</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(6,182,212,0.1); color: #06B6D4;">CSS</span>
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">工具</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 4: Vue.js -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(34,197,94,0.1); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--state-success);">V</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Vue 3 渐进式框架</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">vuejs.org</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(34,197,94,0.1); color: #22C55E;">Vue</span>
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">框架</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 5: TypeScript -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(59,130,246,0.1); border-radius: 6px;">
+                  <span style="font-size: 10px; font-weight: 700; color: #3B82F6;">TS</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">TypeScript 入门</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">ts.xcatliu.com</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(245,158,11,0.1); color: #F59E0B;">TypeScript</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 6: Webpack -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(26,29,38,0.06); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text-primary);">W</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Webpack 5 配置指南</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">webpack.js.org</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">构建工具</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Group 2: 设计资源 ── -->
+        <div style="margin-bottom: var(--space-6);">
+
+          <!-- Group header -->
+          <div class="group-row flex items-center gap-2" style="padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3);">
+            <div class="group-drag-handle flex items-center justify-center shrink-0 cursor-grab" style="width: 16px; height: 16px; color: var(--color-text-tertiary); opacity: 0; transition: opacity var(--transition-fast);">
+              <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+              </svg>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color: var(--state-warning); flex-shrink: 0;">
+              <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h2.086a1.5 1.5 0 0 1 1.06.44L7.828 3.612A.5.5 0 0 0 8.172 3.75H12.5A1.5 1.5 0 0 1 14 5.25V6H2V3.5z" fill="currentColor" opacity="0.15"/>
+              <path d="M2 6h12v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12.5V6z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <span class="font-medium" style="font-size: var(--text-sm); color: var(--color-text-primary);">设计资源</span>
+            <span style="font-size: 11px; color: var(--color-text-tertiary);">18</span>
+            <span class="flex-1"></span>
+            <div class="group-actions flex items-center gap-1" style="opacity: 0; transition: opacity var(--transition-fast);">
+              <button class="inline-flex items-center justify-center" style="width: 24px; height: 24px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit group">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+              </button>
+              <button class="inline-flex items-center justify-center" style="width: 24px; height: 24px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete group">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3-column card grid -->
+          <div class="grid grid-cols-3 gap-4" style="align-items: stretch;">
+
+            <!-- Card: Figma -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(232,133,61,0.1); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #E8853D;">F</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Figma 设计工具</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">figma.com</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(232,133,61,0.1); color: #E8853D;">设计</span>
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">协作</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Dribbble -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(239,68,68,0.1); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #EF4444;">D</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Dribbble 灵感集</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">dribbble.com</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: rgba(239,68,68,0.1); color: #EF4444;">灵感</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card: Unsplash -->
+            <div class="org-card" style="background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: 10px; padding: var(--space-4); cursor: default;">
+              <div class="card-drag-handle absolute flex items-center justify-center cursor-grab" style="top: var(--space-3); left: var(--space-3); width: 16px; height: 16px; color: var(--color-text-tertiary);">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="2" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="3" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="8" r="1.2" fill="currentColor"/>
+                  <circle cx="2" cy="13" r="1.2" fill="currentColor"/>
+                  <circle cx="8" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="card-actions absolute flex items-center gap-0.5" style="top: var(--space-3); right: var(--space-3);">
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Edit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3-10 10H1.5v-3l10-10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                </button>
+                <button class="inline-flex items-center justify-center" style="width: 22px; height: 22px; color: var(--color-text-tertiary); border-radius: var(--radius-sm); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Delete">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+                </button>
+              </div>
+              <div class="flex items-start gap-2" style="padding-top: 2px;">
+                <div class="shrink-0 flex items-center justify-center" style="width: 28px; height: 28px; background: rgba(26,29,38,0.06); border-radius: 6px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--color-text-primary);">U</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="truncate" style="font-size: var(--text-sm); font-weight: 600; color: var(--color-text-primary); line-height: var(--leading-tight);">Unsplash 免费图库</div>
+                  <div class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); margin-top: 2px;">unsplash.com</div>
+                  <div class="flex flex-wrap gap-1" style="margin-top: var(--space-2);">
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">图片</span>
+                    <span style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-bg-inset); color: var(--color-text-secondary);">素材</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Bottom hint ── -->
+        <div class="flex items-center justify-center" style="padding-top: var(--space-4);">
+          <span style="font-size: 11px; color: var(--color-text-tertiary);">拖拽调整顺序 · Ctrl+Z 撤销</span>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- Floating layer -->
+    <div class="floating-layer">
+      <!-- SLOT: floatingLayer -->
+    </div>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

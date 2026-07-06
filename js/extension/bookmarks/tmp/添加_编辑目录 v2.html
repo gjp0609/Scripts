@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkHub</title>
+    <style id="theme-vars">
+/* Bookmark Manager — Brand CSS */
+/* Tone: Clean efficiency, tool-focused, neutral-cool palette */
+
+:root {
+  /* ── Color System ── */
+  --color-primary: #4F6EF7;
+  --color-primary-hover: #3B5AE0;
+  --color-primary-light: #EEF1FE;
+  --color-primary-muted: rgba(79, 110, 247, 0.12);
+
+  --color-bg: #F7F8FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-inset: #F0F1F4;
+  --color-bg-hover: #ECEEF3;
+
+  --color-text-primary: #1A1D26;
+  --color-text-secondary: #5F6578;
+  --color-text-tertiary: #9499A8;
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #4F6EF7;
+
+  --color-border: #E3E5EA;
+  --color-border-light: #F0F1F4;
+  --color-divider: #E8EAEE;
+
+  /* ── State Colors ── */
+  --state-success: #22C55E;
+  --state-warning: #F59E0B;
+  --state-error: #EF4444;
+  --state-info: #3B82F6;
+
+  /* ── Shape System ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Surface Depth ── */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Layout ── */
+  --sidebar-width: 240px;
+  --header-height: 56px;
+}
+
+/* ── Typography Classes ── */
+.font-sans { font-family: var(--font-sans); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-xs { font-size: var(--text-xs); line-height: var(--leading-tight); }
+.text-sm { font-size: var(--text-sm); line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-md { font-size: var(--text-md); line-height: var(--leading-normal); }
+.text-lg { font-size: var(--text-lg); line-height: var(--leading-tight); }
+.text-xl { font-size: var(--text-xl); line-height: var(--leading-tight); }
+.text-2xl { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-brand { color: var(--color-primary); }
+.text-success { color: var(--state-success); }
+.text-error { color: var(--state-error); }
+.text-warning { color: var(--state-warning); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+
+      /* Modal entrance animation */
+      @keyframes modalFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes modalSlideUp {
+        from { opacity: 0; transform: translateY(8px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .modal-backdrop-anim { animation: none !important; opacity: 1 !important; }
+        .modal-card-anim { animation: none !important; opacity: 1 !important; transform: none !important; }
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--color-bg);">
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 bottom-0 z-10 flex flex-col" style="width: var(--sidebar-width); background: var(--color-bg-elevated); border-right: 1px solid var(--color-border);">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: var(--space-4) var(--space-4) var(--space-3);">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--color-primary);">
+          <path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/>
+        </svg>
+        <span class="font-sans text-base font-semibold" style="color: var(--color-text-primary);">MarkHub</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto no-scrollbar" style="padding: 0 var(--space-2);">
+
+        <!-- Main nav items -->
+        <div class="flex flex-col gap-0.5">
+          <!-- SLOT: activeNavItem -->
+          <a href="#" data-nav-key="bookmarks-all" data-active="true" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); background: var(--color-primary-muted); color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/></svg>
+            <span class="flex-1 truncate">全部书签</span>
+            <span class="shrink-0 rounded-full px-1.5 text-xs font-medium" style="font-size: 11px; min-width: 20px; text-align: center; background: var(--color-primary-light); color: var(--color-primary);">128</span>
+          </a>
+          <a href="#" data-nav-key="bookmarks-recent" data-active="false" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            <span class="flex-1 truncate">最近添加</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">12</span>
+          </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="my-2" style="height: 1px; background: var(--color-border-light);"></div>
+
+        <!-- Tags section -->
+        <div class="mb-1" style="padding: var(--space-2) var(--space-2) var(--space-1);">
+          <span class="text-xs font-medium uppercase tracking-wide" style="font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.05em;">标签</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <a href="#" data-nav-key="tag-frontend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #4F6EF7;"></span>
+            <span class="flex-1 truncate">前端开发</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">24</span>
+          </a>
+          <a href="#" data-nav-key="tag-design" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #E8853D;"></span>
+            <span class="flex-1 truncate">设计资源</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">18</span>
+          </a>
+          <a href="#" data-nav-key="tag-tools" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #22C55E;"></span>
+            <span class="flex-1 truncate">工具效率</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">31</span>
+          </a>
+          <a href="#" data-nav-key="tag-backend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #8B5CF6;"></span>
+            <span class="flex-1 truncate">后端技术</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">15</span>
+          </a>
+          <a href="#" data-nav-key="tag-reading" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #F59E0B;"></span>
+            <span class="flex-1 truncate">阅读收藏</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">14</span>
+          </a>
+          <a href="#" data-nav-key="tag-opensource" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #06B6D4;"></span>
+            <span class="flex-1 truncate">开源项目</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">26</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Bottom settings -->
+      <div class="shrink-0" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border-light);">
+        <a href="#" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-tertiary); font-size: var(--text-sm); transition: color var(--transition-fast);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M13.4 9.9a1.1 1.1 0 0 0 .2 1.2l.1.1a1.3 1.3 0 1 1-1.9 1.9l-.1-.1a1.1 1.1 0 0 0-1.2-.2 1.1 1.1 0 0 0-.7 1.1V14a1.3 1.3 0 1 1-2.6 0v-.1a1.1 1.1 0 0 0-.7-1.1 1.1 1.1 0 0 0-1.2.2l-.1.1a1.3 1.3 0 1 1-1.9-1.9l.1-.1a1.1 1.1 0 0 0 .2-1.2 1.1 1.1 0 0 0-1.1-.7H2a1.3 1.3 0 1 1 0-2.6h.1a1.1 1.1 0 0 0 1.1-.7 1.1 1.1 0 0 0-.2-1.2l-.1-.1a1.3 1.3 0 1 1 1.9-1.9l.1.1a1.1 1.1 0 0 0 1.2.2h.1a1.1 1.1 0 0 0 .6-1.1V2a1.3 1.3 0 1 1 2.6 0v.1a1.1 1.1 0 0 0 .7 1.1 1.1 1.1 0 0 0 1.2-.2l.1-.1a1.3 1.3 0 1 1 1.9 1.9l-.1.1a1.1 1.1 0 0 0-.2 1.2v.1a1.1 1.1 0 0 0 1.1.6H14a1.3 1.3 0 1 1 0 2.6h-.1a1.1 1.1 0 0 0-1.1.7z" stroke="currentColor" stroke-width="1.1" fill="none"/></svg>
+          <span class="flex-1 truncate">主题设置</span>
+        </a>
+      </div>
+
+    </aside>
+
+    <!-- Header bar -->
+    <header class="fixed top-0 z-20 flex items-center" style="left: var(--sidebar-width); right: 0; height: var(--header-height); background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border);">
+
+      <!-- Left: mode toggle -->
+      <div class="flex items-center shrink-0" style="padding: 0 var(--space-6);">
+        <button data-tab-key="browse" data-active="true" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-primary); transition: color var(--transition-fast);">
+          浏览
+          <span class="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full" style="width: 16px; height: 2px; background: var(--color-primary);"></span>
+        </button>
+        <button data-tab-key="organize" data-active="false" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-text-secondary); transition: color var(--transition-fast);">
+          整理
+        </button>
+      </div>
+
+      <!-- Center: search input -->
+      <div class="flex-1 flex justify-center" style="padding: 0 var(--space-4);">
+        <div class="relative flex items-center w-full" style="max-width: 480px; height: 36px; background: var(--color-bg-inset); border: 1px solid var(--color-border); border-radius: var(--radius-md); transition: border-color var(--transition-fast), box-shadow var(--transition-fast);">
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-left: var(--space-3); color: var(--color-text-tertiary);">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+          <input type="text" placeholder="搜索书签... ⌘K" class="flex-1 bg-transparent outline-none" style="padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--color-text-primary); font-family: var(--font-sans);">
+          <!-- Engine selector dropdown icon -->
+          <button class="shrink-0 flex items-center gap-1 rounded px-1.5" style="margin-right: var(--space-1); height: 24px; color: var(--color-text-secondary); font-size: 11px; transition: background var(--transition-fast);" aria-label="Search engine selector">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-tertiary);">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
+              <path d="M2 8h12M8 2c2.5 2.5 4 5 4 6s-1.5 3.5-4 6c-2.5-2.5-4-5-4-6s1.5-3.5 4-6z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: action buttons -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: 0 var(--space-6);">
+        <button class="inline-flex items-center gap-1.5 rounded-md font-medium" style="height: 32px; padding: 0 var(--space-3); background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--text-sm); transition: background var(--transition-fast), transform var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <span>添加书签</span>
+        </button>
+        <button class="inline-flex items-center gap-1.5 rounded-md font-medium" style="height: 32px; padding: 0 var(--space-3); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 0 1 1-1h3l1.5 2H13a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+          <span>添加目录</span>
+        </button>
+        <button class="inline-flex items-center justify-center rounded-md" style="width: 32px; height: 32px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-tertiary); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Quick search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- Main content area -->
+    <main class="content-area" style="margin-left: var(--sidebar-width); padding-top: var(--header-height); min-height: 100vh;">
+      <!-- SLOT: mainContent -->
+    </main>
+
+    <!-- Floating layer — Add Folder Modal -->
+    <div class="floating-layer">
+
+      <!-- Backdrop -->
+      <div data-dom-id="folder-modal-backdrop" class="modal-backdrop-anim fixed inset-0 z-50" style="background: rgba(0,0,0,0.25); animation: modalFadeIn 240ms cubic-bezier(.3,0,0,1) forwards;" aria-hidden="true"></div>
+
+      <!-- Modal card -->
+      <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div class="modal-card-anim pointer-events-auto" style="width: 380px; background: var(--color-bg-elevated); border-radius: 16px; box-shadow: var(--shadow-lg); animation: modalSlideUp 280ms cubic-bezier(.3,0,0,1) forwards; overflow: hidden;">
+
+          <!-- Top accent gradient line -->
+          <div style="height: 3px; background: linear-gradient(90deg, #6366F1, #4F6EF7, #818CF8);"></div>
+
+          <!-- Header -->
+          <div class="flex items-center justify-between" style="padding: var(--space-5) var(--space-6) 0;">
+            <h2 class="font-sans font-semibold text-md" style="color: var(--color-text-primary); font-size: 15px; line-height: var(--leading-normal);">新建目录</h2>
+            <button data-dom-id="folder-modal-cancel" class="inline-flex items-center justify-center rounded-md" style="width: 28px; height: 28px; background: transparent; color: var(--color-text-tertiary); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="关闭">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Form -->
+          <div style="padding: var(--space-5) var(--space-6) var(--space-6);">
+            <label class="block font-sans text-sm" style="color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-2);">目录名称</label>
+            <input type="text" autofocus class="block w-full bg-transparent outline-none font-sans" style="height: 34px; padding: 0 var(--space-3); background: var(--color-bg-inset); border-radius: 10px; font-size: var(--text-sm); color: var(--color-text-primary); border: none; transition: box-shadow var(--transition-fast);" onfocus="this.style.boxShadow='0 0 0 2px var(--color-primary)'" onblur="this.style.boxShadow='none'" placeholder="输入目录名称">
+          </div>
+
+          <!-- Footer -->
+          <div class="flex items-center justify-end gap-2" style="padding: 0 var(--space-6) var(--space-5);">
+            <button data-dom-id="folder-modal-cancel" class="inline-flex items-center justify-center rounded-md font-medium whitespace-nowrap" style="height: 34px; padding: 0 var(--space-5); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), color var(--transition-fast);">取消</button>
+            <button data-dom-id="folder-modal-save" class="inline-flex items-center justify-center rounded-md font-medium whitespace-nowrap" style="height: 34px; padding: 0 var(--space-6); background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--text-sm); border-radius: var(--radius-full); transition: background var(--transition-fast), transform var(--transition-fast);">创建</button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

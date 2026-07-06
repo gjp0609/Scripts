@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarkHub</title>
+    <style id="theme-vars">
+/* Bookmark Manager — Brand CSS */
+/* Tone: Clean efficiency, tool-focused, neutral-cool palette */
+
+:root {
+  /* ── Color System ── */
+  --color-primary: #4F6EF7;
+  --color-primary-hover: #3B5AE0;
+  --color-primary-light: #EEF1FE;
+  --color-primary-muted: rgba(79, 110, 247, 0.12);
+
+  --color-bg: #F7F8FA;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-inset: #F0F1F4;
+  --color-bg-hover: #ECEEF3;
+
+  --color-text-primary: #1A1D26;
+  --color-text-secondary: #5F6578;
+  --color-text-tertiary: #9499A8;
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #4F6EF7;
+
+  --color-border: #E3E5EA;
+  --color-border-light: #F0F1F4;
+  --color-divider: #E8EAEE;
+
+  /* ── State Colors ── */
+  --state-success: #22C55E;
+  --state-warning: #F59E0B;
+  --state-error: #EF4444;
+  --state-info: #3B82F6;
+
+  /* ── Shape System ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+
+  /* ── Spacing ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Surface Depth ── */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.08);
+
+  /* ── Transitions ── */
+  --transition-fast: 120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+
+  /* ── Layout ── */
+  --sidebar-width: 240px;
+  --header-height: 56px;
+}
+
+/* ── Typography Classes ── */
+.font-sans { font-family: var(--font-sans); }
+.font-mono { font-family: var(--font-mono); }
+
+.text-xs { font-size: var(--text-xs); line-height: var(--leading-tight); }
+.text-sm { font-size: var(--text-sm); line-height: var(--leading-normal); }
+.text-base { font-size: var(--text-base); line-height: var(--leading-normal); }
+.text-md { font-size: var(--text-md); line-height: var(--leading-normal); }
+.text-lg { font-size: var(--text-lg); line-height: var(--leading-tight); }
+.text-xl { font-size: var(--text-xl); line-height: var(--leading-tight); }
+.text-2xl { font-size: var(--text-2xl); line-height: var(--leading-tight); }
+
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-brand { color: var(--color-primary); }
+.text-success { color: var(--state-success); }
+.text-error { color: var(--state-error); }
+.text-warning { color: var(--state-warning); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="background: var(--color-bg);">
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 bottom-0 z-10 flex flex-col" style="width: var(--sidebar-width); background: var(--color-bg-elevated); border-right: 1px solid var(--color-border);">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: var(--space-4) var(--space-4) var(--space-3);">
+        <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: var(--color-primary);">
+          <path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/>
+        </svg>
+        <span class="font-sans text-base font-semibold" style="color: var(--color-text-primary);">MarkHub</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto no-scrollbar" style="padding: 0 var(--space-2);">
+
+        <!-- Main nav items -->
+        <div class="flex flex-col gap-0.5">
+          <!-- Active: 全部书签 -->
+          <a href="#" data-nav-key="bookmarks-all" data-active="true" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); background: var(--color-primary-muted); color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2v12l4-2.5L12 14V2a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2z" fill="currentColor"/></svg>
+            <span class="flex-1 truncate">全部书签</span>
+            <span class="shrink-0 rounded-full px-1.5 text-xs font-medium" style="font-size: 11px; min-width: 20px; text-align: center; background: var(--color-primary-light); color: var(--color-primary);">128</span>
+          </a>
+          <a href="#" data-nav-key="bookmarks-recent" data-active="false" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            <span class="flex-1 truncate">最近添加</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">12</span>
+          </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="my-2" style="height: 1px; background: var(--color-border-light);"></div>
+
+        <!-- Tags section -->
+        <div class="mb-1" style="padding: var(--space-2) var(--space-2) var(--space-1);">
+          <span class="text-xs font-medium uppercase tracking-wide" style="font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.05em;">标签</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <a href="#" data-nav-key="tag-frontend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #4F6EF7;"></span>
+            <span class="flex-1 truncate">前端开发</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">24</span>
+          </a>
+          <a href="#" data-nav-key="tag-design" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #E8853D;"></span>
+            <span class="flex-1 truncate">设计资源</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">18</span>
+          </a>
+          <a href="#" data-nav-key="tag-tools" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #22C55E;"></span>
+            <span class="flex-1 truncate">工具效率</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">31</span>
+          </a>
+          <a href="#" data-nav-key="tag-backend" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #8B5CF6;"></span>
+            <span class="flex-1 truncate">后端技术</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">15</span>
+          </a>
+          <a href="#" data-nav-key="tag-reading" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #F59E0B;"></span>
+            <span class="flex-1 truncate">阅读收藏</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">14</span>
+          </a>
+          <a href="#" data-nav-key="tag-opensource" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast);">
+            <span class="w-2 h-2 rounded-full shrink-0" style="background: #06B6D4;"></span>
+            <span class="flex-1 truncate">开源项目</span>
+            <span class="shrink-0 text-xs" style="font-size: 11px; color: var(--color-text-tertiary);">26</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- Bottom settings -->
+      <div class="shrink-0" style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border-light);">
+        <a href="#" class="flex items-center gap-2 rounded-md truncate" style="padding: var(--space-2); color: var(--color-text-tertiary); font-size: var(--text-sm); transition: color var(--transition-fast);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M13.4 9.9a1.1 1.1 0 0 0 .2 1.2l.1.1a1.3 1.3 0 1 1-1.9 1.9l-.1-.1a1.1 1.1 0 0 0-1.2-.2 1.1 1.1 0 0 0-.7 1.1V14a1.3 1.3 0 1 1-2.6 0v-.1a1.1 1.1 0 0 0-.7-1.1 1.1 1.1 0 0 0-1.2.2l-.1.1a1.3 1.3 0 1 1-1.9-1.9l.1-.1a1.1 1.1 0 0 0 .2-1.2 1.1 1.1 0 0 0-1.1-.7H2a1.3 1.3 0 1 1 0-2.6h.1a1.1 1.1 0 0 0 1.1-.7 1.1 1.1 0 0 0-.2-1.2l-.1-.1a1.3 1.3 0 1 1 1.9-1.9l.1.1a1.1 1.1 0 0 0 1.2.2h.1a1.1 1.1 0 0 0 .6-1.1V2a1.3 1.3 0 1 1 2.6 0v.1a1.1 1.1 0 0 0 .7 1.1 1.1 1.1 0 0 0 1.2-.2l.1-.1a1.3 1.3 0 1 1 1.9 1.9l-.1.1a1.1 1.1 0 0 0-.2 1.2v.1a1.1 1.1 0 0 0 1.1.6H14a1.3 1.3 0 1 1 0 2.6h-.1a1.1 1.1 0 0 0-1.1.7z" stroke="currentColor" stroke-width="1.1" fill="none"/></svg>
+          <span class="flex-1 truncate">主题设置</span>
+        </a>
+      </div>
+
+    </aside>
+
+    <!-- Header bar -->
+    <header class="fixed top-0 z-20 flex items-center" style="left: var(--sidebar-width); right: 0; height: var(--header-height); background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border);">
+
+      <!-- Left: mode toggle -->
+      <div class="flex items-center shrink-0" style="padding: 0 var(--space-6);">
+        <button data-tab-key="browse" data-active="true" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-primary); transition: color var(--transition-fast);">
+          浏览
+          <span class="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full" style="width: 16px; height: 2px; background: var(--color-primary);"></span>
+        </button>
+        <button data-tab-key="organize" data-active="false" class="relative px-3 py-1 text-sm font-medium rounded-md" style="color: var(--color-text-secondary); transition: color var(--transition-fast);">
+          整理
+        </button>
+      </div>
+
+      <!-- Center: search input (focused with warm indigo ring) -->
+      <div class="flex-1 flex justify-center" style="padding: 0 var(--space-4);">
+        <div class="relative flex items-center w-full" style="max-width: 480px; height: 36px; background: var(--color-bg-elevated); border: 2px solid var(--color-primary); border-radius: var(--radius-md); box-shadow: 0 0 0 3px var(--color-primary-muted); transition: border-color var(--transition-fast), box-shadow var(--transition-fast);">
+          <svg class="shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" style="margin-left: var(--space-3); color: var(--color-text-tertiary);">
+            <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          </svg>
+          <input type="text" value="Rea" class="flex-1 bg-transparent outline-none" style="padding: 0 var(--space-2); font-size: var(--text-sm); color: var(--color-text-primary); font-family: var(--font-sans);">
+          <!-- Cursor blinking -->
+          <span class="shrink-0" style="width: 1.5px; height: 16px; background: var(--color-primary); animation: blink 1s step-end infinite;"></span>
+          <!-- Clear button -->
+          <button class="shrink-0 flex items-center justify-center rounded" style="margin-right: var(--space-2); width: 20px; height: 20px; color: var(--color-text-tertiary); transition: color var(--transition-fast);" aria-label="Clear search">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: action buttons -->
+      <div class="flex items-center gap-2 shrink-0" style="padding: 0 var(--space-6);">
+        <button class="inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap" style="height: 32px; padding: 0 var(--space-3); background: var(--color-primary); color: var(--color-text-inverse); font-size: var(--text-sm); transition: background var(--transition-fast), transform var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></svg>
+          <span>添加书签</span>
+        </button>
+        <button class="inline-flex items-center gap-1.5 rounded-md font-medium whitespace-nowrap" style="height: 32px; padding: 0 var(--space-3); border: 1px solid var(--color-border); background: transparent; color: var(--color-text-secondary); font-size: var(--text-sm); transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 0 1 1-1h3l1.5 2H13a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+          <span>添加目录</span>
+        </button>
+        <button class="inline-flex items-center justify-center rounded-md" style="width: 32px; height: 32px; border: 1px solid var(--color-border); background: transparent; color: var(--color-text-tertiary); transition: background var(--transition-fast), color var(--transition-fast);" aria-label="Quick search">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </div>
+
+    </header>
+
+    <!-- Main content area (dimmed browse view behind) -->
+    <main class="content-area" style="margin-left: var(--sidebar-width); padding-top: var(--header-height); min-height: 100vh; opacity: 0.6; pointer-events: none;">
+
+      <!-- Breadcrumb / filter summary -->
+      <div class="flex items-center gap-3" style="padding: var(--space-6) var(--space-6) 0 var(--space-6);">
+        <h1 class="font-sans font-semibold text-primary whitespace-nowrap" style="font-size: var(--text-lg); color: var(--color-text-primary);">全部书签</h1>
+        <span class="font-sans text-sm text-secondary whitespace-nowrap" style="color: var(--color-text-tertiary); font-size: var(--text-sm);">共 128 个书签</span>
+      </div>
+
+      <!-- Bookmark Groups -->
+      <div style="padding: var(--space-5) var(--space-6);">
+
+        <!-- Group 1: 前端开发 — EXPANDED -->
+        <div style="margin-bottom: var(--space-4);">
+
+          <!-- Group header -->
+          <div class="flex items-center gap-2" style="padding: var(--space-3); border-left: 3px solid var(--color-primary); cursor: pointer; transition: background var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color: var(--color-primary); flex-shrink: 0;">
+              <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h2.086a1.5 1.5 0 0 1 1.06.44L7.828 3.612A.5.5 0 0 0 8.172 3.75H12.5A1.5 1.5 0 0 1 14 5.25V6H2V3.5z" fill="currentColor" opacity="0.15"/>
+              <path d="M2 6h12v6.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12.5V6z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <span class="font-sans font-medium text-sm whitespace-nowrap" style="font-size: var(--text-sm); color: var(--color-text-primary);">前端开发</span>
+            <span class="inline-flex items-center justify-center rounded-full whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; background: var(--color-bg-inset); color: var(--color-text-tertiary);">24</span>
+            <span class="flex-1"></span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-tertiary); flex-shrink: 0;">
+              <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+
+          <!-- Bookmark items -->
+          <div style="border-left: 3px solid var(--color-primary-light);">
+
+            <!-- Bookmark 1 -->
+            <div class="group flex items-center gap-3" style="padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); cursor: pointer; transition: background var(--transition-fast);">
+              <div class="shrink-0 flex items-center justify-center rounded" style="width: 16px; height: 16px; background: var(--color-primary); font-size: 9px; font-weight: 600; color: var(--color-text-inverse); letter-spacing: -0.5px;">R</div>
+              <div class="flex-1 min-w-0 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="font-sans truncate" style="font-size: var(--text-base); color: var(--color-text-primary); line-height: var(--leading-tight);">React 官方文档 | 用于构建用户界面的 JavaScript 库</div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary);">react.dev</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">React</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">前端框架</span>
+                  </div>
+                </div>
+              </div>
+              <button class="shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100" style="width: 28px; height: 28px; color: var(--color-text-tertiary); transition: opacity var(--transition-fast), background var(--transition-fast);" aria-label="More actions">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="13" r="1" fill="currentColor"/></svg>
+              </button>
+            </div>
+
+            <!-- Bookmark 2 -->
+            <div class="group flex items-center gap-3" style="padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); cursor: pointer; transition: background var(--transition-fast);">
+              <div class="shrink-0 flex items-center justify-center rounded" style="width: 16px; height: 16px; background: #06B6D4; font-size: 9px; font-weight: 600; color: var(--color-text-inverse); letter-spacing: -0.5px;">T</div>
+              <div class="flex-1 min-w-0 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="font-sans truncate" style="font-size: var(--text-base); color: var(--color-text-primary); line-height: var(--leading-tight);">Tailwind CSS - 快速构建现代网站</div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary);">tailwindcss.com</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">CSS</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">工具</span>
+                  </div>
+                </div>
+              </div>
+              <button class="shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100" style="width: 28px; height: 28px; color: var(--color-text-tertiary); transition: opacity var(--transition-fast), background var(--transition-fast);" aria-label="More actions">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="13" r="1" fill="currentColor"/></svg>
+              </button>
+            </div>
+
+            <!-- Bookmark 3 -->
+            <div class="group flex items-center gap-3" style="padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); cursor: pointer; transition: background var(--transition-fast);">
+              <div class="shrink-0 flex items-center justify-center rounded" style="width: 16px; height: 16px; background: #22C55E; font-size: 9px; font-weight: 600; color: var(--color-text-inverse); letter-spacing: -0.5px;">V</div>
+              <div class="flex-1 min-w-0 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="font-sans truncate" style="font-size: var(--text-base); color: var(--color-text-primary); line-height: var(--leading-tight);">Vue.js 渐进式 JavaScript 框架</div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary);">vuejs.org</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">Vue</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">前端框架</span>
+                  </div>
+                </div>
+              </div>
+              <button class="shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100" style="width: 28px; height: 28px; color: var(--color-text-tertiary); transition: opacity var(--transition-fast), background var(--transition-fast);" aria-label="More actions">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="13" r="1" fill="currentColor"/></svg>
+              </button>
+            </div>
+
+            <!-- Bookmark 4 -->
+            <div class="group flex items-center gap-3" style="padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--color-divider); cursor: pointer; transition: background var(--transition-fast);">
+              <div class="shrink-0 flex items-center justify-center rounded" style="width: 16px; height: 16px; background: #3B82F6; font-size: 8px; font-weight: 600; color: var(--color-text-inverse); letter-spacing: -0.5px;">TS</div>
+              <div class="flex-1 min-w-0 flex items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <div class="font-sans truncate" style="font-size: var(--text-base); color: var(--color-text-primary); line-height: var(--leading-tight);">TypeScript: JavaScript 的超集</div>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="font-mono truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary);">typescriptlang.org</span>
+                    <span class="inline-flex items-center justify-center whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary);">TypeScript</span>
+                  </div>
+                </div>
+              </div>
+              <button class="shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100" style="width: 28px; height: 28px; color: var(--color-text-tertiary); transition: opacity var(--transition-fast), background var(--transition-fast);" aria-label="More actions">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="3" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="13" r="1" fill="currentColor"/></svg>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Group 2: 设计资源 — COLLAPSED -->
+        <div style="margin-bottom: var(--space-4);">
+          <div class="flex items-center gap-2" style="padding: var(--space-3); border-left: 3px solid var(--color-border); cursor: pointer; transition: background var(--transition-fast);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-secondary); flex-shrink: 0;">
+              <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h2.086a1.5 1.5 0 0 1 1.06.44L7.828 3.612A.5.5 0 0 0 8.172 3.75H12.5A1.5 1.5 0 0 1 14 5.25v7.25a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V3.5z" stroke="currentColor" stroke-width="1.3" fill="none"/>
+            </svg>
+            <span class="font-sans font-medium text-sm whitespace-nowrap" style="font-size: var(--text-sm); color: var(--color-text-secondary);">设计资源</span>
+            <span class="inline-flex items-center justify-center rounded-full whitespace-nowrap" style="font-size: 11px; padding: 1px 8px; background: var(--color-bg-inset); color: var(--color-text-tertiary);">18</span>
+            <span class="flex-1"></span>
+            <span class="font-sans whitespace-nowrap" style="font-size: var(--text-xs); color: var(--color-text-tertiary);">18 个书签</span>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="color: var(--color-text-tertiary); flex-shrink: 0;">
+              <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Expand hint -->
+        <div class="flex items-center justify-center" style="padding: var(--space-4) 0;">
+          <span class="font-sans whitespace-nowrap" style="font-size: var(--text-sm); color: var(--color-text-tertiary);">还有 4 个分组...</span>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- Search dropdown floating panel -->
+    <div class="fixed z-30" style="left: calc(var(--sidebar-width) + 50% - 220px); top: calc(var(--header-height) + 6px); width: 440px;">
+
+      <!-- Dropdown panel -->
+      <div style="background: var(--color-bg-elevated); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06); padding: var(--space-2);">
+
+        <!-- Header: label + count -->
+        <div class="flex items-center justify-between" style="padding: var(--space-1) var(--space-3);">
+          <span class="font-sans" style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 500;">书签</span>
+          <span class="font-sans" style="font-size: 11px; color: var(--color-text-tertiary);">3 个结果</span>
+        </div>
+
+        <!-- Result items -->
+        <div style="padding: var(--space-1) 0;">
+
+          <!-- Result 1: Selected -->
+          <div class="flex items-center gap-2.5" style="padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--color-primary-light); cursor: pointer;">
+            <!-- Favicon: 20px squircle -->
+            <div class="shrink-0 flex items-center justify-center" style="width: 20px; height: 20px; border-radius: 6px; background: var(--color-primary); font-size: 10px; font-weight: 700; color: var(--color-text-inverse); letter-spacing: -0.3px;">R</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-sans truncate" style="font-size: var(--text-sm); color: var(--color-text-primary); line-height: 1.3;"><strong style="color: var(--color-primary); font-weight: 600;">Rea</strong>ct 官方文档</div>
+              <div class="font-sans truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); line-height: 1.3;">react.dev</div>
+            </div>
+          </div>
+
+          <!-- Result 2: Normal -->
+          <div class="flex items-center gap-2.5" style="padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); cursor: pointer; transition: background var(--transition-fast);">
+            <div class="shrink-0 flex items-center justify-center" style="width: 20px; height: 20px; border-radius: 6px; background: var(--color-primary); font-size: 10px; font-weight: 700; color: var(--color-text-inverse); letter-spacing: -0.3px;">R</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-sans truncate" style="font-size: var(--text-sm); color: var(--color-text-primary); line-height: 1.3;"><strong style="color: var(--color-primary); font-weight: 600;">Rea</strong>ct Router 中文文档</div>
+              <div class="font-sans truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); line-height: 1.3;">reactrouter.com</div>
+            </div>
+          </div>
+
+          <!-- Result 3: Normal -->
+          <div class="flex items-center gap-2.5" style="padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); cursor: pointer; transition: background var(--transition-fast);">
+            <div class="shrink-0 flex items-center justify-center" style="width: 20px; height: 20px; border-radius: 6px; background: var(--color-primary); font-size: 10px; font-weight: 700; color: var(--color-text-inverse); letter-spacing: -0.3px;">R</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-sans truncate" style="font-size: var(--text-sm); color: var(--color-text-primary); line-height: 1.3;"><strong style="color: var(--color-primary); font-weight: 600;">Rea</strong>dux</div>
+              <div class="font-sans truncate" style="font-size: var(--text-xs); color: var(--color-text-tertiary); line-height: 1.3;">redux.js.org</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Divider -->
+        <div style="height: var(--space-2);"></div>
+
+        <!-- Search engine section -->
+        <div style="padding: var(--space-1) 0;">
+
+          <!-- Section label -->
+          <div class="flex items-center justify-between" style="padding: var(--space-1) var(--space-3);">
+            <span class="font-sans" style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 500;">搜索引擎</span>
+          </div>
+
+          <!-- Google row -->
+          <div class="flex items-center gap-2.5" style="padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); cursor: pointer; transition: background var(--transition-fast);">
+            <div class="shrink-0 flex items-center justify-center" style="width: 20px; height: 20px; border-radius: 50%;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-sans truncate" style="font-size: var(--text-sm); color: var(--color-text-secondary); line-height: 1.3;">Google 搜索 <strong style="font-weight: 600;">Rea</strong></div>
+            </div>
+          </div>
+
+          <!-- Bing row -->
+          <div class="flex items-center gap-2.5" style="padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); cursor: pointer; transition: background var(--transition-fast);">
+            <div class="shrink-0 flex items-center justify-center" style="width: 20px; height: 20px; border-radius: 50%; background: #008373;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--color-text-inverse); letter-spacing: -0.3px;">b</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-sans truncate" style="font-size: var(--text-sm); color: var(--color-text-secondary); line-height: 1.3;">Bing 搜索 <strong style="font-weight: 600;">Rea</strong></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer: keyboard hints -->
+        <div class="flex items-center justify-center" style="padding: var(--space-2) var(--space-3) var(--space-1);">
+          <span class="font-sans" style="font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;">&#8593;&#8595; 选择 &nbsp; &#8629; 打开 &nbsp; Esc</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Clickable backdrop to close search -->
+    <div data-dom-id="search-backdrop-close" class="fixed inset-0 z-25" style="cursor: default;"></div>
+
+    <style>
+      @keyframes blink {
+        0%, 50% { opacity: 1; }
+        51%, 100% { opacity: 0; }
+      }
+    </style>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -49,8 +49,8 @@ Compatibility requirements:
 - SQLite runtime assets are now bundled under `public/sqlite/` and confirmed in Chrome/Firefox WXT outputs.
 - Real-browser SQLite WASM smoke coverage now verifies rebuild, snapshot load, and trigram search through the production adapter.
 - HTU import now has a module-worker job path with persisted `jobs` records, progress updates, and cancellation.
-- Search rebuild now uses the same persisted `jobs` store and supports cancellation, but it still runs in the page context instead of a worker context.
-- Search rebuild/search worker integration is still pending; the current SQLite runtime adapter targets browser page contexts, not worker contexts.
+- Search rebuild now has a classic-worker job path with persisted `jobs` records, progress updates, cancellation, and worker-side SQLite WASM initialization.
+- The worker path relies on `search-rebuild-worker.js?sqlite3.dir=/sqlite` so the upstream `sqlite3.js` glue can resolve `sqlite3.wasm` correctly from a worker location.
 - HTU import chunk size options now apply to chunk storage as well as record storage.
 
 ## Blockers Before Coding Compatibility
@@ -69,8 +69,8 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Move search rebuild into a worker-compatible SQLite runtime path instead of the page thread.
-2. Wrap SQLite WASM loading for worker contexts without breaking `sqlite3.wasm` asset resolution.
-3. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
-4. Implement HTU export from chunk storage.
-5. Add browser history sync after import/search storage paths are stable.
+1. Move long-running import/search jobs behind background-controlled lifecycle instead of keeping them page-owned.
+2. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
+3. Implement HTU export from chunk storage.
+4. Add browser history sync after import/search storage paths are stable.
+5. Verify large-snapshot quota behavior in real extension contexts.

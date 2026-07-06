@@ -320,6 +320,17 @@ Result:
 - Covered behavior: starting an HTU import through the `ImportWorkerClient`, executing the import in a module worker, persisting job records in IndexedDB, receiving job status updates on the page side, and writing the expected page/visit counts.
 - The smoke uses a small inline TSV source. Full external-backup import still uses the direct browser benchmark harness.
 
+## Search Rebuild Worker Browser Smoke
+
+Command:
+
+- `node --test js\extension\histories\tests\search-rebuild-worker-browser.test.mjs`
+
+Result:
+
+- Search rebuild worker smoke test passed with local Chrome.
+- Covered behavior: starting snapshot rebuild through the worker client, loading `sqlite3.js` inside a classic worker, resolving `sqlite3.wasm` through the worker query parameter `sqlite3.dir=/sqlite`, rebuilding the snapshot from IndexedDB page chunks, persisting the snapshot, and searching it from the page side after completion.
+
 ## HTU Full Browser Import Benchmark
 
 Command:
@@ -353,6 +364,7 @@ Commands:
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
+- `node --test js\extension\histories\tests\search-rebuild-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
@@ -364,9 +376,10 @@ Result:
 - Search engine core: 4 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
+- Search rebuild worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
 - TypeScript check passed.
-- Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js` and `sqlite/sqlite3.wasm`.
+- Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js`, `sqlite/sqlite3.wasm`, and `search-rebuild-worker.js`.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 - External full backup latest run: 7 passed, full backup round-trip completed in about `2.37s`.
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
@@ -376,6 +389,6 @@ Result:
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
 2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-3. Build and test the search rebuild worker path against the external backup.
-4. Add a worker-compatible SQLite WASM loader path.
+3. Verify extension-context IndexedDB quota with a real large snapshot.
+4. Move page-owned workers under background-controlled lifecycle if suspend/resume behavior requires it.
 5. Test combined searches such as keyword plus arbitrary time range.

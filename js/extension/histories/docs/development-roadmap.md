@@ -29,6 +29,7 @@ Current committed runtime code:
 - Browser-page SQLite WASM runtime adapter with bundled `sqlite3.js/sqlite3.wasm` assets and real browser smoke coverage.
 - Options page task flow for HTU import, snapshot rebuild, job listing, and snapshot-backed search.
 - HTU import module worker client/worker path with persisted job updates and cancellation support.
+- Search rebuild classic-worker path with worker-side SQLite WASM initialization, persisted job updates, and cancellation support.
 
 ## Milestone 1: Project Skeleton
 
@@ -111,7 +112,7 @@ Acceptance:
 - Snapshot corruption triggers rebuild, not data loss.
 - Runtime adapter can be tested without SQLite WASM by injecting a fake runtime. Done.
 - Real browser-page SQLite WASM runtime path is verified. Done.
-- Worker-context SQLite loader remains pending because the upstream sqlite3 glue expects script-relative wasm resolution. Pending.
+- Real worker-side SQLite WASM runtime path is verified by using a classic worker URL with `sqlite3.dir` query parameters. Done.
 
 ## Milestone 5: Keyword + Time Search
 

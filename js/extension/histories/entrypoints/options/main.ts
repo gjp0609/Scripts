@@ -5,7 +5,10 @@ import {
   listJobs
 } from '../../src/storage/database';
 import { ImportWorkerClient, type ImportWorkerJobUpdate } from '../../src/jobs/import-worker-client';
-import { runSearchRebuildJob } from '../../src/jobs/search-rebuild-job';
+import {
+  SearchRebuildWorkerClient,
+  type SearchRebuildWorkerJobUpdate
+} from '../../src/jobs/search-rebuild-worker-client';
 import { SearchEngine, type SearchResult } from '../../src/search/search-engine';
 import { createIndexedDbSearchStorage } from '../../src/search/storage-adapter';
 import { loadSqliteWasmSearchRuntime } from '../../src/search/sqlite-wasm-runtime';
@@ -13,6 +16,7 @@ import type { JobRecord } from '../../src/storage/schema';
 
 const runtime = createRuntimeAdapter();
 const importClient = new ImportWorkerClient();
+const searchRebuildClient = new SearchRebuildWorkerClient();
 
 const runtimeStatus = document.querySelector<HTMLElement>('#runtimeStatus');
 const storageStatus = document.querySelector<HTMLElement>('#storageStatus');
@@ -34,7 +38,6 @@ const results = document.querySelector<HTMLElement>('#results');
 const searchStorage = createIndexedDbSearchStorage();
 let importJobId: string | null = null;
 let rebuildJobId: string | null = null;
-let rebuildController: AbortController | null = null;
 let pollHandle: number | undefined;
 let searchRuntimePromise: ReturnType<typeof loadSqliteWasmSearchRuntime> | undefined;
 let searchReader: SearchEngine | null = null;
@@ -85,11 +88,14 @@ rebuildButton?.addEventListener('click', () => {
 });
 
 cancelRebuildButton?.addEventListener('click', () => {
-  rebuildController?.abort();
+  if (rebuildJobId) searchRebuildClient.cancelJob(rebuildJobId);
 });
 
 importClient.subscribe((update) => {
   handleImportWorkerUpdate(update);
+});
+searchRebuildClient.subscribe((update) => {
+  handleSearchRebuildWorkerUpdate(update);
 });
 
 pollHandle = window.setInterval(() => {
@@ -98,9 +104,9 @@ pollHandle = window.setInterval(() => {
 
 window.addEventListener('beforeunload', () => {
   if (pollHandle !== undefined) window.clearInterval(pollHandle);
-  rebuildController?.abort();
   searchReader?.close();
   importClient.terminate();
+  searchRebuildClient.terminate();
 });
 
 void boot();
@@ -122,33 +128,14 @@ async function startImport(): Promise<void> {
 }
 
 async function startSearchRebuild(): Promise<void> {
-  if (rebuildController) return;
+  if (rebuildJobId) return;
 
-  rebuildJobId = crypto.randomUUID();
-  rebuildController = new AbortController();
+  rebuildJobId = searchRebuildClient.startJob();
   searchReader?.close();
   searchReader = null;
   syncControls();
   setJobStatus('Rebuilding snapshot');
-
-  try {
-    await runSearchRebuildJob({
-      jobId: rebuildJobId,
-      signal: rebuildController.signal,
-      scriptUrl: new URL('/sqlite/sqlite3.js', location.href).toString()
-    });
-    setResultSummary('Search snapshot rebuilt.');
-  } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'AbortError')) {
-      setResultSummary(error instanceof Error ? error.message : String(error));
-    }
-  } finally {
-    rebuildController = null;
-    rebuildJobId = null;
-    syncControls();
-    await refreshStatus();
-    await refreshJobs();
-  }
+  await refreshJobs();
 }
 
 async function runSearch(): Promise<void> {
@@ -203,6 +190,25 @@ function handleImportWorkerUpdate(update: ImportWorkerJobUpdate): void {
 
   if (update.status !== 'queued' && update.status !== 'running') {
     if (importFile) importFile.value = '';
+  }
+
+  syncControls();
+  void refreshJobs();
+}
+
+function handleSearchRebuildWorkerUpdate(update: SearchRebuildWorkerJobUpdate): void {
+  if (update.jobId !== rebuildJobId) return;
+
+  if (update.status === 'complete') {
+    rebuildJobId = null;
+    void refreshStatus();
+    setResultSummary('Search snapshot rebuilt.');
+  } else if (update.status === 'failed') {
+    rebuildJobId = null;
+    setResultSummary(update.error ?? 'Search snapshot rebuild failed.');
+  } else if (update.status === 'cancelled') {
+    rebuildJobId = null;
+    setResultSummary('Search snapshot rebuild cancelled.');
   }
 
   syncControls();
@@ -298,7 +304,7 @@ function renderEmptyResults(text: string): void {
 
 function syncControls(): void {
   const importing = Boolean(importJobId);
-  const rebuilding = Boolean(rebuildController);
+  const rebuilding = Boolean(rebuildJobId);
   if (importButton) importButton.disabled = importing || rebuilding;
   if (cancelImportButton) cancelImportButton.disabled = !importing;
   if (rebuildButton) rebuildButton.disabled = importing || rebuilding;
@@ -307,7 +313,7 @@ function syncControls(): void {
 }
 
 function activeJobLabel(latestJob?: JobRecord): string {
-  if (rebuildController) return 'Rebuilding';
+  if (rebuildJobId) return 'Rebuilding';
   if (importJobId) return 'Importing';
   return latestJob ? latestJob.status : 'Idle';
 }

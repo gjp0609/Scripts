@@ -71,7 +71,7 @@ const searchWrapRef = ref<HTMLElement>();
 const boardRef = ref<HTMLElement>();
 const macy = ref<ReturnType<typeof Macy> | null>(null);
 const undoStack = ref<Array<{ label: string; groups: BookmarkGroup[] }>>([]);
-const themeColor = ref(localStorage.getItem('bookmarks-theme-color') || '#2f746d');
+const themeColor = ref(localStorage.getItem('bookmarks-theme-color') || '#4F6EF7');
 const suppressPersistence = ref(false);
 
 function hexToHsl(hex: string): [number, number, number] {
@@ -128,6 +128,13 @@ const siteSearchTargets: SearchTarget[] = [
 const groups = ref<BookmarkGroup[]>(loadGroups());
 
 const totalCount = computed(() => groups.value.reduce((sum, group) => sum + group.items.length, 0));
+const visibleCount = computed(() => visibleGroups.value.reduce((sum, entry) => sum + entry.items.length, 0));
+const pageTitle = computed(() => {
+  if (mode.value === 'organize') return organizeMode.value === 'folder' ? '目录整理' : '书签整理';
+  if (filter.value.type === 'recent') return '最近添加';
+  if (filter.value.type === 'tag') return filter.value.tag;
+  return '全部书签';
+});
 // H-3: 按 dateAdded 降序取前 12；mock 导入项 dateAdded=0，UI 新增项有真实时间戳
 const recentIds = computed(() => {
   const sorted = flatBookmarks.value
@@ -703,10 +710,10 @@ onBeforeUnmount(() => {
       <aside class="sidebar">
         <div class="brand">
           <el-icon><Grid /></el-icon>
-          <span>Bookmarks</span>
+          <span>MarkHub</span>
         </div>
         <button class="side-row" :class="{ active: filter.type === 'all' }" @click="setFilter({ type: 'all' })">
-          <span>全部</span><b>{{ totalCount }}</b>
+          <span>全部书签</span><b>{{ totalCount }}</b>
         </button>
         <button class="side-row" :class="{ active: filter.type === 'recent' }" @click="setFilter({ type: 'recent' })">
           <span>最近添加</span><b>{{ Math.min(12, totalCount) }}</b>
@@ -739,6 +746,14 @@ onBeforeUnmount(() => {
 
       <main class="main">
         <header class="topbar">
+          <div class="mode-tabs" role="tablist" aria-label="视图模式">
+            <button class="mode-tab" :class="{ active: mode === 'browse' }" role="tab" :aria-selected="mode === 'browse'" @click="setMode('browse')">
+              浏览
+            </button>
+            <button class="mode-tab" :class="{ active: mode === 'organize' }" role="tab" :aria-selected="mode === 'organize'" @click="setMode('organize')">
+              整理
+            </button>
+          </div>
           <div ref="searchWrapRef" class="search-wrap">
             <div class="search-bar">
               <el-select v-model="selectedEngine" class="engine-select">
@@ -787,9 +802,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="top-actions">
             <el-button :icon="Plus" @click="beginAddBookmark()">书签</el-button>
-            <el-button :type="mode === 'organize' ? 'primary' : 'default'" @click="setMode(mode === 'browse' ? 'organize' : 'browse')">
-              {{ mode === 'browse' ? '整理' : '退出整理' }}
-            </el-button>
+            <el-button :icon="Folder" @click="beginAddFolder">目录</el-button>
           </div>
         </header>
 
@@ -803,6 +816,10 @@ onBeforeUnmount(() => {
         </section>
 
         <div class="content-scroll">
+          <section class="content-heading">
+            <h1>{{ pageTitle }}</h1>
+            <span>共 {{ mode === 'organize' ? totalCount : visibleCount }} 个书签</span>
+          </section>
           <VueDraggable
             v-if="mode === 'organize' && organizeMode === 'folder'"
             v-model="groups"
@@ -830,6 +847,16 @@ onBeforeUnmount(() => {
               </div>
             </article>
           </VueDraggable>
+
+          <section v-else-if="mode === 'browse' && boardGroups.length === 0" class="empty-state">
+            <div class="empty-mark">
+              <el-icon><Search /></el-icon>
+            </div>
+            <strong>{{ query ? '没有找到匹配的书签' : '还没有书签' }}</strong>
+            <p>{{ query ? '试试其他关键词，或清空搜索条件。' : '添加你的第一个书签，开始收藏。' }}</p>
+            <el-button v-if="query" @click="searchText = ''">清除搜索</el-button>
+            <el-button v-else type="primary" :icon="Plus" @click="beginAddBookmark()">添加书签</el-button>
+          </section>
 
           <section v-else ref="boardRef" class="board">
             <article v-for="entry in boardGroups" :key="entry.group.id" class="group-card">

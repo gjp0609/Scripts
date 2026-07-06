@@ -166,17 +166,11 @@ button {
   white-space: nowrap;
 }
 
-.popup-status,
 .popup-error {
   margin: 10px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 12px;
-}
-
-.popup-status {
-  color: var(--color-primary);
-  background: var(--color-primary-light);
 }
 
 .popup-error {

@@ -16,7 +16,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <article class="bookmark-card" :class="{ organizing: organize }" @click="emit('open', bookmark)">
+  <article class="bookmark-card" :class="{ organizing: organize, 'has-tags': bookmark.extra.tags.length > 0 }" @click="emit('open', bookmark)">
     <button v-if="organize" class="drag-handle" type="button" aria-label="拖拽排序" @click.stop>
       <GripVertical :size="16" />
     </button>
@@ -41,12 +41,12 @@ const emit = defineEmits<{
         {{ bookmark.title.slice(0, 2).toUpperCase() }}
       </div>
       <div class="card-text">
-        <h3>{{ bookmark.title }}</h3>
-        <p>{{ bookmark.domain || bookmark.url }}</p>
+        <h3 :title="bookmark.title">{{ bookmark.title }}</h3>
+        <p :title="bookmark.url || bookmark.domain">{{ bookmark.url || bookmark.domain }}</p>
       </div>
     </div>
 
-    <div class="tag-row">
+    <div v-if="bookmark.extra.tags.length" class="tag-row">
       <span v-for="tag in bookmark.extra.tags.slice(0, 3)" :key="tag">{{ tag }}</span>
     </div>
   </article>

@@ -9,7 +9,6 @@ import { closePopup, executeBookmarklet, getCurrentTab, openAppPage } from '../s
 const folders = ref<FolderView[]>([]);
 const currentTab = ref<CurrentTab | undefined>();
 const query = ref('');
-const status = ref('');
 const error = ref('');
 
 const filteredFolders = computed(() => {
@@ -43,8 +42,8 @@ async function saveToFolder(folder: FolderView) {
   }
 
   await addCurrentBookmark(folder.id, currentTab.value.title || currentTab.value.url, currentTab.value.url);
-  status.value = `已保存到 ${folder.title}`;
-  window.setTimeout(closePopup, 450);
+  error.value = '';
+  closePopup();
 }
 
 async function runBookmarklet(bookmarklet: { url?: string }) {
@@ -80,6 +79,8 @@ onMounted(() => {
       <input v-model="query" type="text" placeholder="搜索目录..." autofocus />
     </div>
 
+    <p v-if="error" class="popup-error">{{ error }}</p>
+
     <section class="folder-list">
       <button v-for="folder in filteredFolders" :key="folder.id" class="folder-row" type="button" @click="saveToFolder(folder)">
         <span>{{ folder.title }}</span>
@@ -98,8 +99,5 @@ onMounted(() => {
         <small>{{ bookmarklet.folderTitle }}</small>
       </button>
     </section>
-
-    <p v-if="status" class="popup-status">{{ status }}</p>
-    <p v-if="error" class="popup-error">{{ error }}</p>
   </main>
 </template>

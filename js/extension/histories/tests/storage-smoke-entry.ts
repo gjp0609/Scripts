@@ -4,6 +4,7 @@ import {
   getDatabaseSummary,
   getJob,
   getLatestSearchSnapshot,
+  listJobs,
   getPageChunks,
   getPageById,
   getPageByNormalizedUrl,
@@ -125,6 +126,7 @@ window.runHistoriesStorageSmoke = async () => {
     progress: { rows: 10 }
   });
   ensure((await getJob('job-1'))?.status === 'running', 'job should round-trip');
+  ensure((await listJobs(5))[0]?.id === 'job-1', 'listJobs should return the newest job record');
 
   await putSearchSnapshot({
     key: 'latest',

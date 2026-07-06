@@ -109,6 +109,7 @@ input {
 
 .toolbar,
 .status-grid article,
+.task-panel,
 .results-panel {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -183,6 +184,10 @@ input {
   padding: 16px;
 }
 
+.task-panel {
+  padding: 16px;
+}
+
 .panel-head {
   display: flex;
   align-items: center;
@@ -195,6 +200,122 @@ input {
 .panel-head h2 {
   margin: 0;
   font-size: 18px;
+}
+
+.task-controls {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) repeat(4, auto);
+  gap: 12px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.file-box input[type='file'] {
+  height: 40px;
+  padding: 7px 10px;
+}
+
+#importButton,
+#cancelImportButton,
+#rebuildButton,
+#cancelRebuildButton {
+  height: 40px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 16px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+#importButton,
+#rebuildButton {
+  background: var(--accent);
+  color: white;
+}
+
+#cancelImportButton,
+#cancelRebuildButton {
+  background: #e9eeea;
+  color: var(--ink);
+}
+
+#importButton:hover,
+#rebuildButton:hover {
+  background: var(--accent-dark);
+}
+
+#cancelImportButton:disabled,
+#cancelRebuildButton:disabled,
+#importButton:disabled,
+#rebuildButton:disabled,
+#searchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.job-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.job-row {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) 96px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfa;
+}
+
+.job-type,
+.job-time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.job-status {
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.job-progress {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.result-list {
+  display: grid;
+  gap: 10px;
+  padding: 16px 0 0;
+}
+
+.result-row {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  background: #fbfcfa;
+}
+
+.result-title {
+  margin: 0;
+  font-size: 15px;
+}
+
+.result-url {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.result-meta {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .empty-state {

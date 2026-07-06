@@ -102,6 +102,27 @@ test('builds page chunks with stable page ids', async () => {
   assert.equal(chunks[1].firstPageId, 2);
 });
 
+test('cancels HTU import when the abort signal is triggered', async () => {
+  const { importHtuText } = await loadImportModule();
+  const controller = new AbortController();
+
+  await assert.rejects(
+    () =>
+      importHtuText(
+        ['https://example.com/a\tU1000\t0\tA', 'https://example.com/b\tU2000\t1\tB', ''].join(
+          '\r\n'
+        ),
+        {
+          signal: controller.signal,
+          onProgress(progress) {
+            if (progress.stage === 'parsed') controller.abort();
+          }
+        }
+      ),
+    (error) => error instanceof DOMException && error.name === 'AbortError'
+  );
+});
+
 let loadedModule;
 let tempDir;
 

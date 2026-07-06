@@ -56,6 +56,24 @@
           </article>
         </section>
 
+        <section class="task-panel" aria-label="tasks">
+          <div class="panel-head">
+            <h2>Tasks</h2>
+            <span id="jobStatus">Idle</span>
+          </div>
+          <div class="task-controls">
+            <label class="file-box">
+              <span>HTU Backup</span>
+              <input id="importFile" type="file" accept=".tsv,text/tab-separated-values" />
+            </label>
+            <button id="importButton" type="button">Import TSV</button>
+            <button id="cancelImportButton" type="button" disabled>Cancel Import</button>
+            <button id="rebuildButton" type="button">Rebuild Snapshot</button>
+            <button id="cancelRebuildButton" type="button" disabled>Cancel Rebuild</button>
+          </div>
+          <div id="jobsList" class="job-list empty-state">No jobs yet.</div>
+        </section>
+
         <section class="results-panel">
           <div class="panel-head">
             <h2>Results</h2>

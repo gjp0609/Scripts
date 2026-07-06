@@ -34,7 +34,7 @@ Compatibility requirements:
 - Chrome MV3 manifest generation has been verified.
 - Firefox MV3 manifest generation has been verified.
 - The options page can message the background/runtime layer.
-- The options page opens the IndexedDB database and reports basic store counts.
+- The options page now opens the IndexedDB database, reports basic store counts, imports HTU TSV files, rebuilds the search snapshot, lists recent jobs, and runs keyword search against the snapshot.
 - Core IndexedDB helper APIs now exist for page upsert, page chunk writes/reads, visit bulk writes, visit chunk writes/reads, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
 - Chunk reader APIs can decode page chunks, locate a page by stable chunk page id, prefilter visit chunks by time range, and decode inclusive time-range visit rows from chunk storage.
 - Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, search snapshots, chunk page lookup, chunk visit decoding, and chunk time-range scans.
@@ -48,9 +48,10 @@ Compatibility requirements:
 - The search engine module now has a production-facing SQLite FTS contract, page-chunk rebuild flow, snapshot save/load flow, keyword search API, IndexedDB storage adapter, and a real browser-page SQLite WASM runtime adapter.
 - SQLite runtime assets are now bundled under `public/sqlite/` and confirmed in Chrome/Firefox WXT outputs.
 - Real-browser SQLite WASM smoke coverage now verifies rebuild, snapshot load, and trigram search through the production adapter.
-- Search rebuild/search worker integration is still pending; the current runtime adapter targets browser page contexts, not worker contexts.
+- HTU import now has a module-worker job path with persisted `jobs` records, progress updates, and cancellation.
+- Search rebuild now uses the same persisted `jobs` store and supports cancellation, but it still runs in the page context instead of a worker context.
+- Search rebuild/search worker integration is still pending; the current SQLite runtime adapter targets browser page contexts, not worker contexts.
 - HTU import chunk size options now apply to chunk storage as well as record storage.
-- The HTU import worker has not been implemented yet.
 
 ## Blockers Before Coding Compatibility
 
@@ -68,7 +69,7 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Move HTU import and search rebuild into worker-facing job APIs with progress, cancellation, and restart state.
+1. Move search rebuild into a worker-compatible SQLite runtime path instead of the page thread.
 2. Wrap SQLite WASM loading for worker contexts without breaking `sqlite3.wasm` asset resolution.
 3. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
 4. Implement HTU export from chunk storage.

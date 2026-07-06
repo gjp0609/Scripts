@@ -54,6 +54,7 @@ export type HtuImportOptions = {
   pageWriteMode?: 'insert' | 'upsert';
   visitChunkSize?: number;
   visitStorage?: 'chunks' | 'records';
+  signal?: AbortSignal;
   onProgress?: (progress: HtuImportProgress) => void | Promise<void>;
 };
 
@@ -61,12 +62,14 @@ export async function importHtuText(
   text: string,
   options: HtuImportOptions = {}
 ): Promise<HtuImportResult> {
+  throwIfAborted(options.signal);
   const parsed = parseHtuTsv(text);
   if (parsed.errors.length > 0) {
     throw new Error(`HTU import failed: ${parsed.errors.length} invalid rows`);
   }
 
   const plan = planHtuImport(parsed.rows);
+  throwIfAborted(options.signal);
   await emitProgress(options, {
     stage: 'parsed',
     rows: parsed.rows.length,
@@ -82,10 +85,12 @@ export async function importHtuText(
   let writtenPages = 0;
 
   if (pageStorage === 'chunks') {
+    throwIfAborted(options.signal);
     plan.pages.forEach((page, index) => {
       pageIds.set(page.normalizedUrl ?? normalizeHistoryUrl(page.url), index + 1);
     });
     writtenPages = await replacePageChunks(buildPageChunks(plan.pages, pageChunkSize));
+    throwIfAborted(options.signal);
     await emitProgress(options, {
       stage: 'pages',
       rows: parsed.rows.length,
@@ -98,6 +103,7 @@ export async function importHtuText(
     const writePages = options.pageWriteMode === 'upsert' ? upsertPages : addPages;
 
     for (let start = 0; start < plan.pages.length; start += pageChunkSize) {
+      throwIfAborted(options.signal);
       const pages = await writePages(plan.pages.slice(start, start + pageChunkSize));
       for (const page of pages) {
         pageIds.set(page.normalizedUrl, page.id);
@@ -119,7 +125,9 @@ export async function importHtuText(
 
   if (visitStorage === 'chunks') {
     const chunkSize = normalizeChunkSize(options.visitChunkSize, DEFAULT_VISIT_CHUNK_SIZE);
+    throwIfAborted(options.signal);
     writtenVisits = await replaceVisitChunks(buildVisitChunks(plan.visits, pageIds, chunkSize));
+    throwIfAborted(options.signal);
     await emitProgress(options, {
       stage: 'visits',
       rows: parsed.rows.length,
@@ -132,6 +140,7 @@ export async function importHtuText(
     const chunkSize = normalizeChunkSize(options.visitChunkSize, DEFAULT_VISIT_CHUNK_SIZE);
 
     for (let start = 0; start < plan.visits.length; start += chunkSize) {
+      throwIfAborted(options.signal);
       const chunk = plan.visits.slice(start, start + chunkSize).map((visit): VisitInput => {
         const pageId = pageIds.get(visit.normalizedUrl);
         if (pageId === undefined) {
@@ -308,7 +317,14 @@ export function buildPageChunks(
 }
 
 async function emitProgress(options: HtuImportOptions, progress: HtuImportProgress) {
+  throwIfAborted(options.signal);
   await options.onProgress?.(progress);
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
+  }
 }
 
 function normalizeChunkSize(value: number | undefined, fallback: number): number {

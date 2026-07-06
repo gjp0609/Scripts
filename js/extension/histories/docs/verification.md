@@ -282,7 +282,7 @@ Commands:
 Result:
 
 - Import planner and chunk builder tests passed.
-- Covered behavior: exact-URL page aggregation for HTU compatibility, latest-page title selection for identical URLs, visit draft creation, page chunk construction, and time-sorted typed-array visit chunks.
+- Covered behavior: exact-URL page aggregation for HTU compatibility, latest-page title selection for identical URLs, visit draft creation, page chunk construction, time-sorted typed-array visit chunks, and import cancellation through `AbortSignal`.
 
 ## Search Engine Core
 
@@ -293,7 +293,7 @@ Command:
 Result:
 
 - Search engine core tests passed.
-- Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword search binding, page-level time filter binding, and result row mapping.
+- Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword search binding, page-level time filter binding, result row mapping, and snapshot rebuild cancellation through `AbortSignal`.
 - The test uses an injected fake SQLite runtime; real SQLite WASM browser execution remains a separate verification step.
 
 ## Search Engine Browser SQLite WASM Smoke
@@ -307,6 +307,18 @@ Result:
 - Real-browser SQLite WASM smoke test passed with local Chrome.
 - Covered behavior: loading `sqlite/sqlite3.js` from the bundled asset path, wasm resolution to `sqlite/sqlite3.wasm`, rebuilding FTS from IndexedDB page chunks, saving/loading the SQLite snapshot through IndexedDB, and executing trigram MATCH searches with and without page-level time filters.
 - The current runtime adapter is validated for browser page contexts. Worker-context loading is still a separate task.
+
+## Import Worker Browser Smoke
+
+Command:
+
+- `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
+
+Result:
+
+- Browser import worker smoke test passed with local Chrome.
+- Covered behavior: starting an HTU import through the `ImportWorkerClient`, executing the import in a module worker, persisting job records in IndexedDB, receiving job status updates on the page side, and writing the expected page/visit counts.
+- The smoke uses a small inline TSV source. Full external-backup import still uses the direct browser benchmark harness.
 
 ## HTU Full Browser Import Benchmark
 
@@ -340,6 +352,7 @@ Commands:
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
+- `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
@@ -347,9 +360,10 @@ Commands:
 Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
-- HTU import planner/chunks: 4 passed.
-- Search engine core: 3 passed.
+- HTU import planner/chunks: 5 passed.
+- Search engine core: 4 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
+- Import worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
 - TypeScript check passed.
 - Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js` and `sqlite/sqlite3.wasm`.
@@ -362,6 +376,6 @@ Result:
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
 2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-3. Build and test the HTU import/search rebuild workers against the external backup.
+3. Build and test the search rebuild worker path against the external backup.
 4. Add a worker-compatible SQLite WASM loader path.
 5. Test combined searches such as keyword plus arbitrary time range.

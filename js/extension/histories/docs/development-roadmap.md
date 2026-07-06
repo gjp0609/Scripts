@@ -27,6 +27,8 @@ Current committed runtime code:
 - Chunk reader APIs for page chunk decoding, stable page-id lookup, visit chunk decoding, and time-range visit scans.
 - Search engine core for SQLite FTS schema setup, page-chunk rebuild, snapshot save/load, keyword search, and IndexedDB snapshot storage adapter.
 - Browser-page SQLite WASM runtime adapter with bundled `sqlite3.js/sqlite3.wasm` assets and real browser smoke coverage.
+- Options page task flow for HTU import, snapshot rebuild, job listing, and snapshot-backed search.
+- HTU import module worker client/worker path with persisted job updates and cancellation support.
 
 ## Milestone 1: Project Skeleton
 
@@ -85,7 +87,8 @@ Acceptance:
 - Preserves all 4-column rows structurally. Parser/export round-trip done.
 - Writes expected page and visit counts. Done: `887,561` visits and `384,065` exact-URL pages.
 - Applies configurable page and visit chunk sizes on the chunk storage path. Done in browser smoke coverage.
-- Can resume or restart safely after cancellation. Pending worker job state.
+- Can run as a module worker job with progress, persisted job records, and cancellation. Done for HTU import.
+- Can resume or restart safely after cancellation. Restart is supported by starting a new job; resumable cursor state is still pending.
 
 ## Milestone 4: SQLite FTS Search Module
 

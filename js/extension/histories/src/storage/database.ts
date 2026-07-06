@@ -484,6 +484,21 @@ export async function getJob(id: string): Promise<JobRecord | undefined> {
   }
 }
 
+export async function listJobs(limit = 20): Promise<JobRecord[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('jobs', 'readonly');
+    const results = await readCursor<JobRecord>(transaction.objectStore('jobs'), undefined, {
+      limit: Number.POSITIVE_INFINITY
+    });
+    results.sort((left, right) => right.updatedAt - left.updatedAt);
+    return results.slice(0, limit);
+  } finally {
+    db.close();
+  }
+}
+
 export async function putSearchSnapshot(snapshot: SearchSnapshotRecord): Promise<void> {
   const db = await openHistoriesDatabase();
 

@@ -130,6 +130,49 @@ test('loads a snapshot and searches with keyword, time range, and limit', async 
   engine.close();
 });
 
+test('cancels snapshot rebuild when the abort signal is triggered', async () => {
+  const { SearchEngine } = await loadSearchModule();
+  const controller = new AbortController();
+  const runtime = new FakeRuntime(new FakeDatabase());
+  const storage = {
+    async getPageChunks() {
+      return [
+        {
+          id: 'page-chunk:0',
+          firstPageId: 1,
+          count: 1,
+          urls: ['https://example.com/a'],
+          normalizedUrls: ['https://example.com/a'],
+          titles: ['A'],
+          visitCounts: new Uint32Array([1]),
+          lastVisitTimes: new Float64Array([1000])
+        }
+      ];
+    },
+    async putSearchSnapshot() {
+      assert.fail('snapshot should not be written after abort');
+    },
+    async getLatestSearchSnapshot() {
+      return undefined;
+    }
+  };
+  const engine = new SearchEngine({
+    runtime,
+    storage,
+    signal: controller.signal,
+    onProgress(progress) {
+      if (progress.stage === 'reset') controller.abort();
+    }
+  });
+
+  await assert.rejects(
+    () => engine.rebuildSnapshot(),
+    (error) => error instanceof DOMException && error.name === 'AbortError'
+  );
+
+  engine.close();
+});
+
 class FakeRuntime {
   sqliteVersion = '3.46.1';
 

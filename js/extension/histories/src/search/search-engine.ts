@@ -80,6 +80,7 @@ export type SearchEngineOptions = {
   storage: SearchStorage;
   runtime: SqliteSearchRuntime;
   now?: () => number;
+  signal?: AbortSignal;
   onProgress?: (progress: SearchBuildProgress) => void | Promise<void>;
 };
 
@@ -91,20 +92,24 @@ export class SearchEngine {
   private readonly storage: SearchStorage;
   private readonly runtime: SqliteSearchRuntime;
   private readonly now: () => number;
+  private readonly signal?: AbortSignal;
   private readonly onProgress?: (progress: SearchBuildProgress) => void | Promise<void>;
 
   constructor(options: SearchEngineOptions) {
     this.storage = options.storage;
     this.runtime = options.runtime;
     this.now = options.now ?? Date.now;
+    this.signal = options.signal;
     this.onProgress = options.onProgress;
   }
 
   async rebuildSnapshot(): Promise<SearchSnapshotInfo> {
+    throwIfAborted(this.signal);
     this.createFreshDatabase(this.runtime.openMemoryDatabase());
     await this.emitProgress({ stage: 'reset', pages: 0, writtenPages: 0 });
 
     const pageChunks = await this.storage.getPageChunks();
+    throwIfAborted(this.signal);
     const pageCount = pageChunks.reduce((total, chunk) => total + chunk.count, 0);
     const statement = this.requireDatabase().prepare(
       'INSERT INTO pages_fts(rowid, search_text, url, title, visit_count, last_visit_time) VALUES(?, ?, ?, ?, ?, ?)'
@@ -113,7 +118,9 @@ export class SearchEngine {
 
     try {
       for (const chunk of pageChunks) {
+        throwIfAborted(this.signal);
         for (let index = 0; index < chunk.count; index += 1) {
+          throwIfAborted(this.signal);
           const pageId = chunk.firstPageId + index;
           const url = chunk.urls[index] ?? '';
           const title = chunk.titles[index] ?? '';
@@ -136,8 +143,10 @@ export class SearchEngine {
       statement.finalize();
     }
 
+    throwIfAborted(this.signal);
     const bytes = this.runtime.exportDatabase(this.requireDatabase());
     await this.emitProgress({ stage: 'snapshot', pages: pageCount, writtenPages });
+    throwIfAborted(this.signal);
     await this.storage.putSearchSnapshot({
       key: 'latest',
       schemaVersion: SEARCH_SCHEMA_VERSION,
@@ -224,6 +233,7 @@ export class SearchEngine {
   }
 
   private async emitProgress(progress: SearchBuildProgress): Promise<void> {
+    throwIfAborted(this.signal);
     await this.onProgress?.(progress);
   }
 }
@@ -301,5 +311,11 @@ function safeDecodeUrl(url: string): string {
     return decodeURIComponent(url);
   } catch {
     return url;
+  }
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
   }
 }

@@ -1,9 +1,16 @@
 import {
+  decodePageChunkRows,
+  decodeVisitChunkRows,
   getDatabaseSummary,
   getJob,
   getLatestSearchSnapshot,
+  getPageChunks,
   getPageById,
   getPageByNormalizedUrl,
+  getPageFromChunksById,
+  getVisitChunks,
+  getVisitChunksByTimeRange,
+  getVisitsFromChunksByTimeRange,
   getVisitsByPageAndTimeRange,
   getVisitsByTimeRange,
   getVisitsByTransitionAndTimeRange,
@@ -176,9 +183,55 @@ async function runImportSmoke() {
 
   const summary = await getDatabaseSummary();
   ensure(summary.pages === 2, 'import should write aggregated pages');
-  ensure(summary.pageChunks === 1, 'import should write page chunks');
+  ensure(summary.pageChunks === 2, 'import should write page chunks');
   ensure(summary.visits === 3, 'import should write visits');
-  ensure(summary.visitChunks === 1, 'import should write visit chunks');
+  ensure(summary.visitChunks === 2, 'import should write visit chunks');
+
+  const pageChunks = await getPageChunks();
+  ensure(pageChunks.length === 2, 'import should preserve page chunk count');
+  ensureIds(
+    decodePageChunkRows(pageChunks[0]).map((page) => page.id),
+    [1],
+    'page chunk rows should expose stable page ids'
+  );
+
+  const importedPage = await getPageFromChunksById(1);
+  ensure(importedPage?.url === 'https://example.com/imported', 'page chunk lookup should find page 1');
+  ensure(importedPage.visitCount === 2, 'page chunk lookup should expose visit count');
+  ensure(importedPage.lastVisitTime === 3000, 'page chunk lookup should expose last visit time');
+  ensure((await getPageFromChunksById(99)) === undefined, 'page chunk lookup should miss unknown page');
+
+  const visitChunks = await getVisitChunks();
+  ensure(visitChunks.length === 2, 'import should preserve visit chunk count');
+  ensureIds(
+    decodeVisitChunkRows(visitChunks[0]).map((visit) => visit.visitTime),
+    [1000, 2000],
+    'visit chunk rows should decode in time order'
+  );
+
+  const overlappingVisitChunks = await getVisitChunksByTimeRange({ startTime: 1500, endTime: 2500 });
+  ensure(overlappingVisitChunks.length === 1, 'time range should prefilter overlapping visit chunks');
+  ensure(overlappingVisitChunks[0].id === 'visit-chunk:0', 'time range should keep matching chunk id');
+
+  const chunkTimeRange = await getVisitsFromChunksByTimeRange({ startTime: 1500, endTime: 3500 });
+  ensureIds(
+    chunkTimeRange.map((visit) => visit.visitTime),
+    [2000, 3000],
+    'chunk time range should return inclusive matches'
+  );
+  ensureIds(
+    chunkTimeRange.map((visit) => visit.transition),
+    ['reload', 'typed'],
+    'chunk time range should decode transitions'
+  );
+
+  const reverseChunkTimeRange = await getVisitsFromChunksByTimeRange({ limit: 2, reverse: true });
+  ensureIds(
+    reverseChunkTimeRange.map((visit) => visit.visitTime),
+    [3000, 2000],
+    'reverse chunk time range should read newest visits first'
+  );
+
   ensure(result.rows === 3, 'import result rows should match parsed rows');
   ensure(result.pages === 2, 'import result pages should match aggregated pages');
   ensure(result.visits === 3, 'import result visits should match planned visits');

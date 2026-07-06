@@ -85,7 +85,7 @@ export async function importHtuText(
     plan.pages.forEach((page, index) => {
       pageIds.set(page.normalizedUrl ?? normalizeHistoryUrl(page.url), index + 1);
     });
-    writtenPages = await replacePageChunks(buildPageChunks(plan.pages));
+    writtenPages = await replacePageChunks(buildPageChunks(plan.pages, pageChunkSize));
     await emitProgress(options, {
       stage: 'pages',
       rows: parsed.rows.length,
@@ -118,7 +118,8 @@ export async function importHtuText(
   const visitStorage = options.visitStorage ?? DEFAULT_VISIT_STORAGE;
 
   if (visitStorage === 'chunks') {
-    writtenVisits = await replaceVisitChunks(buildVisitChunks(plan.visits, pageIds));
+    const chunkSize = normalizeChunkSize(options.visitChunkSize, DEFAULT_VISIT_CHUNK_SIZE);
+    writtenVisits = await replaceVisitChunks(buildVisitChunks(plan.visits, pageIds, chunkSize));
     await emitProgress(options, {
       stage: 'visits',
       rows: parsed.rows.length,

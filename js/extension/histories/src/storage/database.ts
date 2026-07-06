@@ -15,6 +15,27 @@ export type HistoriesDatabase = IDBDatabase;
 
 const MAX_TIME = Number.MAX_SAFE_INTEGER;
 
+export type PageChunkRow = {
+  id: number;
+  url: string;
+  normalizedUrl: string;
+  title: string;
+  visitCount: number;
+  lastVisitTime: number;
+  chunkId: string;
+  chunkIndex: number;
+};
+
+export type VisitChunkRow = {
+  id: string;
+  pageId: number;
+  visitTime: number;
+  transition: string;
+  sourceIndex: number;
+  chunkId: string;
+  chunkIndex: number;
+};
+
 export function openHistoriesDatabase(): Promise<HistoriesDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
@@ -187,6 +208,51 @@ export async function replacePageChunks(chunks: PageChunkRecord[]): Promise<numb
   }
 }
 
+export async function getPageChunks(): Promise<PageChunkRecord[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('pageChunks', 'readonly');
+    return await readCursor<PageChunkRecord>(transaction.objectStore('pageChunks'), undefined, {
+      limit: Number.POSITIVE_INFINITY
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function getPageFromChunksById(pageId: number): Promise<PageChunkRow | undefined> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('pageChunks', 'readonly');
+    const index = transaction.objectStore('pageChunks').index('firstPageId');
+    const chunk = (await readFirstCursor<PageChunkRecord>(
+      index,
+      IDBKeyRange.upperBound(pageId),
+      'prev'
+    )) as PageChunkRecord | undefined;
+
+    if (!chunk || pageId < chunk.firstPageId || pageId >= chunk.firstPageId + chunk.count) {
+      return undefined;
+    }
+
+    return decodePageChunkRow(chunk, pageId - chunk.firstPageId);
+  } finally {
+    db.close();
+  }
+}
+
+export function decodePageChunkRows(chunk: PageChunkRecord): PageChunkRow[] {
+  const rows: PageChunkRow[] = [];
+
+  for (let index = 0; index < chunk.count; index += 1) {
+    rows.push(decodePageChunkRow(chunk, index));
+  }
+
+  return rows;
+}
+
 export async function getPageById(id: number): Promise<PageRecord | undefined> {
   const db = await openHistoriesDatabase();
 
@@ -260,6 +326,86 @@ export type VisitRangeQuery = {
   limit?: number;
   reverse?: boolean;
 };
+
+export async function getVisitChunks(): Promise<VisitChunkRecord[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('visitChunks', 'readonly');
+    return await readCursor<VisitChunkRecord>(transaction.objectStore('visitChunks'), undefined, {
+      limit: Number.POSITIVE_INFINITY
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function getVisitChunksByTimeRange(
+  query: VisitRangeQuery = {}
+): Promise<VisitChunkRecord[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('visitChunks', 'readonly');
+    return await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+  } finally {
+    db.close();
+  }
+}
+
+export async function getVisitsFromChunksByTimeRange(
+  query: VisitRangeQuery = {}
+): Promise<VisitChunkRow[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('visitChunks', 'readonly');
+    const chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    const orderedChunks = query.reverse ? chunks.reverse() : chunks;
+    const results: VisitChunkRow[] = [];
+    const startTime = query.startTime ?? 0;
+    const endTime = query.endTime ?? MAX_TIME;
+    const limit = query.limit ?? 1000;
+
+    for (const chunk of orderedChunks) {
+      const rows = decodeVisitChunkRows(chunk);
+      if (query.reverse) rows.reverse();
+
+      for (const row of rows) {
+        if (row.visitTime < startTime || row.visitTime > endTime) continue;
+        results.push(row);
+        if (results.length >= limit) return results;
+      }
+    }
+
+    return results;
+  } finally {
+    db.close();
+  }
+}
+
+export function decodeVisitChunkRows(chunk: VisitChunkRecord): VisitChunkRow[] {
+  const rows: VisitChunkRow[] = [];
+
+  for (let index = 0; index < chunk.count; index += 1) {
+    rows.push({
+      id: makeVisitChunkRowId(
+        chunk.pageIds[index],
+        chunk.visitTimes[index],
+        chunk.transitionCodes[index],
+        chunk.sourceIndexes[index]
+      ),
+      pageId: chunk.pageIds[index],
+      visitTime: chunk.visitTimes[index],
+      transition: decodeTransition(chunk.transitionCodes[index]),
+      sourceIndex: chunk.sourceIndexes[index],
+      chunkId: chunk.id,
+      chunkIndex: index
+    });
+  }
+
+  return rows;
+}
 
 export async function getVisitsByTimeRange(query: VisitRangeQuery = {}): Promise<VisitRecord[]> {
   const db = await openHistoriesDatabase();
@@ -478,8 +624,8 @@ function transactionDone(transaction: IDBTransaction): Promise<void> {
 }
 
 function readCursor<T>(
-  source: IDBIndex,
-  range: IDBKeyRange,
+  source: IDBIndex | IDBObjectStore,
+  range: IDBKeyRange | undefined,
   query: VisitRangeQuery
 ): Promise<T[]> {
   const results: T[] = [];
@@ -502,6 +648,100 @@ function readCursor<T>(
     };
     request.onerror = () => reject(request.error);
   });
+}
+
+function readFirstCursor<T>(
+  source: IDBIndex | IDBObjectStore,
+  range: IDBKeyRange | undefined,
+  direction: IDBCursorDirection = 'next'
+): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const request = source.openCursor(range, direction);
+
+    request.onsuccess = () => resolve(request.result?.value as T | undefined);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function readOverlappingVisitChunks(
+  store: IDBObjectStore,
+  query: VisitRangeQuery
+): Promise<VisitChunkRecord[]> {
+  const endTime = query.endTime ?? MAX_TIME;
+  const startTime = query.startTime ?? 0;
+  const range = IDBKeyRange.upperBound(endTime);
+  const index = store.index('minVisitTime');
+
+  return new Promise((resolve, reject) => {
+    const chunks: VisitChunkRecord[] = [];
+    const request = index.openCursor(range);
+
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) {
+        resolve(chunks);
+        return;
+      }
+
+      const chunk = cursor.value as VisitChunkRecord;
+      if (chunk.maxVisitTime >= startTime) {
+        chunks.push(chunk);
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function decodePageChunkRow(chunk: PageChunkRecord, index: number): PageChunkRow {
+  return {
+    id: chunk.firstPageId + index,
+    url: chunk.urls[index] ?? '',
+    normalizedUrl: chunk.normalizedUrls[index] ?? '',
+    title: chunk.titles[index] ?? '',
+    visitCount: chunk.visitCounts[index] ?? 0,
+    lastVisitTime: chunk.lastVisitTimes[index] ?? 0,
+    chunkId: chunk.id,
+    chunkIndex: index
+  };
+}
+
+function makeVisitChunkRowId(
+  pageId: number,
+  visitTime: number,
+  transitionCode: number,
+  sourceIndex: number
+): string {
+  return `chunk:${pageId}:${visitTime}:${transitionCode}:${sourceIndex}`;
+}
+
+function decodeTransition(code: number): string {
+  switch (code) {
+    case 0:
+      return 'link';
+    case 1:
+      return 'typed';
+    case 2:
+      return 'auto_bookmark';
+    case 3:
+      return 'auto_subframe';
+    case 4:
+      return 'manual_subframe';
+    case 5:
+      return 'generated';
+    case 6:
+      return 'auto_toplevel';
+    case 7:
+      return 'form_submit';
+    case 8:
+      return 'reload';
+    case 9:
+      return 'keyword';
+    case 10:
+      return 'keyword_generated';
+    default:
+      return 'unknown';
+  }
 }
 
 function timeKeyRange(query: VisitRangeQuery): IDBKeyRange {

@@ -24,6 +24,7 @@ Current committed runtime code:
 - IndexedDB schema bootstrap and basic status readout.
 - IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
 - HTU import core for parse, exact-URL page aggregation, page chunks, visit chunks, and progress callbacks.
+- Chunk reader APIs for page chunk decoding, stable page-id lookup, visit chunk decoding, and time-range visit scans.
 
 ## Milestone 1: Project Skeleton
 
@@ -64,6 +65,7 @@ Acceptance:
 - Can query `[page_id, visit_time]`. Done in browser smoke test.
 - Can query `[transition, visit_time]`. Done in browser smoke test.
 - Can recover from interrupted job state. API added; resume semantics pending import/sync jobs.
+- Can read bulk-import chunks for export/search/time filters. Done for page chunks and visit chunks.
 
 ## Milestone 3: HTU Import Pipeline
 
@@ -80,6 +82,7 @@ Acceptance:
 - Imports the external backup without URL/title logging. Done in full-browser benchmark.
 - Preserves all 4-column rows structurally. Parser/export round-trip done.
 - Writes expected page and visit counts. Done: `887,561` visits and `384,065` exact-URL pages.
+- Applies configurable page and visit chunk sizes on the chunk storage path. Done in browser smoke coverage.
 - Can resume or restart safely after cancellation. Pending worker job state.
 
 ## Milestone 4: SQLite FTS Search Module
@@ -207,10 +210,11 @@ Acceptance:
 
 1. Build skeleton.
 2. IndexedDB core storage.
-3. SQLite FTS search module.
-4. HTU import pipeline.
+3. HTU import pipeline.
+4. SQLite FTS search module.
 5. Keyword plus time-range search.
-6. Browser history sync.
-7. Export and UI.
+6. HTU export.
+7. Browser history sync.
+8. Search UI.
 
 Do not start statistics UI until sync and search are working against the external full backup scale.

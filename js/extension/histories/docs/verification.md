@@ -270,7 +270,8 @@ Result:
 - Browser smoke test passed with local Chrome.
 - The test bundles `src/storage/database.ts` for a real browser context, starts a temporary local HTTP server, writes to browser IndexedDB, then deletes the test database.
 - Covered behavior: page upsert by normalized URL, visit bulk writes, `visit_time` scans, `[page_id, visit_time]` scans, `[transition, visit_time]` scans, reverse limited scans, job round-trip, search snapshot round-trip, and database summary counts.
-- The same browser smoke also covers a small HTU import through `importHtuText`, including parse, exact-URL page aggregation, page chunk writes, visit chunk writes, and progress stages.
+- The same browser smoke also covers a small HTU import through `importHtuText`, including parse, exact-URL page aggregation, configurable page chunk writes, configurable visit chunk writes, and progress stages.
+- Chunk reader coverage includes page chunk decode, stable page-id lookup from chunks, visit chunk decode, overlapping visit chunk prefilter, inclusive chunk time-range scan, reverse chunk time-range scan, transition decode, and limit handling.
 
 ## HTU Import Core
 
@@ -310,6 +311,7 @@ Performance finding:
 
 Commands:
 
+- `npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json`
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
@@ -320,9 +322,12 @@ Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 4 passed.
-- Storage smoke: 1 passed in local Chrome.
+- Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
+- TypeScript check passed.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
+- External full backup latest run: 7 passed, full backup round-trip completed in about `2.37s`.
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
+- External full browser import latest run: `887,561` rows, `384,065` pages, `887,561` visits, `763 ms` fetch, `2,469 ms` import, `3,232 ms` total browser-side after page load.
 
 ## Next Verification Steps
 

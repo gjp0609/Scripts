@@ -25,6 +25,7 @@ Current committed runtime code:
 - IndexedDB helper APIs for pages, visits, jobs, snapshots, and indexed visit range scans.
 - HTU import core for parse, exact-URL page aggregation, page chunks, visit chunks, and progress callbacks.
 - Chunk reader APIs for page chunk decoding, stable page-id lookup, visit chunk decoding, and time-range visit scans.
+- Search engine core for SQLite FTS schema setup, page-chunk rebuild, snapshot save/load, keyword search, and IndexedDB snapshot storage adapter.
 
 ## Milestone 1: Project Skeleton
 
@@ -90,12 +91,12 @@ Acceptance:
 Deliverables:
 
 - SQLite WASM loader.
-- FTS5 trigram schema.
-- Build FTS from `pages`.
-- Save FTS snapshot to IndexedDB.
-- Load FTS snapshot from IndexedDB.
+- FTS5 trigram schema. Done in search engine core.
+- Build FTS from page chunks. Done in search engine core.
+- Save FTS snapshot to IndexedDB. Done through the storage adapter contract.
+- Load FTS snapshot from IndexedDB. Done through the storage adapter contract.
 - Dirty snapshot tracking.
-- Keyword search API.
+- Keyword search API. Done at page-result level.
 
 Acceptance:
 
@@ -103,6 +104,7 @@ Acceptance:
 - Queries such as `ifen`, `yifen`, `yifeng`, `feng`, `ruan` work.
 - Typical query time stays under target on the external backup scale.
 - Snapshot corruption triggers rebuild, not data loss.
+- Runtime adapter can be tested without SQLite WASM by injecting a fake runtime. Done.
 
 ## Milestone 5: Keyword + Time Search
 

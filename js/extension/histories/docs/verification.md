@@ -284,6 +284,18 @@ Result:
 - Import planner and chunk builder tests passed.
 - Covered behavior: exact-URL page aggregation for HTU compatibility, latest-page title selection for identical URLs, visit draft creation, page chunk construction, and time-sorted typed-array visit chunks.
 
+## Search Engine Core
+
+Command:
+
+- `node --test js\extension\histories\tests\search-engine.test.mjs`
+
+Result:
+
+- Search engine core tests passed.
+- Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword search binding, page-level time filter binding, and result row mapping.
+- The test uses an injected fake SQLite runtime; real SQLite WASM browser execution remains a separate verification step.
+
 ## HTU Full Browser Import Benchmark
 
 Command:
@@ -314,6 +326,7 @@ Commands:
 - `npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json`
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
+- `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
 - `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
@@ -322,6 +335,7 @@ Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 4 passed.
+- Search engine core: 3 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
 - TypeScript check passed.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
@@ -332,7 +346,7 @@ Result:
 ## Next Verification Steps
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
-2. Add chunk readers for export, search snapshot build, and time-range search.
+2. Wire and verify the real SQLite WASM runtime adapter against the search engine core.
 3. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
-4. Build and test the HTU import worker against the external backup.
+4. Build and test the HTU import/search rebuild workers against the external backup.
 5. Test combined searches such as keyword plus arbitrary time range.

@@ -45,7 +45,8 @@ Compatibility requirements:
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
 - A real external History Trends Unlimited backup file has been structurally verified and round-trip hashed, but it must stay outside the repository.
-- The search engine module is still a placeholder; SQLite WASM has not been promoted from probe code into runtime code.
+- The search engine module now has a production-facing SQLite FTS contract, page-chunk rebuild flow, snapshot save/load flow, keyword search API, and IndexedDB storage adapter.
+- The real SQLite WASM loader has not been wired into runtime code yet; current search engine tests use an injected fake SQLite runtime.
 - HTU import chunk size options now apply to chunk storage as well as record storage.
 - The HTU import worker has not been implemented yet.
 
@@ -65,8 +66,8 @@ Compatibility requirements:
 
 ## Next Work
 
-1. Move HTU import into a worker-facing job API with progress, cancellation, and restart state.
-2. Promote SQLite WASM FTS snapshot search into production search modules.
+1. Wire the real SQLite WASM loader/runtime adapter into the search engine.
+2. Move HTU import and search rebuild into worker-facing job APIs with progress, cancellation, and restart state.
 3. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
 4. Implement HTU export from chunk storage.
 5. Add browser history sync after import/search storage paths are stable.

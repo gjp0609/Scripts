@@ -21,11 +21,11 @@
 | R-011 | 主数据源 | 未开始 | 待定 | 浏览器书签写回验证 | 无 |
 | R-012 | 插件额外数据 | 未开始 | 待定 | storage 数据结构检查 | 无 |
 | R-013 | 浏览器外部变更同步 | 未开始 | 待定 | 浏览器书签管理器外部修改验证 | 无 |
-| R-020 | 主页面 | 未开始 | 待定 | 扩展页面截图对比 | 无 |
-| R-021 | Popup | 未开始 | 待定 | 点击扩展按钮验证 | 无 |
+| R-020 | 主页面 | 进行中 | src/entrypoints/app, src/app | 扩展页面截图对比 | 已完成 WXT 页面入口和基础布局，真实交互待继续验证 |
+| R-021 | Popup | 进行中 | src/entrypoints/popup, src/popup | 点击扩展按钮验证 | 已完成 WXT popup 入口和基础保存逻辑，真实浏览器待验证 |
 | R-022 | 编辑书签 | 未开始 | 待定 | 编辑后浏览器书签与额外数据检查 | 无 |
 | R-023 | 添加 / 编辑目录 | 未开始 | 待定 | 目录创建、重命名、删除验证 | 删除目录风险交互需重点验证 |
-| R-024 | 设置与导入导出 | 未开始 | 待定 | 标准书签 HTML 导入导出、全量数据导入导出验证 | 首版可先预留入口 |
+| R-024 | 设置与导入导出 | 进行中 | src/services/importExportService.ts | 标准书签 HTML 导入导出、全量数据导入导出验证 | 服务函数已创建，UI 入口和真实导入验证待补 |
 | R-030 | 默认浏览体验 | 未开始 | 待定 | 打开主页面截图与焦点验证 | 无 |
 | R-031 | 书签卡片内容 | 未开始 | 待定 | 截图与完整 URL 操作验证 | 无 |
 | R-032 | 目录分组 | 未开始 | 待定 | 目录展开收起验证 | 无 |
@@ -38,14 +38,14 @@
 | R-052 | 书签整理 | 未开始 | 待定 | 排序、跨目录移动、写回验证 | 无 |
 | R-053 | 目录整理 | 未开始 | 待定 | 目录排序、重命名、删除验证 | 无 |
 | R-054 | 拖拽反馈 | 未开始 | 待定 | 拖拽截图和撤销验证 | 无 |
-| R-060 | 浏览器书签 API | 未开始 | 待定 | 真实 API 读写验证 | Firefox/Chromium API 包装方式待定 |
-| R-061 | 当前标签页 API | 未开始 | 待定 | popup 保存当前页验证 | 权限最小化待确认 |
-| R-062 | 数据模型 | 未开始 | 待定 | 类型检查和数据合成单测 | 无 |
-| R-063 | 服务层 | 未开始 | 待定 | 模块边界审查 | 无 |
-| R-070 | 插件构建 | 未开始 | 待定 | 加载浏览器扩展验证 | 构建工具待定 |
-| R-071 | 前端技术 | 未开始 | 待定 | 构建与 UI 截图验证 | 组件库选择待实现确认 |
+| R-060 | 浏览器书签 API | 进行中 | src/services/bookmarkApi.ts, src/services/bookmarkRepository.ts | 真实 API 读写验证 | 已切到 WXT `browser` API，真实浏览器读写待验证 |
+| R-061 | 当前标签页 API | 进行中 | src/services/extensionRuntime.ts, src/popup/Popup.vue | popup 保存当前页验证 | 已实现读取当前标签页和保存入口，真实浏览器待验证 |
+| R-062 | 数据模型 | 进行中 | src/types/bookmark.ts | 类型检查和数据合成单测 | 已拆分浏览器书签、额外数据、视图模型，单测待补 |
+| R-063 | 服务层 | 进行中 | src/services | 模块边界审查 | 服务层已拆分，删除/移动/拖拽完整链路待继续补 |
+| R-070 | 插件构建 | 已完成 | wxt.config.ts, src/entrypoints | `npm run build` | WXT 构建已通过，真实浏览器加载待验证 |
+| R-071 | 前端技术 | 已完成 | package.json, wxt.config.ts | `npm run build` | 已使用 WXT + Vue 3 + TypeScript + lucide |
 | R-072 | 禁止的实现方式 | 进行中 | 本文档 | 代码审查 | 旧实现已删除，后续持续约束 |
-| R-080 | 视觉风格 | 未开始 | 待定 | 与 tmp 设计稿截图对比 | 无 |
+| R-080 | 视觉风格 | 进行中 | src/app/styles.css, src/popup/popup.css | 与 tmp 设计稿截图对比 | 已抽取 MarkHub 基础视觉，截图对比待做 |
 | R-081 | 明确不要 | 进行中 | 本文档 | 代码审查和截图审查 | 后续持续约束 |
 | R-082 | 响应式 | 未开始 | 待定 | 桌面/窄屏截图验证 | 无 |
 | R-090 | 基础验收 | 未开始 | 待定 | 真实扩展端到端验证 | 无 |
@@ -55,7 +55,35 @@
 
 ## 最近记录
 
-### 2026-07-06
+### 当前轮：切换到 WXT
+
+- 用户临时需求：改为使用 WXT。
+- 技术决策：后续使用 WXT 作为浏览器插件构建框架，不继续维护手写 Vite 多入口扩展壳。
+- 已执行：迁移工程到 WXT 结构，新增 `wxt.config.ts`，将 popup、主页面和 background 移入 `src/entrypoints/`，删除旧 `app.html`、`popup.html`、`vite.config.ts`、`public/manifest.json` 和旧 `src/background.ts`。
+- 已执行：保留已拆出的服务层和 Vue 组件，按 WXT 入口重新挂载。
+- 已执行：浏览器 API 从 `chrome` 回调风格切换为 WXT `browser` Promise API。
+- 已验证：`npm run build` 通过，生成 `.output/chrome-mv3/manifest.json`、`app.html`、`popup.html`、`background.js`、图标和资源文件。
+- 验证结果：生成的 manifest 为 MV3，包含 `bookmarks`、`storage`、`activeTab`、`tabs`、`scripting` 权限，`action.default_popup` 为 `popup.html`。
+- 遗留问题：尚未在真实浏览器中加载 `.output/chrome-mv3/` 做书签 API 读写和截图对比。
+
+### 当前轮：记录规则修正
+
+- 用户临时需求：操作记录应当写入“最近记录”，并按时间倒序排列，最新记录在最上面。
+- 用户临时需求：不要用日期式排期；当前阶段大约是一到两天工作量。
+- 已更新 `REQUIREMENTS.md`：补充最近记录倒序规则、短周期工作量口径和避免远期日期式排期的约束。
+- 已更新本文档：移除独立的“当前轮动作”区，将本轮动作并入“最近记录”。
+
+### 当前轮：浏览器插件工程基线
+
+- 已提交文档优先执行纪律，提交：`b8c0265`。
+- 本轮先创建新的浏览器插件工程，不恢复旧 `src/App.vue` 原型。
+- 原计划技术路线：使用 Vue 3 + TypeScript + Vite 自建扩展壳；该路线已被上方“切换到 WXT”记录替代。
+- 设计执行：以 `tmp/` 的 MarkHub 设计稿为样式基准，抽取统一 CSS tokens，优先实现 240px 侧栏、56px 顶栏、紧凑书签卡片、搜索浮层、整理模式工具栏、添加/编辑弹窗和 popup 基础布局。
+- 数据执行：先搭建 `bookmarkApi`、`extraStore`、`bookmarkRepository`、`searchService`、`extensionRuntime`、`importExportService`，保持浏览器书签数据和插件额外数据分离。
+- 导入导出执行：本轮要预留并实现基础服务函数，覆盖标准 Netscape Bookmark HTML 导入/导出、全量数据导入/导出、仅插件额外数据导入/导出。
+- 验证执行：安装依赖后至少执行一次构建，确认扩展产物能生成；真实浏览器加载和截图对比后续继续补充。
+
+### 基线归档与需求整理
 
 - 新增 `REQUIREMENTS.md`，将目标改为直接实现浏览器插件。
 - 归档旧实现提交：`2b3cb8c`。

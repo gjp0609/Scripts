@@ -1,0 +1,24 @@
+{
+  "name": "markhub-bookmarks-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt prepare && vue-tsc --noEmit && wxt build",
+    "typecheck": "wxt prepare && vue-tsc --noEmit",
+    "zip": "wxt zip"
+  },
+  "dependencies": {
+    "lucide-vue-next": "^0.468.0",
+    "sortablejs": "^1.15.2",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "@types/sortablejs": "^1.15.8",
+    "typescript": "^5.7.0",
+    "vue-tsc": "^2.1.10",
+    "wxt": "^0.20.0"
+  }
+}

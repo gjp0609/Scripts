@@ -1,0 +1,84 @@
+export type BrowserBookmarkNode = {
+  id: string;
+  parentId?: string;
+  index?: number;
+  title: string;
+  url?: string;
+  children?: BrowserBookmarkNode[];
+};
+
+export type BookmarkExtra = {
+  bookmarkId: string;
+  tags: string[];
+  description?: string;
+  searchUrl?: string;
+  faviconOverride?: string;
+  updatedAt: number;
+};
+
+export type BookmarkView = BrowserBookmarkNode & {
+  extra: BookmarkExtra;
+  domain: string;
+  accent: string;
+};
+
+export type FolderView = {
+  id: string;
+  title: string;
+  index: number;
+  bookmarks: BookmarkView[];
+  collapsed?: boolean;
+};
+
+export type UiPreferences = {
+  collapsedFolderIds: string[];
+  searchEngine: SearchEngineId;
+};
+
+export type SearchEngineId = 'google' | 'bing';
+
+export type SearchResultItem =
+  | {
+      type: 'bookmark';
+      id: string;
+      title: string;
+      url: string;
+      domain: string;
+      folderTitle: string;
+      tags: string[];
+      accent: string;
+    }
+  | {
+      type: 'engine';
+      id: SearchEngineId;
+      title: string;
+      url: string;
+      domain: string;
+      tags: string[];
+      accent: string;
+    };
+
+export type QuickSearchTarget = {
+  bookmarkId: string;
+  title: string;
+  domain: string;
+  searchUrl: string;
+  accent: string;
+};
+
+export type FullExportData = {
+  version: 1;
+  exportedAt: string;
+  folders: Array<{
+    title: string;
+    index: number;
+    bookmarks: Array<{
+      title: string;
+      url: string;
+      index?: number;
+      extra?: BookmarkExtra;
+    }>;
+  }>;
+  extras: Record<string, BookmarkExtra>;
+  preferences: UiPreferences;
+};

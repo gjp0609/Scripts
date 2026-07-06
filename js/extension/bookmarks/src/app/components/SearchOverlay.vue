@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue';
 import { CornerDownLeft } from 'lucide-vue-next';
 import type { SearchResultItem } from '../../types/bookmark';
 
 defineProps<{
   query: string;
   results: SearchResultItem[];
+  overlayStyle?: CSSProperties;
 }>();
 
 const emit = defineEmits<{
@@ -13,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="query.trim()" class="search-overlay">
+  <div v-if="query.trim()" class="search-overlay" :style="overlayStyle">
     <div class="overlay-head">
       <span>搜索结果</span>
       <span>{{ results.length }} 个结果</span>

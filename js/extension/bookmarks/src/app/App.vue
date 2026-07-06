@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import type { CSSProperties } from 'vue';
 import { ChevronDown, Folder } from 'lucide-vue-next';
 import type { BookmarkView, QuickSearchTarget, SearchResultItem } from '../types/bookmark';
 import { createBookmark, removeBookmark } from '../services/bookmarkApi';
@@ -23,6 +24,8 @@ const query = ref('');
 const bookmarkModalOpen = ref(false);
 const folderModalOpen = ref(false);
 const editingBookmark = ref<BookmarkView | undefined>();
+const searchBoxEl = ref<HTMLDivElement | null>(null);
+const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
 
 const quickSearch = computed(() => parseQuickSearch(query.value));
 const quickTargets = computed(() => getQuickSearchTargets(workspace.folders.value, quickSearch.value?.siteQuery ?? ''));
@@ -83,6 +86,41 @@ async function deleteBookmark(bookmark: BookmarkView) {
 async function copyUrl(bookmark: BookmarkView) {
   if (bookmark.url) await navigator.clipboard.writeText(bookmark.url);
 }
+
+function updateOverlayPosition() {
+  const element = searchBoxEl.value;
+  if (!element) {
+    overlayStyle.value = { visibility: 'hidden' };
+    return;
+  }
+
+  const rect = element.getBoundingClientRect();
+  const width = Math.min(rect.width, window.innerWidth - 24);
+  const left = Math.min(Math.max(12, rect.left), window.innerWidth - width - 12);
+
+  overlayStyle.value = {
+    top: `${rect.bottom + 6}px`,
+    left: `${left}px`,
+    width: `${width}px`,
+    visibility: 'visible'
+  };
+}
+
+function setSearchBoxElement(element: HTMLDivElement) {
+  searchBoxEl.value = element;
+  void nextTick().then(updateOverlayPosition);
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateOverlayPosition);
+  window.addEventListener('scroll', updateOverlayPosition, { passive: true });
+  void nextTick().then(updateOverlayPosition);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateOverlayPosition);
+  window.removeEventListener('scroll', updateOverlayPosition);
+});
 </script>
 
 <template>
@@ -97,6 +135,7 @@ async function copyUrl(bookmark: BookmarkView) {
       @update:engine="workspace.setSearchEngine($event)"
       @add-bookmark="startAddBookmark"
       @add-folder="folderModalOpen = true"
+      @search-box-ready="setSearchBoxElement"
     />
 
     <main class="content-area">
@@ -144,9 +183,10 @@ async function copyUrl(bookmark: BookmarkView) {
       v-if="quickSearch"
       :targets="quickTargets"
       :keyword="quickSearch.keyword"
+      :overlay-style="overlayStyle"
       @open="openQuickSearch"
     />
-    <SearchOverlay v-else :query="query" :results="searchResults" @open="openSearchResult" />
+    <SearchOverlay v-else :query="query" :results="searchResults" :overlay-style="overlayStyle" @open="openSearchResult" />
 
     <BookmarkModal
       :open="bookmarkModalOpen"

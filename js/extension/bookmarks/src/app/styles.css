@@ -446,10 +446,7 @@ button {
 
 .search-overlay {
   position: fixed;
-  top: calc(var(--header-height) + 6px);
-  left: calc(var(--sidebar-width) + 50% - 220px);
   z-index: 30;
-  width: 440px;
   padding: 8px;
   border-radius: 14px;
   background: var(--color-bg-elevated);
@@ -748,11 +745,5 @@ button {
 
   .content-area {
     padding-top: 108px;
-  }
-
-  .search-overlay {
-    top: 108px;
-    left: 12px;
-    width: calc(100vw - 24px);
   }
 }

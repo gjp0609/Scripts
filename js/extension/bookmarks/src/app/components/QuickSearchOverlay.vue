@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue';
 import { Search } from 'lucide-vue-next';
 import type { QuickSearchTarget } from '../../types/bookmark';
 
 defineProps<{
   targets: QuickSearchTarget[];
   keyword: string;
+  overlayStyle?: CSSProperties;
 }>();
 
 const emit = defineEmits<{
@@ -13,7 +15,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="search-overlay quick-overlay">
+  <div class="search-overlay quick-overlay" :style="overlayStyle">
     <div class="overlay-head">
       <span>快捷站内搜索</span>
       <span>{{ targets.length }} 个站点</span>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue';
 import { FolderPlus, Globe2, Plus, Search } from 'lucide-vue-next';
 import type { SearchEngineId } from '../../types/bookmark';
 
@@ -14,7 +15,16 @@ const emit = defineEmits<{
   'update:engine': [value: SearchEngineId];
   'add-bookmark': [];
   'add-folder': [];
+  'search-box-ready': [element: HTMLDivElement];
 }>();
+
+const searchBoxEl = ref<HTMLDivElement | null>(null);
+
+onMounted(() => {
+  if (searchBoxEl.value) {
+    emit('search-box-ready', searchBoxEl.value);
+  }
+});
 </script>
 
 <template>
@@ -24,7 +34,7 @@ const emit = defineEmits<{
       <button :class="{ active: mode === 'organize' }" type="button" @click="emit('update:mode', 'organize')">整理</button>
     </div>
 
-    <div class="search-box">
+    <div ref="searchBoxEl" class="search-box">
       <Search :size="16" />
       <input
         :value="query"

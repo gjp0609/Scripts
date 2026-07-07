@@ -289,7 +289,7 @@ function renderSearchResults(rows: SearchResult[]): void {
         <article class="result-row">
           <h3 class="result-title">${escapeHtml(row.title || row.url)}</h3>
           <p class="result-url">${escapeHtml(row.url)}</p>
-          <p class="result-meta">pageId=${row.pageId} visits=${row.visitCount} last=${formatDateTime(row.lastVisitTime)}</p>
+          <p class="result-meta">${formatResultMeta(row)}</p>
         </article>
       `
     )
@@ -370,6 +370,23 @@ function formatDateTime(timestamp: number): string {
     minute: '2-digit',
     second: '2-digit'
   }).format(timestamp);
+}
+
+function formatResultMeta(row: SearchResult): string {
+  const parts = [
+    `pageId=${row.pageId}`,
+    `visits=${row.visitCount}`,
+    `last=${formatDateTime(row.lastVisitTime)}`
+  ];
+
+  if (row.matchedVisitCount !== undefined) {
+    parts.push(`rangeHits=${row.matchedVisitCount}`);
+  }
+  if (row.matchedVisitTime !== undefined) {
+    parts.push(`rangeLast=${formatDateTime(row.matchedVisitTime)}`);
+  }
+
+  return parts.join(' ');
 }
 
 function formatTime(timestamp: number): string {

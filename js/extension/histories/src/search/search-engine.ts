@@ -11,6 +11,8 @@ export type SearchResult = {
   title: string;
   visitCount: number;
   lastVisitTime: number;
+  matchedVisitCount?: number;
+  matchedVisitTime?: number;
 };
 
 export type SearchBuildProgress = {
@@ -72,6 +74,10 @@ export type SearchSnapshotRecord = {
 
 export type SearchStorage = {
   getPageChunks: () => Promise<SearchPageChunk[]>;
+  getPageVisitStatsFromTimeRange: (
+    query: SearchQuery,
+    pageIds?: Iterable<number>
+  ) => Promise<Array<{ pageId: number; matchedVisitCount: number; matchedVisitTime: number }>>;
   putSearchSnapshot: (snapshot: SearchSnapshotRecord) => Promise<void>;
   getLatestSearchSnapshot: () => Promise<SearchSnapshotRecord | undefined>;
 };
@@ -179,29 +185,30 @@ export class SearchEngine {
     const keyword = normalizeKeyword(query.keyword);
     if (!keyword) return [];
 
-    const database = this.requireDatabase();
-    const timeWhere = buildPageTimeWhere(query.startTime, query.endTime);
     const limit = normalizeLimit(query.limit);
-    const statement = database.prepare(`
-      SELECT rowid, url, title, visit_count, last_visit_time
-      FROM pages_fts
-      WHERE pages_fts MATCH ?
-      ${timeWhere.sql}
-      ORDER BY CAST(visit_count AS INTEGER) DESC, CAST(last_visit_time AS REAL) DESC
-      LIMIT ?
-    `);
-    const rows: SearchResult[] = [];
-
-    try {
-      statement.bind([makeFtsMatchQuery(keyword), ...timeWhere.binds, limit]);
-      while (statement.step()) {
-        rows.push(searchResultFromRow(statement.get([])));
-      }
-    } finally {
-      statement.finalize();
+    if (!hasVisitTimeFilter(query)) {
+      return await this.searchPagesByKeyword(keyword, limit);
     }
 
-    return rows;
+    const candidates = await this.searchPagesByKeyword(keyword);
+    if (candidates.length === 0) return [];
+
+    const pageVisitStats = await this.storage.getPageVisitStatsFromTimeRange(query, candidates.map((row) => row.pageId));
+    if (pageVisitStats.length === 0) return [];
+
+    const statsByPageId = new Map(pageVisitStats.map((item) => [item.pageId, item]));
+    return candidates
+      .filter((row) => statsByPageId.has(row.pageId))
+      .map((row) => {
+        const stats = statsByPageId.get(row.pageId);
+        return {
+          ...row,
+          matchedVisitCount: stats?.matchedVisitCount,
+          matchedVisitTime: stats?.matchedVisitTime
+        };
+      })
+      .sort(compareTimeFilteredResults)
+      .slice(0, limit);
   }
 
   close(): void {
@@ -236,6 +243,30 @@ export class SearchEngine {
     throwIfAborted(this.signal);
     await this.onProgress?.(progress);
   }
+
+  private async searchPagesByKeyword(keyword: string, limit?: number): Promise<SearchResult[]> {
+    const database = this.requireDatabase();
+    const statement = database.prepare(`
+      SELECT rowid, url, title, visit_count, last_visit_time
+      FROM pages_fts
+      WHERE pages_fts MATCH ?
+      ORDER BY CAST(visit_count AS INTEGER) DESC, CAST(last_visit_time AS REAL) DESC
+      ${limit === undefined ? '' : 'LIMIT ?'}
+    `);
+    const rows: SearchResult[] = [];
+
+    try {
+      const binds = limit === undefined ? [makeFtsMatchQuery(keyword)] : [makeFtsMatchQuery(keyword), limit];
+      statement.bind(binds);
+      while (statement.step()) {
+        rows.push(searchResultFromRow(statement.get([])));
+      }
+    } finally {
+      statement.finalize();
+    }
+
+    return rows;
+  }
 }
 
 export function normalizeSearchText(url: string, title = ''): string {
@@ -248,25 +279,6 @@ export function normalizeKeyword(keyword: string): string {
 
 export function makeFtsMatchQuery(keyword: string): string {
   return `"${keyword.replace(/"/g, '""')}"`;
-}
-
-function buildPageTimeWhere(startTime?: number, endTime?: number): { sql: string; binds: number[] } {
-  const clauses: string[] = [];
-  const binds: number[] = [];
-
-  if (Number.isFinite(startTime)) {
-    clauses.push('CAST(last_visit_time AS REAL) >= ?');
-    binds.push(startTime as number);
-  }
-  if (Number.isFinite(endTime)) {
-    clauses.push('CAST(last_visit_time AS REAL) <= ?');
-    binds.push(endTime as number);
-  }
-
-  return {
-    sql: clauses.length > 0 ? `AND ${clauses.join(' AND ')}` : '',
-    binds
-  };
 }
 
 function normalizeLimit(limit: number | undefined): number {
@@ -318,4 +330,18 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
   if (signal?.aborted) {
     throw new DOMException('The operation was aborted.', 'AbortError');
   }
+}
+
+function hasVisitTimeFilter(query: SearchQuery): boolean {
+  return Number.isFinite(query.startTime) || Number.isFinite(query.endTime);
+}
+
+function compareTimeFilteredResults(left: SearchResult, right: SearchResult): number {
+  return (
+    (right.matchedVisitTime ?? 0) - (left.matchedVisitTime ?? 0) ||
+    (right.matchedVisitCount ?? 0) - (left.matchedVisitCount ?? 0) ||
+    right.visitCount - left.visitCount ||
+    right.lastVisitTime - left.lastVisitTime ||
+    left.pageId - right.pageId
+  );
 }

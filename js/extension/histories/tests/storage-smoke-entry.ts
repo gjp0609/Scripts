@@ -9,6 +9,7 @@ import {
   getPageById,
   getPageByNormalizedUrl,
   getPageFromChunksById,
+  getPageVisitStatsFromChunksByTimeRange,
   getVisitChunks,
   getVisitChunksByTimeRange,
   getVisitsFromChunksByTimeRange,
@@ -214,6 +215,18 @@ async function runImportSmoke() {
   const overlappingVisitChunks = await getVisitChunksByTimeRange({ startTime: 1500, endTime: 2500 });
   ensure(overlappingVisitChunks.length === 1, 'time range should prefilter overlapping visit chunks');
   ensure(overlappingVisitChunks[0].id === 'visit-chunk:0', 'time range should keep matching chunk id');
+
+  const pageVisitStats = await getPageVisitStatsFromChunksByTimeRange(
+    { startTime: 1500, endTime: 3500 },
+    [1, 2]
+  );
+  ensureIds(
+    pageVisitStats.map((item) => item.pageId),
+    [2, 1],
+    'page visit stats should only include filtered pages with matching visits'
+  );
+  ensure(pageVisitStats[0].matchedVisitCount === 1, 'page visit stats should count matching visits');
+  ensure(pageVisitStats[1].matchedVisitTime === 3000, 'page visit stats should track latest matching visit');
 
   const chunkTimeRange = await getVisitsFromChunksByTimeRange({ startTime: 1500, endTime: 3500 });
   ensureIds(

@@ -42,6 +42,9 @@ test('rebuilds a SQLite FTS snapshot from page chunks', async () => {
         }
       ];
     },
+    async getPageVisitStatsFromTimeRange() {
+      return [];
+    },
     async putSearchSnapshot(snapshot) {
       snapshots.push(snapshot);
     },
@@ -91,6 +94,12 @@ test('loads a snapshot and searches with keyword, time range, and limit', async 
     async getPageChunks() {
       return [];
     },
+    async getPageVisitStatsFromTimeRange(query, pageIds) {
+      assert.equal(query.startTime, 5000);
+      assert.equal(query.endTime, 7000);
+      assert.deepEqual([...pageIds], [9]);
+      return [{ pageId: 9, matchedVisitCount: 2, matchedVisitTime: 6000 }];
+    },
     async putSearchSnapshot() {},
     async getLatestSearchSnapshot() {
       return {
@@ -121,11 +130,84 @@ test('loads a snapshot and searches with keyword, time range, and limit', async 
       url: 'https://example.com/ruanyifeng',
       title: 'Title',
       visitCount: 8,
-      lastVisitTime: 6000
+      lastVisitTime: 6000,
+      matchedVisitCount: 2,
+      matchedVisitTime: 6000
     }
   ]);
-  assert.deepEqual(snapshotDatabase.selectBinds, ['"ifen"', 5000, 7000, 10]);
+  assert.deepEqual(snapshotDatabase.selectBinds, ['"ifen"']);
   assert.equal(snapshotDatabase.execCalls, 0);
+
+  engine.close();
+});
+
+test('intersects keyword matches with time-range visit stats', async () => {
+  const { SearchEngine } = await loadSearchModule();
+  const snapshotDatabase = new FakeDatabase({
+    selectRows: [
+      [1, 'https://example.com/a', 'A', 10, 9000],
+      [2, 'https://example.com/b', 'B', 5, 8000],
+      [3, 'https://example.com/c', 'C', 4, 7000]
+    ]
+  });
+  const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+  const storage = {
+    async getPageChunks() {
+      return [];
+    },
+    async getPageVisitStatsFromTimeRange(query, pageIds) {
+      assert.equal(query.startTime, 1000);
+      assert.equal(query.endTime, 5000);
+      assert.deepEqual([...pageIds], [1, 2, 3]);
+      return [
+        { pageId: 2, matchedVisitCount: 1, matchedVisitTime: 3000 },
+        { pageId: 3, matchedVisitCount: 3, matchedVisitTime: 4000 }
+      ];
+    },
+    async putSearchSnapshot() {},
+    async getLatestSearchSnapshot() {
+      return {
+        key: 'latest',
+        schemaVersion: 1,
+        sqliteVersion: '3.46.1',
+        createdAt: 1,
+        sourceRevision: 'test',
+        bytes: new Uint8Array([1, 2, 3]),
+        pageCount: 3,
+        snapshotSize: 3
+      };
+    }
+  };
+  const engine = new SearchEngine({ runtime, storage });
+
+  await engine.loadSnapshot();
+  const rows = await engine.search({
+    keyword: 'ifen',
+    startTime: 1000,
+    endTime: 5000,
+    limit: 10
+  });
+
+  assert.deepEqual(rows, [
+    {
+      pageId: 3,
+      url: 'https://example.com/c',
+      title: 'C',
+      visitCount: 4,
+      lastVisitTime: 7000,
+      matchedVisitCount: 3,
+      matchedVisitTime: 4000
+    },
+    {
+      pageId: 2,
+      url: 'https://example.com/b',
+      title: 'B',
+      visitCount: 5,
+      lastVisitTime: 8000,
+      matchedVisitCount: 1,
+      matchedVisitTime: 3000
+    }
+  ]);
 
   engine.close();
 });
@@ -148,6 +230,9 @@ test('cancels snapshot rebuild when the abort signal is triggered', async () => 
           lastVisitTimes: new Float64Array([1000])
         }
       ];
+    },
+    async getPageVisitStatsFromTimeRange() {
+      return [];
     },
     async putSearchSnapshot() {
       assert.fail('snapshot should not be written after abort');

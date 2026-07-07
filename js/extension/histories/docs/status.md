@@ -35,6 +35,7 @@ Compatibility requirements:
 - Firefox MV3 manifest generation has been verified.
 - The options page can message the background/runtime layer.
 - The options page now opens the IndexedDB database, reports basic store counts, imports HTU TSV files, rebuilds the search snapshot, lists recent jobs, and runs keyword search against the snapshot.
+- Keyword search now supports real visit-time intersection by combining SQLite FTS page matches with IndexedDB visit chunk stats for the requested time range.
 - Core IndexedDB helper APIs now exist for page upsert, page chunk writes/reads, visit bulk writes, visit chunk writes/reads, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
 - Chunk reader APIs can decode page chunks, locate a page by stable chunk page id, prefilter visit chunks by time range, and decode inclusive time-range visit rows from chunk storage.
 - Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, search snapshots, chunk page lookup, chunk visit decoding, and chunk time-range scans.
@@ -70,7 +71,7 @@ Compatibility requirements:
 ## Next Work
 
 1. Move long-running import/search jobs behind background-controlled lifecycle instead of keeping them page-owned.
-2. Implement keyword plus time-range search planning on top of FTS page ids and chunk visit time ranges.
-3. Implement HTU export from chunk storage.
-4. Add browser history sync after import/search storage paths are stable.
-5. Verify large-snapshot quota behavior in real extension contexts.
+2. Implement HTU export from chunk storage.
+3. Add browser history sync after import/search storage paths are stable.
+4. Verify large-snapshot quota behavior in real extension contexts.
+5. Move page-level search results toward visit-level result semantics when time filters are active.

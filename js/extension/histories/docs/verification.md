@@ -293,7 +293,7 @@ Command:
 Result:
 
 - Search engine core tests passed.
-- Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword search binding, page-level time filter binding, result row mapping, and snapshot rebuild cancellation through `AbortSignal`.
+- Covered behavior: keyword normalization, URL decode in search text, FTS MATCH quote escaping, page-chunk rebuild into FTS insert rows, snapshot metadata creation, progress stages, snapshot load, keyword-only search, keyword-plus-time-range intersection through chunk visit stats, result row mapping, and snapshot rebuild cancellation through `AbortSignal`.
 - The test uses an injected fake SQLite runtime; real SQLite WASM browser execution remains a separate verification step.
 
 ## Search Engine Browser SQLite WASM Smoke
@@ -305,7 +305,7 @@ Command:
 Result:
 
 - Real-browser SQLite WASM smoke test passed with local Chrome.
-- Covered behavior: loading `sqlite/sqlite3.js` from the bundled asset path, wasm resolution to `sqlite/sqlite3.wasm`, rebuilding FTS from IndexedDB page chunks, saving/loading the SQLite snapshot through IndexedDB, and executing trigram MATCH searches with and without page-level time filters.
+- Covered behavior: loading `sqlite/sqlite3.js` from the bundled asset path, wasm resolution to `sqlite/sqlite3.wasm`, rebuilding FTS from IndexedDB page chunks, saving/loading the SQLite snapshot through IndexedDB, and executing trigram MATCH searches with and without real visit-time-range intersection.
 - The current runtime adapter is validated for browser page contexts. Worker-context loading is still a separate task.
 
 ## Import Worker Browser Smoke
@@ -373,11 +373,12 @@ Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 5 passed.
-- Search engine core: 4 passed.
+- Search engine core: 5 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
 - Search rebuild worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
+- Keyword + time-range search is covered in both unit tests and browser SQLite WASM smoke.
 - TypeScript check passed.
 - Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js`, `sqlite/sqlite3.wasm`, and `search-rebuild-worker.js`.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.

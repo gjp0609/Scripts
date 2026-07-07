@@ -36,6 +36,12 @@ export type VisitChunkRow = {
   chunkIndex: number;
 };
 
+export type PageVisitStats = {
+  pageId: number;
+  matchedVisitCount: number;
+  matchedVisitTime: number;
+};
+
 export function openHistoriesDatabase(): Promise<HistoriesDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
@@ -379,6 +385,48 @@ export async function getVisitsFromChunksByTimeRange(
     }
 
     return results;
+  } finally {
+    db.close();
+  }
+}
+
+export async function getPageVisitStatsFromChunksByTimeRange(
+  query: VisitRangeQuery = {},
+  pageIds?: Iterable<number>
+): Promise<PageVisitStats[]> {
+  const db = await openHistoriesDatabase();
+
+  try {
+    const transaction = db.transaction('visitChunks', 'readonly');
+    const chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    const startTime = query.startTime ?? 0;
+    const endTime = query.endTime ?? MAX_TIME;
+    const pageIdFilter = pageIds ? new Set(pageIds) : undefined;
+    const stats = new Map<number, PageVisitStats>();
+
+    for (const chunk of chunks) {
+      for (let index = 0; index < chunk.count; index += 1) {
+        const pageId = chunk.pageIds[index];
+        const visitTime = chunk.visitTimes[index];
+        if (visitTime < startTime || visitTime > endTime) continue;
+        if (pageIdFilter && !pageIdFilter.has(pageId)) continue;
+
+        const existing = stats.get(pageId);
+        if (existing) {
+          existing.matchedVisitCount += 1;
+          existing.matchedVisitTime = Math.max(existing.matchedVisitTime, visitTime);
+          continue;
+        }
+
+        stats.set(pageId, {
+          pageId,
+          matchedVisitCount: 1,
+          matchedVisitTime: visitTime
+        });
+      }
+    }
+
+    return [...stats.values()];
   } finally {
     db.close();
   }

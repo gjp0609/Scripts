@@ -1,4 +1,5 @@
 import {
+  getPageVisitStatsFromChunksByTimeRange,
   getLatestSearchSnapshot,
   getPageChunks,
   putSearchSnapshot
@@ -8,6 +9,7 @@ import type { SearchStorage } from './search-engine';
 export function createIndexedDbSearchStorage(): SearchStorage {
   return {
     getPageChunks,
+    getPageVisitStatsFromTimeRange: getPageVisitStatsFromChunksByTimeRange,
     putSearchSnapshot,
     getLatestSearchSnapshot
   };

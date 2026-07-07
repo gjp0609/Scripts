@@ -119,18 +119,19 @@ Acceptance:
 Deliverables:
 
 - Search planner.
-- Keyword-only page search.
-- Time-only visit search.
-- Keyword plus time-range search.
+- Keyword-only page search. Done.
+- Time-only visit search. Chunk primitives done; dedicated UI/query mode still pending.
+- Keyword plus time-range search. Done at page-result level through FTS/page-id and visit-chunk intersection.
 - Transition filter support.
 - Domain/host filter support.
 
 Acceptance:
 
 - Time-only queries use IndexedDB visit-time indexes.
-- Keyword plus time range intersects FTS page ids with visit-time results.
+- Keyword plus time range intersects FTS page ids with visit-time results. Done.
 - Narrow time ranges avoid scanning all visits.
 - Result semantics are explicit: page-level when no visit filter is active, visit-level when time/transition filters are active.
+  Current implementation still returns page-level rows with `matchedVisitCount` and `matchedVisitTime` metadata when a time filter is active.
 
 ## Milestone 6: Browser History Sync
 

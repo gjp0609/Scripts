@@ -137,7 +137,7 @@ Acceptance:
 
 Deliverables:
 
-- Initial full sync using `startTime: 0`.
+- Initial full sync using `startTime: 0`. Done for record-backed databases.
 - New visit listener.
 - Title update handling.
 - Deletion handling.
@@ -146,10 +146,11 @@ Deliverables:
 
 Acceptance:
 
-- Full sync captures all available browser history.
-- New visits appear in search after sync.
-- Snapshot is not rewritten for every single visit.
-- Deletions are reflected in pages, visits, and FTS.
+- Full sync captures all available browser history. Done for the record-backed path.
+- Incremental sync resumes from the latest completed cursor. Done for the record-backed path.
+- New visits appear in search after sync. Only when the database is record-backed and the snapshot is rebuilt; mixed chunk/record merge is still pending.
+- Snapshot is not rewritten for every single visit. Pending event-driven sync path.
+- Deletions are reflected in pages, visits, and FTS. Pending.
 
 ## Milestone 7: HTU Export
 

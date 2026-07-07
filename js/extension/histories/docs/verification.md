@@ -296,6 +296,17 @@ Result:
 - HTU export core tests passed.
 - Covered behavior: rebuilding 4-column archived TSV from page chunks and visit chunks, preserving source-row order through `sourceIndex`, preserving visit-level titles, and generating HTU-style backup filenames.
 
+## Browser History Sync Core
+
+Command:
+
+- `node --test js\extension\histories\tests\history-sync.test.mjs`
+
+Result:
+
+- Browser history sync core tests passed.
+- Covered behavior: full sync over `history.search({ text: "", startTime: 0 })`, exact page aggregation by normalized URL, stable visit-id generation from browser visit metadata, incremental filtering against `startTime`, ignoring future-skewed visits, and next-sync cursor calculation.
+
 ## Export Worker Browser Smoke
 
 Command:
@@ -385,6 +396,7 @@ Commands:
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
 - `node --test js\extension\histories\tests\htu-export.test.mjs`
+- `node --test js\extension\histories\tests\history-sync.test.mjs`
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
@@ -399,12 +411,14 @@ Result:
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 5 passed.
 - HTU export core: 2 passed.
+- Browser history sync core: 2 passed.
 - Search engine core: 5 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
 - Export worker browser smoke: 1 passed.
 - Search rebuild worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
+- Record-backed fallback coverage now verifies synthesized page/visit chunks for empty non-import databases.
 - Keyword + time-range search is covered in both unit tests and browser SQLite WASM smoke.
 - TypeScript check passed.
 - Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js`, `sqlite/sqlite3.wasm`, and `search-rebuild-worker.js`.

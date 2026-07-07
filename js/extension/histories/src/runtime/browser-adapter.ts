@@ -9,6 +9,30 @@ type ManifestLike = {
   version?: string;
 };
 
+type HistorySearchQuery = {
+  text: string;
+  startTime: number;
+  maxResults: number;
+};
+
+type HistoryVisitsQuery = {
+  url: string;
+};
+
+type BrowserHistoryItem = {
+  url?: string;
+  title?: string;
+  lastVisitTime?: number;
+  visitCount?: number;
+};
+
+type BrowserHistoryVisit = {
+  visitId?: string | number;
+  visitTime?: number;
+  transition?: string;
+  referringVisitId?: string | number;
+};
+
 type BrowserLike = {
   runtime: {
     getManifest(): ManifestLike;
@@ -26,6 +50,10 @@ type BrowserLike = {
       ): void;
     };
     sendMessage(message: RuntimeMessage): Promise<unknown>;
+  };
+  history?: {
+    search(query: HistorySearchQuery): Promise<BrowserHistoryItem[]>;
+    getVisits(query: HistoryVisitsQuery): Promise<BrowserHistoryVisit[]>;
   };
   action?: {
     onClicked: {
@@ -80,6 +108,20 @@ export function createRuntimeAdapter() {
 
     async sendMessage<T = unknown>(message: RuntimeMessage): Promise<T> {
       return (await runtime.runtime.sendMessage(message)) as T;
+    },
+
+    async searchHistory(query: HistorySearchQuery): Promise<BrowserHistoryItem[]> {
+      if (!runtime.history) {
+        throw new Error('WebExtension history API is not available.');
+      }
+      return await runtime.history.search(query);
+    },
+
+    async getHistoryVisits(query: HistoryVisitsQuery): Promise<BrowserHistoryVisit[]> {
+      if (!runtime.history) {
+        throw new Error('WebExtension history API is not available.');
+      }
+      return await runtime.history.getVisits(query);
     }
   };
 }

@@ -29,6 +29,8 @@ const jobsList = document.querySelector<HTMLElement>('#jobsList');
 const importFile = document.querySelector<HTMLInputElement>('#importFile');
 const importButton = document.querySelector<HTMLButtonElement>('#importButton');
 const cancelImportButton = document.querySelector<HTMLButtonElement>('#cancelImportButton');
+const syncButton = document.querySelector<HTMLButtonElement>('#syncButton');
+const cancelSyncButton = document.querySelector<HTMLButtonElement>('#cancelSyncButton');
 const exportButton = document.querySelector<HTMLButtonElement>('#exportButton');
 const cancelExportButton = document.querySelector<HTMLButtonElement>('#cancelExportButton');
 const rebuildButton = document.querySelector<HTMLButtonElement>('#rebuildButton');
@@ -41,6 +43,7 @@ const results = document.querySelector<HTMLElement>('#results');
 
 const searchStorage = createIndexedDbSearchStorage();
 let importJobId: string | null = null;
+let syncJobId: string | null = null;
 let exportJobId: string | null = null;
 let rebuildJobId: string | null = null;
 let pollHandle: number | undefined;
@@ -86,6 +89,18 @@ importButton?.addEventListener('click', () => {
 
 cancelImportButton?.addEventListener('click', () => {
   if (importJobId) importClient.cancelJob(importJobId);
+});
+
+syncButton?.addEventListener('click', () => {
+  void startHistorySync();
+});
+
+cancelSyncButton?.addEventListener('click', () => {
+  if (!syncJobId) return;
+  void runtime.sendMessage({
+    type: 'histories:history-sync-cancel',
+    jobId: syncJobId
+  });
 });
 
 exportButton?.addEventListener('click', () => {
@@ -140,6 +155,29 @@ async function startImport(): Promise<void> {
     text
   });
   setJobStatus(`Importing ${file.name}`);
+  syncControls();
+  await refreshJobs();
+}
+
+async function startHistorySync(): Promise<void> {
+  if (syncJobId || importJobId || exportJobId || rebuildJobId) return;
+
+  const response = await runtime.sendMessage<{ jobId?: string; error?: string }>({
+    type: 'histories:history-sync-start',
+    mode: 'incremental'
+  });
+  if (response?.error) {
+    setResultSummary(response.error);
+    return;
+  }
+  if (!response?.jobId) {
+    setResultSummary('Unable to start history sync.');
+    return;
+  }
+
+  syncJobId = response.jobId;
+  setJobStatus('Syncing');
+  setResultSummary('Browser history sync started.');
   syncControls();
   await refreshJobs();
 }
@@ -284,6 +322,7 @@ async function refreshStatus(): Promise<void> {
 async function refreshJobs(): Promise<void> {
   try {
     const jobs = await listJobs(8);
+    reconcileActiveJobs(jobs);
     renderJobs(jobs);
   } catch (error) {
     console.error('[histories] refreshJobs failed', error);
@@ -354,18 +393,22 @@ function renderEmptyResults(text: string): void {
 
 function syncControls(): void {
   const importing = Boolean(importJobId);
+  const syncing = Boolean(syncJobId);
   const exporting = Boolean(exportJobId);
   const rebuilding = Boolean(rebuildJobId);
-  if (importButton) importButton.disabled = importing || rebuilding || exporting;
+  if (importButton) importButton.disabled = importing || syncing || rebuilding || exporting;
   if (cancelImportButton) cancelImportButton.disabled = !importing;
-  if (exportButton) exportButton.disabled = importing || rebuilding || exporting;
+  if (syncButton) syncButton.disabled = importing || syncing || rebuilding || exporting;
+  if (cancelSyncButton) cancelSyncButton.disabled = !syncing;
+  if (exportButton) exportButton.disabled = importing || syncing || rebuilding || exporting;
   if (cancelExportButton) cancelExportButton.disabled = !exporting;
-  if (rebuildButton) rebuildButton.disabled = importing || rebuilding || exporting;
+  if (rebuildButton) rebuildButton.disabled = importing || syncing || rebuilding || exporting;
   if (cancelRebuildButton) cancelRebuildButton.disabled = !rebuilding;
-  if (searchButton) searchButton.disabled = rebuilding || exporting;
+  if (searchButton) searchButton.disabled = syncing || rebuilding || exporting;
 }
 
 function activeJobLabel(latestJob?: JobRecord): string {
+  if (syncJobId) return 'Syncing';
   if (exportJobId) return 'Exporting';
   if (rebuildJobId) return 'Rebuilding';
   if (importJobId) return 'Importing';
@@ -397,6 +440,7 @@ function formatJobProgress(job: JobRecord): string {
   const progress = job.progress as
     | {
         stage?: string;
+        items?: number;
         rows?: number;
         pages?: number;
         visits?: number;
@@ -412,6 +456,9 @@ function formatJobProgress(job: JobRecord): string {
   if (!progress) return 'No progress';
   if (job.type === 'search-rebuild') {
     return `${progress.stage ?? 'unknown'} ${progress.writtenPages ?? progress.pageCount ?? 0}/${progress.pages ?? progress.pageCount ?? 0}`;
+  }
+  if (job.type === 'history-sync') {
+    return `${progress.stage ?? 'unknown'} items=${progress.items ?? 0} pages=${progress.writtenPages ?? 0}/${progress.pages ?? 0} visits=${progress.writtenVisits ?? 0}/${progress.visits ?? 0}`;
   }
   if (job.type === 'htu-export') {
     return `${progress.stage ?? 'unknown'} pages=${progress.pages ?? 0} visits=${progress.writtenRows ?? progress.visits ?? 0}/${progress.visits ?? 0} bytes=${progress.bytes ?? 0}`;
@@ -473,4 +520,33 @@ function downloadTextFile(filename: string, text: string): void {
   link.download = filename;
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function reconcileActiveJobs(jobs: JobRecord[]): void {
+  reconcileJob('history-sync', syncJobId, jobs, (job) => {
+    syncJobId = null;
+    if (job.status === 'complete') {
+      void refreshStatus();
+      setResultSummary('Browser history sync completed.');
+    } else if (job.status === 'failed') {
+      setResultSummary(job.error ?? 'Browser history sync failed.');
+    } else if (job.status === 'cancelled') {
+      setResultSummary('Browser history sync cancelled.');
+    }
+  });
+
+  syncControls();
+}
+
+function reconcileJob(
+  type: JobRecord['type'],
+  jobId: string | null,
+  jobs: JobRecord[],
+  onFinished: (job: JobRecord) => void
+): void {
+  if (!jobId) return;
+  const job = jobs.find((item) => item.id === jobId && item.type === type);
+  if (!job) return;
+  if (job.status === 'queued' || job.status === 'running') return;
+  onFinished(job);
 }

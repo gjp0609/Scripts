@@ -219,9 +219,12 @@ export async function getPageChunks(): Promise<PageChunkRecord[]> {
 
   try {
     const transaction = db.transaction('pageChunks', 'readonly');
-    return await readCursor<PageChunkRecord>(transaction.objectStore('pageChunks'), undefined, {
+    const chunks = await readCursor<PageChunkRecord>(transaction.objectStore('pageChunks'), undefined, {
       limit: Number.POSITIVE_INFINITY
     });
+    if (chunks.length > 0) return chunks;
+
+    return await synthesizePageChunksFromRecords(db);
   } finally {
     db.close();
   }
@@ -338,9 +341,12 @@ export async function getVisitChunks(): Promise<VisitChunkRecord[]> {
 
   try {
     const transaction = db.transaction('visitChunks', 'readonly');
-    return await readCursor<VisitChunkRecord>(transaction.objectStore('visitChunks'), undefined, {
+    const chunks = await readCursor<VisitChunkRecord>(transaction.objectStore('visitChunks'), undefined, {
       limit: Number.POSITIVE_INFINITY
     });
+    if (chunks.length > 0) return chunks;
+
+    return await synthesizeVisitChunksFromRecords(db);
   } finally {
     db.close();
   }
@@ -671,6 +677,60 @@ function getVisitChunkSummary(db: IDBDatabase): Promise<{ chunks: number; visits
   });
 }
 
+async function synthesizePageChunksFromRecords(db: IDBDatabase): Promise<PageChunkRecord[]> {
+  const pages = await readAllPages(db);
+  return pages.map((page) => ({
+    id: `page-record:${page.id}`,
+    firstPageId: page.id,
+    count: 1,
+    urls: [page.url],
+    normalizedUrls: [page.normalizedUrl],
+    titles: [page.title],
+    visitCounts: new Uint32Array([page.visitCount]),
+    lastVisitTimes: new Float64Array([page.lastVisitTime])
+  }));
+}
+
+async function synthesizeVisitChunksFromRecords(db: IDBDatabase): Promise<VisitChunkRecord[]> {
+  const [visits, pages] = await Promise.all([readAllVisits(db), readAllPages(db)]);
+  if (visits.length === 0) return [];
+
+  const pageTitles = new Map(pages.map((page) => [page.id, page.title]));
+  visits.sort(
+    (left, right) =>
+      left.visitTime - right.visitTime ||
+      left.pageId - right.pageId ||
+      String(left.id).localeCompare(String(right.id))
+  );
+
+  return visits.map((visit, index) => ({
+    id: `visit-record:${index}`,
+    minVisitTime: visit.visitTime,
+    maxVisitTime: visit.visitTime,
+    count: 1,
+    pageIds: new Uint32Array([visit.pageId]),
+    visitTimes: new Float64Array([visit.visitTime]),
+    transitionCodes: new Uint8Array([encodeTransition(visit.transition)]),
+    sourceIndexes: new Uint32Array([index]),
+    titles: [pageTitles.get(visit.pageId) ?? '']
+  }));
+}
+
+async function readAllPages(db: IDBDatabase): Promise<PageRecord[]> {
+  const transaction = db.transaction('pages', 'readonly');
+  return await readCursor<PageRecord>(transaction.objectStore('pages'), undefined, {
+    limit: Number.POSITIVE_INFINITY
+  });
+}
+
+async function readAllVisits(db: IDBDatabase): Promise<VisitRecord[]> {
+  const transaction = db.transaction('visits', 'readonly');
+  const index = transaction.objectStore('visits').index('visitTime');
+  return await readCursor<VisitRecord>(index, undefined, {
+    limit: Number.POSITIVE_INFINITY
+  });
+}
+
 function requestToPromise<T = unknown>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -804,6 +864,35 @@ function decodeTransition(code: number): string {
       return 'keyword_generated';
     default:
       return 'unknown';
+  }
+}
+
+function encodeTransition(transition: string): number {
+  switch (transition) {
+    case 'link':
+      return 0;
+    case 'typed':
+      return 1;
+    case 'auto_bookmark':
+      return 2;
+    case 'auto_subframe':
+      return 3;
+    case 'manual_subframe':
+      return 4;
+    case 'generated':
+      return 5;
+    case 'auto_toplevel':
+      return 6;
+    case 'form_submit':
+      return 7;
+    case 'reload':
+      return 8;
+    case 'keyword':
+      return 9;
+    case 'keyword_generated':
+      return 10;
+    default:
+      return 255;
   }
 }
 

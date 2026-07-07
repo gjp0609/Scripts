@@ -74,7 +74,19 @@ async function startJob(jobId) {
         writtenPages: 0
       });
 
-      const pageChunks = await getAllFromStore('pageChunks');
+      let pageChunks = await getAllFromStore('pageChunks');
+      if (!pageChunks.length) {
+        pageChunks = (await getAllFromStore('pages')).map((page) => ({
+          id: `page-record:${page.id}`,
+          firstPageId: page.id,
+          count: 1,
+          urls: [page.url],
+          normalizedUrls: [page.normalizedUrl],
+          titles: [page.title],
+          visitCounts: new Uint32Array([page.visitCount || 0]),
+          lastVisitTimes: new Float64Array([page.lastVisitTime || 0])
+        }));
+      }
       throwIfCancelled(job);
       const totalPages = pageChunks.reduce((total, chunk) => total + chunk.count, 0);
       const statement = db.prepare(

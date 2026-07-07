@@ -120,6 +120,22 @@ window.runHistoriesStorageSmoke = async () => {
     'reverse limited scan should read newest visits first'
   );
 
+  const fallbackPageChunks = await getPageChunks();
+  ensure(fallbackPageChunks.length === 2, 'record-backed page fallback should synthesize chunks');
+  ensureIds(
+    decodePageChunkRows(fallbackPageChunks[0]).map((row) => row.id),
+    [page.id],
+    'record-backed page fallback should preserve page ids'
+  );
+
+  const fallbackVisitChunks = await getVisitChunks();
+  ensure(fallbackVisitChunks.length === 4, 'record-backed visit fallback should synthesize chunks');
+  ensureIds(
+    decodeVisitChunkRows(fallbackVisitChunks[0]).map((row) => row.visitTime),
+    [1000],
+    'record-backed visit fallback should preserve visit times'
+  );
+
   await putJob({
     id: 'job-1',
     type: 'htu-import',

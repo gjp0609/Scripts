@@ -1,4 +1,5 @@
 import './styles.css';
+import { exportHtuArchivedTsv, makeHtuBackupFilename } from '../../src/export/htu-export';
 import { createRuntimeAdapter } from '../../src/runtime/browser-adapter';
 import {
   getDatabaseSummary,
@@ -27,6 +28,7 @@ const jobsList = document.querySelector<HTMLElement>('#jobsList');
 const importFile = document.querySelector<HTMLInputElement>('#importFile');
 const importButton = document.querySelector<HTMLButtonElement>('#importButton');
 const cancelImportButton = document.querySelector<HTMLButtonElement>('#cancelImportButton');
+const exportButton = document.querySelector<HTMLButtonElement>('#exportButton');
 const rebuildButton = document.querySelector<HTMLButtonElement>('#rebuildButton');
 const cancelRebuildButton = document.querySelector<HTMLButtonElement>('#cancelRebuildButton');
 const searchButton = document.querySelector<HTMLButtonElement>('#searchButton');
@@ -38,6 +40,7 @@ const results = document.querySelector<HTMLElement>('#results');
 const searchStorage = createIndexedDbSearchStorage();
 let importJobId: string | null = null;
 let rebuildJobId: string | null = null;
+let exporting = false;
 let pollHandle: number | undefined;
 let searchRuntimePromise: ReturnType<typeof loadSqliteWasmSearchRuntime> | undefined;
 let searchReader: SearchEngine | null = null;
@@ -81,6 +84,10 @@ importButton?.addEventListener('click', () => {
 
 cancelImportButton?.addEventListener('click', () => {
   if (importJobId) importClient.cancelJob(importJobId);
+});
+
+exportButton?.addEventListener('click', () => {
+  void startExport();
 });
 
 rebuildButton?.addEventListener('click', () => {
@@ -136,6 +143,27 @@ async function startSearchRebuild(): Promise<void> {
   syncControls();
   setJobStatus('Rebuilding snapshot');
   await refreshJobs();
+}
+
+async function startExport(): Promise<void> {
+  if (exporting || importJobId || rebuildJobId) return;
+
+  exporting = true;
+  syncControls();
+  setJobStatus('Exporting');
+  setResultSummary('Building HTU backup export...');
+
+  try {
+    const text = await exportHtuArchivedTsv();
+    downloadTextFile(makeHtuBackupFilename(), text);
+    setResultSummary(`Exported ${text.length.toLocaleString('en-US')} bytes.`);
+  } catch (error) {
+    setResultSummary(error instanceof Error ? error.message : String(error));
+  } finally {
+    exporting = false;
+    setJobStatus(activeJobLabel());
+    syncControls();
+  }
 }
 
 async function runSearch(): Promise<void> {
@@ -305,14 +333,16 @@ function renderEmptyResults(text: string): void {
 function syncControls(): void {
   const importing = Boolean(importJobId);
   const rebuilding = Boolean(rebuildJobId);
-  if (importButton) importButton.disabled = importing || rebuilding;
+  if (importButton) importButton.disabled = importing || rebuilding || exporting;
   if (cancelImportButton) cancelImportButton.disabled = !importing;
-  if (rebuildButton) rebuildButton.disabled = importing || rebuilding;
+  if (exportButton) exportButton.disabled = importing || rebuilding || exporting;
+  if (rebuildButton) rebuildButton.disabled = importing || rebuilding || exporting;
   if (cancelRebuildButton) cancelRebuildButton.disabled = !rebuilding;
-  if (searchButton) searchButton.disabled = rebuilding;
+  if (searchButton) searchButton.disabled = rebuilding || exporting;
 }
 
 function activeJobLabel(latestJob?: JobRecord): string {
+  if (exporting) return 'Exporting';
   if (rebuildJobId) return 'Rebuilding';
   if (importJobId) return 'Importing';
   return latestJob ? latestJob.status : 'Idle';
@@ -404,4 +434,14 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
+}
+
+function downloadTextFile(filename: string, text: string): void {
+  const blob = new Blob([text], { type: 'text/tab-separated-values;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

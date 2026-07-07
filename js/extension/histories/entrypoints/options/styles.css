@@ -204,7 +204,7 @@ input {
 
 .task-controls {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) repeat(4, auto);
+  grid-template-columns: minmax(260px, 1fr) repeat(5, auto);
   gap: 12px;
   align-items: end;
   margin-top: 14px;
@@ -217,6 +217,7 @@ input {
 
 #importButton,
 #cancelImportButton,
+#exportButton,
 #rebuildButton,
 #cancelRebuildButton {
   height: 40px;
@@ -228,6 +229,7 @@ input {
 }
 
 #importButton,
+#exportButton,
 #rebuildButton {
   background: var(--accent);
   color: white;
@@ -240,6 +242,7 @@ input {
 }
 
 #importButton:hover,
+#exportButton:hover,
 #rebuildButton:hover {
   background: var(--accent-dark);
 }
@@ -247,6 +250,7 @@ input {
 #cancelImportButton:disabled,
 #cancelRebuildButton:disabled,
 #importButton:disabled,
+#exportButton:disabled,
 #rebuildButton:disabled,
 #searchButton:disabled {
   cursor: not-allowed;

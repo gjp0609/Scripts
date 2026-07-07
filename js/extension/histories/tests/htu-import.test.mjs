@@ -37,6 +37,7 @@ test('plans HTU rows into aggregated pages and visit drafts', async () => {
     normalizedUrl: 'https://example.com/a',
     visitTime: 1000,
     transition: 'link',
+    title: 'Old title',
     sourceIndex: 0
   });
 });
@@ -54,9 +55,27 @@ test('builds time-sorted typed-array visit chunks', async () => {
   ]);
   const chunks = buildVisitChunks(
     [
-      { normalizedUrl: 'https://b.example/', visitTime: 3000, transition: 'reload', sourceIndex: 2 },
-      { normalizedUrl: 'https://a.example/', visitTime: 1000, transition: 'link', sourceIndex: 0 },
-      { normalizedUrl: 'https://a.example/', visitTime: 2000, transition: 'typed', sourceIndex: 1 }
+      {
+        normalizedUrl: 'https://b.example/',
+        visitTime: 3000,
+        transition: 'reload',
+        title: 'B',
+        sourceIndex: 2
+      },
+      {
+        normalizedUrl: 'https://a.example/',
+        visitTime: 1000,
+        transition: 'link',
+        title: 'A1',
+        sourceIndex: 0
+      },
+      {
+        normalizedUrl: 'https://a.example/',
+        visitTime: 2000,
+        transition: 'typed',
+        title: 'A2',
+        sourceIndex: 1
+      }
     ],
     pageIds,
     2
@@ -69,6 +88,7 @@ test('builds time-sorted typed-array visit chunks', async () => {
   assert.deepEqual([...chunks[0].visitTimes], [1000, 2000]);
   assert.deepEqual([...chunks[0].transitionCodes], [0, 1]);
   assert.deepEqual([...chunks[0].sourceIndexes], [0, 1]);
+  assert.deepEqual(chunks[0].titles, ['A1', 'A2']);
   assert.equal(chunks[1].minVisitTime, 3000);
 });
 

@@ -36,12 +36,15 @@ Compatibility requirements:
 - The options page can message the background/runtime layer.
 - The options page now opens the IndexedDB database, reports basic store counts, imports HTU TSV files, rebuilds the search snapshot, lists recent jobs, and runs keyword search against the snapshot.
 - Keyword search now supports real visit-time intersection by combining SQLite FTS page matches with IndexedDB visit chunk stats for the requested time range.
+- The options page now includes a direct 4-column HTU backup export button backed by chunk storage.
 - Core IndexedDB helper APIs now exist for page upsert, page chunk writes/reads, visit bulk writes, visit chunk writes/reads, visit time-range scans, page/time scans, transition/time scans, jobs, and search snapshots.
 - Chunk reader APIs can decode page chunks, locate a page by stable chunk page id, prefilter visit chunks by time range, and decode inclusive time-range visit rows from chunk storage.
+- Visit chunks now preserve visit-level titles from HTU imports so archived export can reconstruct per-visit titles instead of collapsing to page-level metadata.
 - Browser-level IndexedDB smoke test covers page upsert, visit writes, `visit_time`, `[page_id, visit_time]`, `[transition, visit_time]`, jobs, search snapshots, chunk page lookup, chunk visit decoding, and chunk time-range scans.
 - HTU import core now parses HTU TSV text, aggregates pages by exact HTU URL, writes page chunks, writes visit chunks, and reports import progress.
 - Browser-level smoke test covers a small HTU import into IndexedDB.
 - Browser-level full backup import benchmark passed against the external HTU file: `887,561` rows, `384,065` pages, `887,561` visits, about `2.6s` import time and `3.2s` total browser-side time after fetch.
+- HTU archived export core can now rebuild a 4-column backup TSV from page chunks plus visit chunks and preserve imported row order by `sourceIndex`.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
@@ -71,7 +74,8 @@ Compatibility requirements:
 ## Next Work
 
 1. Move long-running import/search jobs behind background-controlled lifecycle instead of keeping them page-owned.
-2. Implement HTU export from chunk storage.
-3. Add browser history sync after import/search storage paths are stable.
+2. Move HTU export behind a worker/background-controlled path so large backups do not build on the options page thread.
+3. Add browser history sync after import/search/export storage paths are stable.
 4. Verify large-snapshot quota behavior in real extension contexts.
 5. Move page-level search results toward visit-level result semantics when time filters are active.
+6. Add exact export metadata for non-HTU-originated visits if browser-sync rows must preserve visit-level titles too.

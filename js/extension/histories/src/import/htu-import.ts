@@ -27,6 +27,7 @@ export type HtuImportVisitDraft = {
   normalizedUrl: string;
   visitTime: number;
   transition: string;
+  title: string | null;
   sourceIndex: number;
 };
 
@@ -212,6 +213,7 @@ export function planHtuImport(rows: HtuImportRow[]): HtuImportPlan {
       normalizedUrl,
       visitTime: row.visitTime,
       transition: row.transition,
+      title: row.title,
       sourceIndex
     });
   });
@@ -246,6 +248,7 @@ export function buildVisitChunks(
       pageId,
       visitTime: visit.visitTime,
       transitionCode: encodeTransition(visit.transition),
+      title: visit.title ?? '',
       sourceIndex: visit.sourceIndex
     };
   });
@@ -261,12 +264,14 @@ export function buildVisitChunks(
     const visitTimeArray = new Float64Array(rowsInChunk.length);
     const transitionCodeArray = new Uint8Array(rowsInChunk.length);
     const sourceIndexArray = new Uint32Array(rowsInChunk.length);
+    const titles = new Array<string>(rowsInChunk.length);
 
     rowsInChunk.forEach((row, index) => {
       pageIdArray[index] = row.pageId;
       visitTimeArray[index] = row.visitTime;
       transitionCodeArray[index] = row.transitionCode;
       sourceIndexArray[index] = row.sourceIndex;
+      titles[index] = row.title;
     });
 
     chunks.push({
@@ -277,7 +282,8 @@ export function buildVisitChunks(
       pageIds: pageIdArray,
       visitTimes: visitTimeArray,
       transitionCodes: transitionCodeArray,
-      sourceIndexes: sourceIndexArray
+      sourceIndexes: sourceIndexArray,
+      titles
     });
   }
 

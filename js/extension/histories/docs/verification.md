@@ -283,6 +283,18 @@ Result:
 
 - Import planner and chunk builder tests passed.
 - Covered behavior: exact-URL page aggregation for HTU compatibility, latest-page title selection for identical URLs, visit draft creation, page chunk construction, time-sorted typed-array visit chunks, and import cancellation through `AbortSignal`.
+- Visit chunks now also preserve visit-level titles for later archived export.
+
+## HTU Export Core
+
+Command:
+
+- `node --test js\extension\histories\tests\htu-export.test.mjs`
+
+Result:
+
+- HTU export core tests passed.
+- Covered behavior: rebuilding 4-column archived TSV from page chunks and visit chunks, preserving source-row order through `sourceIndex`, preserving visit-level titles, and generating HTU-style backup filenames.
 
 ## Search Engine Core
 
@@ -361,6 +373,7 @@ Commands:
 - `npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json`
 - `node --test js\extension\histories\tests\htu-tsv.test.mjs`
 - `node --test js\extension\histories\tests\htu-import.test.mjs`
+- `node --test js\extension\histories\tests\htu-export.test.mjs`
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
@@ -373,6 +386,7 @@ Result:
 
 - Repository fixtures: 6 passed, 1 skipped when external backup is not configured.
 - HTU import planner/chunks: 5 passed.
+- HTU export core: 2 passed.
 - Search engine core: 5 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
@@ -383,6 +397,7 @@ Result:
 - Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js`, `sqlite/sqlite3.wasm`, and `search-rebuild-worker.js`.
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 - External full backup latest run: 7 passed, full backup round-trip completed in about `2.37s`.
+- External full backup latest rerun after export changes: 7 passed, full backup round-trip completed in about `2.41s`.
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
 - External full browser import latest run: `887,561` rows, `384,065` pages, `887,561` visits, `763 ms` fetch, `2,469 ms` import, `3,232 ms` total browser-side after page load.
 

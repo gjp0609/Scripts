@@ -53,6 +53,7 @@ export type VisitChunkRecord = {
   visitTimes: Float64Array;
   transitionCodes: Uint8Array;
   sourceIndexes: Uint32Array;
+  titles?: string[];
 };
 
 export type SearchSnapshotRecord = {

@@ -25,6 +25,7 @@ import {
 } from '../src/storage/database';
 import { DATABASE_NAME } from '../src/storage/schema';
 import { importHtuText } from '../src/import/htu-import';
+import { exportHtuArchivedTsv } from '../src/export/htu-export';
 
 type SmokeResult = {
   pageCount: number;
@@ -211,6 +212,11 @@ async function runImportSmoke() {
     [1000, 2000],
     'visit chunk rows should decode in time order'
   );
+  ensureIds(
+    visitChunks[0].titles ?? [],
+    ['Old imported title', 'Other imported title'],
+    'visit chunks should preserve visit-level titles for export'
+  );
 
   const overlappingVisitChunks = await getVisitChunksByTimeRange({ startTime: 1500, endTime: 2500 });
   ensure(overlappingVisitChunks.length === 1, 'time range should prefilter overlapping visit chunks');
@@ -251,8 +257,7 @@ async function runImportSmoke() {
   ensure(result.pages === 2, 'import result pages should match aggregated pages');
   ensure(result.visits === 3, 'import result visits should match planned visits');
   ensure(result.writtenVisits === 3, 'import result written visits should match storage writes');
-
-  await deleteDatabase(DATABASE_NAME);
+  ensure(await exportHtuArchivedTsv() === source, 'archived export should round-trip imported HTU backup');
 
   return {
     importRows: result.rows,

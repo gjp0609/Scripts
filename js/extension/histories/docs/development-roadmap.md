@@ -155,7 +155,7 @@ Acceptance:
 
 Deliverables:
 
-- 4-column archived/backup export.
+- 4-column archived/backup export. Core chunk-based path done; worker/background path still pending.
 - 8-column analysis/search/trends export.
 - Export filters.
 - Download handling for Chrome and Firefox.
@@ -163,8 +163,9 @@ Deliverables:
 
 Acceptance:
 
-- 4-column export can be imported by HTU.
-- Export format preserves CRLF, `U` timestamps, transition ids, and empty title behavior.
+- 4-column export can be imported by HTU. Core implementation done.
+- Export format preserves CRLF, `U` timestamps, transition ids, and empty title behavior. Done for archived export core.
+- Imported HTU visit titles are preserved at visit level so archived export does not degrade to page-level titles. Done.
 - External backup round-trip hash test remains green where no data changes are applied.
 
 ## Milestone 8: Search UI

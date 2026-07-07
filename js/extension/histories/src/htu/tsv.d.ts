@@ -18,6 +18,13 @@ export type HtuParseError = {
   errorMsg: string;
 };
 
+export type HtuArchivedRow = {
+  url: string | null;
+  visitTime: number | null;
+  transition: string | null;
+  title: string | null;
+};
+
 export function convertToUnixEpoch(windowsEpochVisitTime: string | number): number;
 export function convertToWindowsEpoch(unixEpochVisitTime: string | number): number;
 export function convertTransitionToText(transition: string | number): string;
@@ -27,5 +34,4 @@ export function parseHtuTsv(text: string): {
   rows: HtuParsedRow[];
   errors: HtuParseError[];
 };
-export function serializeArchivedRows(rows: HtuParsedRow[]): string;
-
+export function serializeArchivedRows(rows: HtuArchivedRow[]): string;

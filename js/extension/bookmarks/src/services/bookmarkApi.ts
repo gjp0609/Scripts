@@ -71,6 +71,11 @@ export async function getNode(id: string): Promise<BrowserBookmarkNode | undefin
   return nodes[0];
 }
 
+export async function getSubTree(id: string): Promise<BrowserBookmarkNode | undefined> {
+  const nodes = (await browser.bookmarks.getSubTree(id)) as BrowserBookmarkNode[];
+  return nodes[0];
+}
+
 export function getDefaultBookmarkRoot(tree: BrowserBookmarkNode[]): BrowserBookmarkNode | undefined {
   const rootChildren = tree[0]?.children ?? [];
   return (

@@ -41,6 +41,24 @@ export async function removeExtra(bookmarkId: string): Promise<void> {
   await setLocal(EXTRAS_KEY, next);
 }
 
+export async function removeExtras(bookmarkIds: string[]): Promise<void> {
+  if (!bookmarkIds.length) return;
+  const extras = await getExtras();
+  let changed = false;
+  const next = { ...extras };
+
+  bookmarkIds.forEach((bookmarkId) => {
+    if (bookmarkId in next) {
+      delete next[bookmarkId];
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    await setLocal(EXTRAS_KEY, next);
+  }
+}
+
 export async function replaceExtras(extras: Record<string, BookmarkExtra>): Promise<void> {
   await setLocal(EXTRAS_KEY, extras);
 }

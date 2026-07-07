@@ -281,23 +281,31 @@ button {
 .folder-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.folder-head-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
   padding: 8px 12px;
   color: var(--color-text-primary);
   background: transparent;
 }
 
-.folder-head svg {
+.folder-head-main svg {
   color: var(--color-text-tertiary);
 }
 
-.folder-head strong {
+.folder-head-main strong {
   font-size: 13px;
 }
 
-.folder-head span {
+.folder-head-main span {
   padding: 2px 8px;
   border-radius: var(--radius-full);
   color: var(--color-text-tertiary);
@@ -305,8 +313,29 @@ button {
   font-size: 11px;
 }
 
-.folder-head .collapsed {
+.folder-head-main .collapsed {
   transform: rotate(90deg);
+}
+
+.folder-head-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.folder-head-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-tertiary);
+  background: transparent;
+}
+
+.folder-head-actions button:hover {
+  background: var(--color-bg-hover);
 }
 
 .bookmark-grid {
@@ -679,6 +708,81 @@ button {
 
 .folder-modal {
   width: min(400px, calc(100vw - 32px));
+}
+
+.confirm-modal {
+  width: min(400px, calc(100vw - 32px));
+}
+
+.confirm-modal .modal-accent {
+  display: none;
+}
+
+.confirm-modal .modal-head {
+  padding: 18px 22px 14px;
+  border-bottom: 0;
+}
+
+.confirm-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 11px;
+  color: #d92d20;
+  background: linear-gradient(180deg, #fff6f5 0%, #fef1ef 100%);
+  box-shadow: inset 0 0 0 1px rgba(217, 45, 32, 0.08);
+}
+
+.confirm-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.confirm-copy p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.confirm-title h2 {
+  margin: 0;
+}
+
+.confirm-body {
+  margin: 0 20px 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(217, 45, 32, 0.16);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff8f7 0%, #fffdfc 100%);
+}
+
+.confirm-body p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.confirm-modal .modal-foot {
+  margin: 0;
+  padding: 14px 20px 16px;
+}
+
+.danger-pill {
+  background: #d92d20;
+  border-color: #d92d20;
+  box-shadow: 0 8px 16px rgba(217, 45, 32, 0.16);
 }
 
 .import-export-modal {

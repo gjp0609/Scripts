@@ -339,6 +339,7 @@ export function useBookmarkWorkspace() {
     toggleFolder,
     upsertFolder,
     upsertBookmark,
+    removeFolder,
     removeBookmark,
     moveBookmark
   };

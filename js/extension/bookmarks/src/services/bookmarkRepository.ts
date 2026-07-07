@@ -1,6 +1,6 @@
 import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
-import { createBookmark, getDefaultBookmarkRoot, getTree, moveNode, removeBookmark, updateBookmark } from './bookmarkApi';
-import { cleanupExtras, getExtras, removeExtra, saveExtra } from './extraStore';
+import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
+import { cleanupExtras, getExtras, removeExtra, removeExtras, saveExtra } from './extraStore';
 import { getFaviconSources } from './favicon';
 
 const accents = ['#4F6EF7', '#06B6D4', '#22C55E', '#E8853D', '#EF4444', '#8B5CF6', '#F59E0B'];
@@ -75,6 +75,14 @@ export async function addCurrentBookmark(parentId: string, title: string, url: s
   return createBookmark({ parentId, title, url });
 }
 
+export async function saveFolderDetails(input: { id?: string; parentId: string; title: string }): Promise<BrowserBookmarkNode> {
+  if (input.id) {
+    return updateBookmark(input.id, { title: input.title });
+  }
+
+  return createBookmark({ parentId: input.parentId, title: input.title });
+}
+
 export async function saveBookmarkDetails(input: {
   id?: string;
   parentId: string;
@@ -114,6 +122,28 @@ export async function saveBookmarkDetails(input: {
 export async function deleteBookmarkDetails(bookmarkId: string): Promise<void> {
   await removeBookmark(bookmarkId);
   await removeExtra(bookmarkId);
+}
+
+function collectBookmarkIds(node?: BrowserBookmarkNode): string[] {
+  if (!node) return [];
+  const ids: string[] = [];
+
+  if (node.url) {
+    ids.push(node.id);
+  }
+
+  node.children?.forEach((child) => {
+    ids.push(...collectBookmarkIds(child));
+  });
+
+  return ids;
+}
+
+export async function deleteFolderDetails(folderId: string): Promise<void> {
+  const subtree = await getSubTree(folderId);
+  const bookmarkIds = collectBookmarkIds(subtree);
+  await removeFolder(folderId);
+  await removeExtras(bookmarkIds);
 }
 
 export type BookmarkMoveSnapshot = {

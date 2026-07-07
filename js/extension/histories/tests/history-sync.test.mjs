@@ -172,6 +172,137 @@ test('filters getVisits results by startTime and ignores future-skewed visits', 
   assert.equal(result.nextStartTime, 2501);
 });
 
+test('merges browser sync plan into existing chunk-backed history without duplicating imported visits', async () => {
+  const { mergeHistorySyncPlanIntoChunks } = await loadSyncModule();
+  const merged = await mergeHistorySyncPlanIntoChunks({
+    plan: {
+      items: 2,
+      startTime: 0,
+      maxVisitTime: 4000,
+      pages: [
+        {
+          url: 'https://example.com/a',
+          normalizedUrl: 'https://example.com/a',
+          title: 'A latest',
+          visitCount: 3,
+          lastVisitTime: 4000
+        },
+        {
+          url: 'https://example.net/new',
+          normalizedUrl: 'https://example.net/new',
+          title: 'New page',
+          visitCount: 1,
+          lastVisitTime: 3500
+        }
+      ],
+      visits: [
+        {
+          id: 'sync:https://example.com/a:3000:na:na:typed:0',
+          normalizedUrl: 'https://example.com/a',
+          visitTime: 3000,
+          transition: 'typed',
+          title: 'A imported'
+        },
+        {
+          id: 'sync:https://example.com/a:4000:na:na:reload:1',
+          normalizedUrl: 'https://example.com/a',
+          visitTime: 4000,
+          transition: 'reload',
+          title: 'A latest'
+        },
+        {
+          id: 'sync:https://example.net/new:3500:na:na:link:0',
+          normalizedUrl: 'https://example.net/new',
+          visitTime: 3500,
+          transition: 'link',
+          title: 'New page'
+        }
+      ]
+    },
+    existingPages: [
+      {
+        id: 1,
+        url: 'https://example.com/a',
+        normalizedUrl: 'https://example.com/a',
+        title: 'A imported',
+        visitCount: 2,
+        lastVisitTime: 3000,
+        chunkId: 'page-chunk:0',
+        chunkIndex: 0
+      },
+      {
+        id: 2,
+        url: 'https://example.org/b',
+        normalizedUrl: 'https://example.org/b',
+        title: 'B imported',
+        visitCount: 1,
+        lastVisitTime: 2000,
+        chunkId: 'page-chunk:0',
+        chunkIndex: 1
+      }
+    ],
+    existingVisits: [
+      {
+        id: 'chunk:1:1000:0:0',
+        pageId: 1,
+        normalizedUrl: 'https://example.com/a',
+        visitTime: 1000,
+        transition: 'link',
+        title: 'A imported',
+        sourceIndex: 0,
+        chunkId: 'visit-chunk:0',
+        chunkIndex: 0
+      },
+      {
+        id: 'chunk:2:2000:8:1',
+        pageId: 2,
+        normalizedUrl: 'https://example.org/b',
+        visitTime: 2000,
+        transition: 'reload',
+        title: 'B imported',
+        sourceIndex: 1,
+        chunkId: 'visit-chunk:0',
+        chunkIndex: 1
+      },
+      {
+        id: 'chunk:1:3000:1:2',
+        pageId: 1,
+        normalizedUrl: 'https://example.com/a',
+        visitTime: 3000,
+        transition: 'typed',
+        title: 'A imported',
+        sourceIndex: 2,
+        chunkId: 'visit-chunk:0',
+        chunkIndex: 2
+      }
+    ],
+    pageChunkSize: 10,
+    visitChunkSize: 10
+  });
+
+  assert.equal(merged.pages, 3);
+  assert.equal(merged.visits, 5);
+  assert.equal(merged.nextStartTime, 4001);
+  assert.equal(merged.pageChunks.length, 1);
+  assert.equal(merged.visitChunks.length, 1);
+  assert.deepEqual(merged.pageChunks[0].urls, [
+    'https://example.com/a',
+    'https://example.org/b',
+    'https://example.net/new'
+  ]);
+  assert.deepEqual([...merged.pageChunks[0].visitCounts], [3, 1, 1]);
+  assert.deepEqual([...merged.visitChunks[0].pageIds], [1, 2, 1, 3, 1]);
+  assert.deepEqual([...merged.visitChunks[0].visitTimes], [1000, 2000, 3000, 3500, 4000]);
+  assert.deepEqual([...merged.visitChunks[0].sourceIndexes], [0, 1, 2, 3, 4]);
+  assert.deepEqual(merged.visitChunks[0].titles, [
+    'A imported',
+    'B imported',
+    'A imported',
+    'New page',
+    'A latest'
+  ]);
+});
+
 let loadedModule;
 let tempDir;
 

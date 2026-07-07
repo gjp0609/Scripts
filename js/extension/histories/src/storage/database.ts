@@ -359,7 +359,10 @@ export async function getVisitChunksByTimeRange(
 
   try {
     const transaction = db.transaction('visitChunks', 'readonly');
-    return await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    const chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    if (chunks.length > 0) return chunks;
+
+    return filterVisitChunksByTimeRange(await synthesizeVisitChunksFromRecords(db), query);
   } finally {
     db.close();
   }
@@ -372,7 +375,10 @@ export async function getVisitsFromChunksByTimeRange(
 
   try {
     const transaction = db.transaction('visitChunks', 'readonly');
-    const chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    let chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    if (chunks.length === 0) {
+      chunks = filterVisitChunksByTimeRange(await synthesizeVisitChunksFromRecords(db), query);
+    }
     const orderedChunks = query.reverse ? chunks.reverse() : chunks;
     const results: VisitChunkRow[] = [];
     const startTime = query.startTime ?? 0;
@@ -404,7 +410,10 @@ export async function getPageVisitStatsFromChunksByTimeRange(
 
   try {
     const transaction = db.transaction('visitChunks', 'readonly');
-    const chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    let chunks = await readOverlappingVisitChunks(transaction.objectStore('visitChunks'), query);
+    if (chunks.length === 0) {
+      chunks = filterVisitChunksByTimeRange(await synthesizeVisitChunksFromRecords(db), query);
+    }
     const startTime = query.startTime ?? 0;
     const endTime = query.endTime ?? MAX_TIME;
     const pageIdFilter = pageIds ? new Set(pageIds) : undefined;
@@ -814,6 +823,15 @@ function readOverlappingVisitChunks(
     };
     request.onerror = () => reject(request.error);
   });
+}
+
+function filterVisitChunksByTimeRange(
+  chunks: VisitChunkRecord[],
+  query: VisitRangeQuery
+): VisitChunkRecord[] {
+  const startTime = query.startTime ?? 0;
+  const endTime = query.endTime ?? MAX_TIME;
+  return chunks.filter((chunk) => chunk.minVisitTime <= endTime && chunk.maxVisitTime >= startTime);
 }
 
 function decodePageChunkRow(chunk: PageChunkRecord, index: number): PageChunkRow {

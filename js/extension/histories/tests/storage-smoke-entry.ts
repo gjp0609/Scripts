@@ -136,6 +136,26 @@ window.runHistoriesStorageSmoke = async () => {
     'record-backed visit fallback should preserve visit times'
   );
 
+  const fallbackRangedVisitChunks = await getVisitChunksByTimeRange({ startTime: 1500, endTime: 3500 });
+  ensure(fallbackRangedVisitChunks.length === 2, 'record-backed visit range fallback should prefilter synthesized chunks');
+
+  const fallbackChunkTimeRange = await getVisitsFromChunksByTimeRange({ startTime: 1500, endTime: 3500 });
+  ensureIds(
+    fallbackChunkTimeRange.map((visit) => visit.visitTime),
+    [2000, 3000],
+    'record-backed chunk time range should scan synthesized visits'
+  );
+
+  const fallbackPageVisitStats = await getPageVisitStatsFromChunksByTimeRange(
+    { startTime: 1500, endTime: 3500 },
+    [page.id, otherPage.id]
+  );
+  ensureIds(
+    fallbackPageVisitStats.map((item) => item.pageId),
+    [page.id, otherPage.id],
+    'record-backed page visit stats should aggregate synthesized visits'
+  );
+
   await putJob({
     id: 'job-1',
     type: 'htu-import',

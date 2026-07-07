@@ -46,8 +46,10 @@ Compatibility requirements:
 - Browser-level full backup import benchmark passed against the external HTU file: `887,561` rows, `384,065` pages, `887,561` visits, about `2.6s` import time and `3.2s` total browser-side time after fetch.
 - HTU archived export core can now rebuild a 4-column backup TSV from page chunks plus visit chunks and preserve imported row order by `sourceIndex`.
 - HTU export now has a module-worker job path with persisted `jobs` records, progress updates, cancellation, and options-page download handling.
-- Browser history sync now has a background-triggered job path for record-backed databases, with incremental cursor tracking based on the latest completed sync job.
+- Browser history sync now has a background-triggered job path with incremental cursor tracking based on the latest completed sync job.
+- Browser sync can now merge into existing chunk-backed HTU imports by rewriting page/visit chunks while preserving imported page ids and visit `sourceIndex` ordering.
 - Search rebuild and HTU export now fall back to record-backed `pages`/`visits` data when no chunk stores exist.
+- Time-range chunk readers now also fall back to record-backed `visits` data when no chunk stores exist.
 - Storage route selected for implementation: IndexedDB primary backend for structured history data and minimal visit-time indexes.
 - Search route selected for implementation: SQLite WASM `:memory:` with FTS5 trigram, persisted as an IndexedDB snapshot.
 - SQLite WASM + OPFS is verified in Chrome but rejected as the common Chrome + Firefox storage backend after Firefox OPFS probe failure.
@@ -73,13 +75,13 @@ Compatibility requirements:
 - HTU 1.8.9 exports analysis/search/trends TSV as 8 columns: `URL`, `host`, `domain`, `visit_time`, `local_time`, `weekday`, `transition_text`, `title`.
 - Import compatibility must accept HTU 3-column, 4-column, and 8-column TSV variants.
 - Firefox compatibility is a hard requirement, so the architecture cannot depend on Chrome-only extension APIs.
-- Mixed chunk-backed imports plus record-backed browser sync are not merged yet. The current sync entry explicitly rejects databases that already contain `pageChunks` or `visitChunks`.
+- Browser-sync deduplication currently uses `(normalizedUrl, visitTime, transition)` keys when merging into chunk-backed imports.
 
 ## Next Work
 
 1. Move long-running import/search jobs behind background-controlled lifecycle instead of keeping them page-owned.
-2. Merge browser sync into the chunk-backed primary store instead of rejecting mixed chunk/record databases.
-3. Add continuous history event listeners on top of the current pull-based sync baseline.
-4. Verify large-snapshot quota behavior in real extension contexts.
-5. Move page-level search results toward visit-level result semantics when time filters are active.
-6. Add exact export metadata for non-HTU-originated visits if browser-sync rows must preserve visit-level titles too.
+2. Add continuous history event listeners on top of the current pull-based sync baseline.
+3. Verify large-snapshot quota behavior in real extension contexts.
+4. Move page-level search results toward visit-level result semantics when time filters are active.
+5. Add exact export metadata for non-HTU-originated visits if browser-sync rows must preserve visit-level titles too.
+6. Verify mixed imported-history plus browser-sync behavior against a real extension profile.

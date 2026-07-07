@@ -146,9 +146,9 @@ Deliverables:
 
 Acceptance:
 
-- Full sync captures all available browser history. Done for the record-backed path.
-- Incremental sync resumes from the latest completed cursor. Done for the record-backed path.
-- New visits appear in search after sync. Only when the database is record-backed and the snapshot is rebuilt; mixed chunk/record merge is still pending.
+- Full sync captures all available browser history. Done for record-backed and chunk-backed paths.
+- Incremental sync resumes from the latest completed cursor. Done.
+- New visits appear in search after sync after rebuilding the snapshot. Done for both record-backed and chunk-backed paths.
 - Snapshot is not rewritten for every single visit. Pending event-driven sync path.
 - Deletions are reflected in pages, visits, and FTS. Pending.
 

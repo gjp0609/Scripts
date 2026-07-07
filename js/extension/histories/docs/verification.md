@@ -305,7 +305,7 @@ Command:
 Result:
 
 - Browser history sync core tests passed.
-- Covered behavior: full sync over `history.search({ text: "", startTime: 0 })`, exact page aggregation by normalized URL, stable visit-id generation from browser visit metadata, incremental filtering against `startTime`, ignoring future-skewed visits, and next-sync cursor calculation.
+- Covered behavior: full sync over `history.search({ text: "", startTime: 0 })`, exact page aggregation by normalized URL, stable visit-id generation from browser visit metadata, incremental filtering against `startTime`, ignoring future-skewed visits, next-sync cursor calculation, and chunk-backed merge without duplicating imported visits.
 
 ## Export Worker Browser Smoke
 
@@ -412,13 +412,14 @@ Result:
 - HTU import planner/chunks: 5 passed.
 - HTU export core: 2 passed.
 - Browser history sync core: 2 passed.
+- Browser history sync core: 3 passed.
 - Search engine core: 5 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
 - Export worker browser smoke: 1 passed.
 - Search rebuild worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
-- Record-backed fallback coverage now verifies synthesized page/visit chunks for empty non-import databases.
+- Record-backed fallback coverage now verifies synthesized page/visit chunks, synthesized chunk time-range scans, and synthesized page-visit stats for empty non-import databases.
 - Keyword + time-range search is covered in both unit tests and browser SQLite WASM smoke.
 - TypeScript check passed.
 - Chrome/Firefox WXT outputs now include `sqlite/sqlite3.js`, `sqlite/sqlite3.wasm`, and `search-rebuild-worker.js`.

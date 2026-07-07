@@ -1,6 +1,5 @@
 import { createRuntimeAdapter } from '../src/runtime/browser-adapter';
 import { runHistorySyncJob } from '../src/jobs/history-sync-job';
-import { getDatabaseSummary } from '../src/storage/database';
 
 export default defineBackground(() => {
   const runtime = createRuntimeAdapter();
@@ -23,14 +22,6 @@ export default defineBackground(() => {
     }
 
     if (message?.type === 'histories:history-sync-start') {
-      const summary = await getDatabaseSummary();
-      if (summary.pageChunks > 0 || summary.visitChunks > 0) {
-        return {
-          type: 'histories:error',
-          error: 'History sync is not enabled on chunk-backed imports yet. Start from an empty database or finish the merge path first.'
-        };
-      }
-
       const requestedJobId =
         typeof message.jobId === 'string' && message.jobId.length > 0 ? message.jobId : crypto.randomUUID();
       if (activeSyncJobs.has(requestedJobId)) {

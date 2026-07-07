@@ -75,7 +75,7 @@ export type FullExportData = {
   exportedAt: string;
   folders: Array<{
     title: string;
-    index: number;
+    index?: number;
     bookmarks: Array<{
       title: string;
       url: string;
@@ -83,6 +83,6 @@ export type FullExportData = {
       extra?: BookmarkExtra;
     }>;
   }>;
-  extras: Record<string, BookmarkExtra>;
-  preferences: UiPreferences;
+  extras?: Record<string, BookmarkExtra>;
+  preferences?: Partial<UiPreferences>;
 };

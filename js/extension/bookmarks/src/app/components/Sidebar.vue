@@ -6,6 +6,10 @@ defineProps<{
   tags: Array<{ name: string; count: number }>;
 }>();
 
+const emit = defineEmits<{
+  'open-settings': [];
+}>();
+
 const tagColors = ['#4F6EF7', '#E8853D', '#22C55E', '#8B5CF6', '#F59E0B', '#06B6D4'];
 </script>
 
@@ -38,7 +42,7 @@ const tagColors = ['#4F6EF7', '#E8853D', '#22C55E', '#8B5CF6', '#F59E0B', '#06B6
       </a>
     </nav>
 
-    <button class="settings-button" type="button">
+    <button class="settings-button" type="button" @click="emit('open-settings')">
       <Settings :size="16" />
       <span>设置与导入导出</span>
     </button>

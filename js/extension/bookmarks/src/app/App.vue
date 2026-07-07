@@ -6,6 +6,8 @@ import Sortable from 'sortablejs';
 import type { BookmarkView, QuickSearchTarget, SearchResultItem } from '../types/bookmark';
 import { createBookmark } from '../services/bookmarkApi';
 import { deleteBookmarkDetails, moveBookmarkOrder, restoreBookmarkPosition, saveBookmarkDetails, type BookmarkMoveSnapshot } from '../services/bookmarkRepository';
+import { getExtras, getPreferences } from '../services/extraStore';
+import { exportFullData, importFullData } from '../services/importExportService';
 import { buildQuickSearchUrl, getQuickSearchTargets, parseQuickSearch, searchBookmarks } from '../services/searchService';
 import { openUrl } from '../services/extensionRuntime';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
@@ -14,6 +16,7 @@ import BookmarkModal from './components/BookmarkModal.vue';
 import EmptyState from './components/EmptyState.vue';
 import FolderModal from './components/FolderModal.vue';
 import HeaderBar from './components/HeaderBar.vue';
+import ImportExportModal from './components/ImportExportModal.vue';
 import OrganizeToolbar from './components/OrganizeToolbar.vue';
 import QuickSearchOverlay from './components/QuickSearchOverlay.vue';
 import SearchOverlay from './components/SearchOverlay.vue';
@@ -24,18 +27,22 @@ const mode = ref<'browse' | 'organize'>('browse');
 const query = ref('');
 const bookmarkModalOpen = ref(false);
 const folderModalOpen = ref(false);
+const importExportOpen = ref(false);
 const editingBookmark = ref<BookmarkView | undefined>();
 const searchBoxEl = ref<HTMLDivElement | null>(null);
 const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
 const folderListRefs = ref<Record<string, HTMLElement | null>>({});
 const sortableInstances = new Map<string, Sortable>();
 const lastMoveSnapshot = ref<BookmarkMoveSnapshot | undefined>();
+const importExportBusy = ref(false);
+const importExportError = ref('');
 
 const quickSearch = computed(() => parseQuickSearch(query.value));
 const quickTargets = computed(() => getQuickSearchTargets(workspace.folders.value, quickSearch.value?.siteQuery ?? ''));
 const searchResults = computed(() => searchBookmarks(workspace.folders.value, query.value, workspace.searchEngine.value));
 const activeSearchIndex = ref(0);
 const activeQuickIndex = ref(0);
+const canUndo = computed(() => Boolean(lastMoveSnapshot.value));
 const visibleFolders = computed(() => {
   if (!query.value.trim() || quickSearch.value) return workspace.folders.value;
   const ids = new Set(searchResults.value.filter((item) => item.type === 'bookmark').map((item) => item.id));
@@ -63,6 +70,11 @@ function openQuickSearch(target: QuickSearchTarget) {
 function normalizeIndex(current: number, total: number): number {
   if (!total) return 0;
   return ((current % total) + total) % total;
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest('input, textarea, [contenteditable="true"], [contenteditable=""], select'));
 }
 
 function moveSearchSelection(delta: number) {
@@ -138,6 +150,11 @@ function startAddBookmark() {
   bookmarkModalOpen.value = true;
 }
 
+function openImportExport() {
+  importExportError.value = '';
+  importExportOpen.value = true;
+}
+
 function startEditBookmark(bookmark: BookmarkView) {
   editingBookmark.value = bookmark;
   bookmarkModalOpen.value = true;
@@ -181,6 +198,81 @@ async function undoLastMove() {
     parentId: restoredBookmark.parentId ?? snapshot.parentId ?? '',
     index: restoredBookmark.index ?? snapshot.index ?? 0
   });
+}
+
+function ensureRootId(): string {
+  if (!workspace.rootId.value) {
+    throw new Error('当前未读取到可导入的书签根目录');
+  }
+  return workspace.rootId.value;
+}
+
+function downloadFile(filename: string, content: BlobPart, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function formatExportTimestamp(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
+
+function readFileText(file: File): Promise<string> {
+  return file.text();
+}
+
+async function runImportExport(task: () => Promise<void>, options?: { closeOnSuccess?: boolean }) {
+  importExportBusy.value = true;
+  importExportError.value = '';
+
+  try {
+    await task();
+    if (options?.closeOnSuccess) {
+      importExportOpen.value = false;
+    }
+  } catch (error) {
+    importExportError.value = error instanceof Error ? error.message : '导入导出失败';
+  } finally {
+    importExportBusy.value = false;
+  }
+}
+
+async function exportFullBookmarkData() {
+  await runImportExport(async () => {
+    const [extras, preferences] = await Promise.all([getExtras(), getPreferences()]);
+    const data = exportFullData(workspace.folders.value, extras, preferences);
+    downloadFile(`markhub-full-export-${formatExportTimestamp()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+  });
+}
+
+async function importFullBookmarkData(file: File) {
+  await runImportExport(async () => {
+    const text = await readFileText(file);
+    const data = JSON.parse(text);
+    await importFullData(ensureRootId(), data);
+    await workspace.reload();
+  }, { closeOnSuccess: true });
+}
+
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if (mode.value !== 'organize' || !canUndo.value) return;
+  if (bookmarkModalOpen.value || folderModalOpen.value) return;
+  if (!(event.ctrlKey || event.metaKey) || event.shiftKey) return;
+  if (event.key.toLowerCase() !== 'z') return;
+  if (isEditableTarget(event.target)) return;
+
+  event.preventDefault();
+  void undoLastMove();
 }
 
 function updateOverlayPosition() {
@@ -276,12 +368,14 @@ function setupSortables() {
 onMounted(() => {
   window.addEventListener('resize', updateOverlayPosition);
   window.addEventListener('scroll', updateOverlayPosition, { passive: true });
+  window.addEventListener('keydown', handleGlobalKeydown);
   void nextTick().then(updateOverlayPosition);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateOverlayPosition);
   window.removeEventListener('scroll', updateOverlayPosition);
+  window.removeEventListener('keydown', handleGlobalKeydown);
   destroySortables();
 });
 
@@ -309,7 +403,7 @@ watch(
 
 <template>
   <div class="markhub-shell">
-    <Sidebar :total="workspace.totalBookmarks.value" :tags="workspace.tags.value" />
+    <Sidebar :total="workspace.totalBookmarks.value" :tags="workspace.tags.value" @open-settings="openImportExport" />
     <HeaderBar
       :mode="mode"
       :query="query"
@@ -326,6 +420,7 @@ watch(
     <main class="content-area">
       <OrganizeToolbar
         v-if="mode === 'organize'"
+        :can-undo="canUndo"
         @add-bookmark="startAddBookmark"
         @add-folder="folderModalOpen = true"
         @undo="undoLastMove"
@@ -395,5 +490,13 @@ watch(
       @save="saveBookmark"
     />
     <FolderModal :open="folderModalOpen" @close="folderModalOpen = false" @save="saveFolder" />
+    <ImportExportModal
+      :open="importExportOpen"
+      :busy="importExportBusy"
+      :error="importExportError"
+      @close="importExportOpen = false"
+      @export-full="exportFullBookmarkData"
+      @import-full="importFullBookmarkData"
+    />
   </div>
 </template>

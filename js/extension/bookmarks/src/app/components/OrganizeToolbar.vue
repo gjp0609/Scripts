@@ -6,6 +6,10 @@ const emit = defineEmits<{
   'add-folder': [];
   undo: [];
 }>();
+
+defineProps<{
+  canUndo?: boolean;
+}>();
 </script>
 
 <template>
@@ -23,7 +27,7 @@ const emit = defineEmits<{
         <FolderPlus :size="12" />
         <span>新增目录</span>
       </button>
-      <button type="button" @click="emit('undo')">
+      <button type="button" :disabled="!canUndo" @click="emit('undo')">
         <RotateCcw :size="12" />
         <span>撤销</span>
       </button>

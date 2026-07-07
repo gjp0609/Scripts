@@ -602,6 +602,11 @@ button {
   font-weight: 600;
 }
 
+.organize-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .bookmark-card-ghost {
   opacity: 0.45;
 }
@@ -674,6 +679,96 @@ button {
 
 .folder-modal {
   width: min(400px, calc(100vw - 32px));
+}
+
+.import-export-modal {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.import-export-body {
+  display: grid;
+  gap: 16px;
+  padding: 0 20px 20px;
+}
+
+.import-export-intro {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.import-export-group {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.import-export-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 10px;
+  color: var(--color-text-primary);
+}
+
+.import-export-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border-light);
+}
+
+.import-export-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.import-export-copy strong {
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.import-export-copy span {
+  color: var(--color-text-tertiary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.import-export-row .ghost-pill,
+.import-export-row .primary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.import-export-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 10px;
+  color: #b42318;
+  background: #fef3f2;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .import-export-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .import-export-row .ghost-pill,
+  .import-export-row .primary-pill {
+    justify-content: center;
+    width: 100%;
+  }
 }
 
 .modal-accent {

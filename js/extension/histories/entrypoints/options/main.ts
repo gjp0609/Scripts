@@ -1,11 +1,11 @@
 import './styles.css';
-import { exportHtuArchivedTsv, makeHtuBackupFilename } from '../../src/export/htu-export';
 import { createRuntimeAdapter } from '../../src/runtime/browser-adapter';
 import {
   getDatabaseSummary,
   listJobs
 } from '../../src/storage/database';
 import { ImportWorkerClient, type ImportWorkerJobUpdate } from '../../src/jobs/import-worker-client';
+import { ExportWorkerClient, type ExportWorkerJobUpdate } from '../../src/jobs/export-worker-client';
 import {
   SearchRebuildWorkerClient,
   type SearchRebuildWorkerJobUpdate
@@ -17,6 +17,7 @@ import type { JobRecord } from '../../src/storage/schema';
 
 const runtime = createRuntimeAdapter();
 const importClient = new ImportWorkerClient();
+const exportClient = new ExportWorkerClient();
 const searchRebuildClient = new SearchRebuildWorkerClient();
 
 const runtimeStatus = document.querySelector<HTMLElement>('#runtimeStatus');
@@ -29,6 +30,7 @@ const importFile = document.querySelector<HTMLInputElement>('#importFile');
 const importButton = document.querySelector<HTMLButtonElement>('#importButton');
 const cancelImportButton = document.querySelector<HTMLButtonElement>('#cancelImportButton');
 const exportButton = document.querySelector<HTMLButtonElement>('#exportButton');
+const cancelExportButton = document.querySelector<HTMLButtonElement>('#cancelExportButton');
 const rebuildButton = document.querySelector<HTMLButtonElement>('#rebuildButton');
 const cancelRebuildButton = document.querySelector<HTMLButtonElement>('#cancelRebuildButton');
 const searchButton = document.querySelector<HTMLButtonElement>('#searchButton');
@@ -39,8 +41,8 @@ const results = document.querySelector<HTMLElement>('#results');
 
 const searchStorage = createIndexedDbSearchStorage();
 let importJobId: string | null = null;
+let exportJobId: string | null = null;
 let rebuildJobId: string | null = null;
-let exporting = false;
 let pollHandle: number | undefined;
 let searchRuntimePromise: ReturnType<typeof loadSqliteWasmSearchRuntime> | undefined;
 let searchReader: SearchEngine | null = null;
@@ -90,6 +92,10 @@ exportButton?.addEventListener('click', () => {
   void startExport();
 });
 
+cancelExportButton?.addEventListener('click', () => {
+  if (exportJobId) exportClient.cancelJob(exportJobId);
+});
+
 rebuildButton?.addEventListener('click', () => {
   void startSearchRebuild();
 });
@@ -100,6 +106,9 @@ cancelRebuildButton?.addEventListener('click', () => {
 
 importClient.subscribe((update) => {
   handleImportWorkerUpdate(update);
+});
+exportClient.subscribe((update) => {
+  handleExportWorkerUpdate(update);
 });
 searchRebuildClient.subscribe((update) => {
   handleSearchRebuildWorkerUpdate(update);
@@ -113,6 +122,7 @@ window.addEventListener('beforeunload', () => {
   if (pollHandle !== undefined) window.clearInterval(pollHandle);
   searchReader?.close();
   importClient.terminate();
+  exportClient.terminate();
   searchRebuildClient.terminate();
 });
 
@@ -146,24 +156,13 @@ async function startSearchRebuild(): Promise<void> {
 }
 
 async function startExport(): Promise<void> {
-  if (exporting || importJobId || rebuildJobId) return;
+  if (exportJobId || importJobId || rebuildJobId) return;
 
-  exporting = true;
+  exportJobId = exportClient.startJob();
   syncControls();
   setJobStatus('Exporting');
   setResultSummary('Building HTU backup export...');
-
-  try {
-    const text = await exportHtuArchivedTsv();
-    downloadTextFile(makeHtuBackupFilename(), text);
-    setResultSummary(`Exported ${text.length.toLocaleString('en-US')} bytes.`);
-  } catch (error) {
-    setResultSummary(error instanceof Error ? error.message : String(error));
-  } finally {
-    exporting = false;
-    setJobStatus(activeJobLabel());
-    syncControls();
-  }
+  await refreshJobs();
 }
 
 async function runSearch(): Promise<void> {
@@ -237,6 +236,29 @@ function handleSearchRebuildWorkerUpdate(update: SearchRebuildWorkerJobUpdate): 
   } else if (update.status === 'cancelled') {
     rebuildJobId = null;
     setResultSummary('Search snapshot rebuild cancelled.');
+  }
+
+  syncControls();
+  void refreshJobs();
+}
+
+function handleExportWorkerUpdate(update: ExportWorkerJobUpdate): void {
+  if (update.jobId !== exportJobId) return;
+
+  if (update.status === 'complete') {
+    exportJobId = null;
+    if (update.filename && update.text !== undefined) {
+      downloadTextFile(update.filename, update.text);
+      setResultSummary(`Exported ${update.text.length.toLocaleString('en-US')} bytes.`);
+    } else {
+      setResultSummary('HTU export completed.');
+    }
+  } else if (update.status === 'failed') {
+    exportJobId = null;
+    setResultSummary(update.error ?? 'HTU export failed.');
+  } else if (update.status === 'cancelled') {
+    exportJobId = null;
+    setResultSummary('HTU export cancelled.');
   }
 
   syncControls();
@@ -332,17 +354,19 @@ function renderEmptyResults(text: string): void {
 
 function syncControls(): void {
   const importing = Boolean(importJobId);
+  const exporting = Boolean(exportJobId);
   const rebuilding = Boolean(rebuildJobId);
   if (importButton) importButton.disabled = importing || rebuilding || exporting;
   if (cancelImportButton) cancelImportButton.disabled = !importing;
   if (exportButton) exportButton.disabled = importing || rebuilding || exporting;
+  if (cancelExportButton) cancelExportButton.disabled = !exporting;
   if (rebuildButton) rebuildButton.disabled = importing || rebuilding || exporting;
   if (cancelRebuildButton) cancelRebuildButton.disabled = !rebuilding;
   if (searchButton) searchButton.disabled = rebuilding || exporting;
 }
 
 function activeJobLabel(latestJob?: JobRecord): string {
-  if (exporting) return 'Exporting';
+  if (exportJobId) return 'Exporting';
   if (rebuildJobId) return 'Rebuilding';
   if (importJobId) return 'Importing';
   return latestJob ? latestJob.status : 'Idle';
@@ -378,7 +402,9 @@ function formatJobProgress(job: JobRecord): string {
         visits?: number;
         writtenPages?: number;
         writtenVisits?: number;
+        writtenRows?: number;
         pageCount?: number;
+        bytes?: number;
       }
     | undefined;
 
@@ -386,6 +412,9 @@ function formatJobProgress(job: JobRecord): string {
   if (!progress) return 'No progress';
   if (job.type === 'search-rebuild') {
     return `${progress.stage ?? 'unknown'} ${progress.writtenPages ?? progress.pageCount ?? 0}/${progress.pages ?? progress.pageCount ?? 0}`;
+  }
+  if (job.type === 'htu-export') {
+    return `${progress.stage ?? 'unknown'} pages=${progress.pages ?? 0} visits=${progress.writtenRows ?? progress.visits ?? 0}/${progress.visits ?? 0} bytes=${progress.bytes ?? 0}`;
   }
 
   return `${progress.stage ?? 'unknown'} rows=${progress.rows ?? 0} pages=${progress.writtenPages ?? 0}/${progress.pages ?? 0} visits=${progress.writtenVisits ?? 0}/${progress.visits ?? 0}`;

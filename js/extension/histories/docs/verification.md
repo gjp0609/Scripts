@@ -296,6 +296,17 @@ Result:
 - HTU export core tests passed.
 - Covered behavior: rebuilding 4-column archived TSV from page chunks and visit chunks, preserving source-row order through `sourceIndex`, preserving visit-level titles, and generating HTU-style backup filenames.
 
+## Export Worker Browser Smoke
+
+Command:
+
+- `node --test js\extension\histories\tests\export-worker-browser.test.mjs`
+
+Result:
+
+- Browser export worker smoke test passed with local Chrome.
+- Covered behavior: starting an HTU export through the `ExportWorkerClient`, executing the export in a module worker, persisting job records in IndexedDB, receiving job status updates on the page side, and preserving archived HTU bytes on the worker result path.
+
 ## Search Engine Core
 
 Command:
@@ -377,6 +388,7 @@ Commands:
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
+- `node --test js\extension\histories\tests\export-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\search-rebuild-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
@@ -390,6 +402,7 @@ Result:
 - Search engine core: 5 passed.
 - Search engine browser SQLite WASM smoke: 1 passed.
 - Import worker browser smoke: 1 passed.
+- Export worker browser smoke: 1 passed.
 - Search rebuild worker browser smoke: 1 passed.
 - Storage smoke: 1 passed in local Chrome, including chunk reader coverage.
 - Keyword + time-range search is covered in both unit tests and browser SQLite WASM smoke.
@@ -398,6 +411,7 @@ Result:
 - External full backup: 7 passed, full backup round-trip completed in about 2.0 seconds.
 - External full backup latest run: 7 passed, full backup round-trip completed in about `2.37s`.
 - External full backup latest rerun after export changes: 7 passed, full backup round-trip completed in about `2.41s`.
+- External full backup latest rerun after export worker changes: 7 passed, full backup round-trip completed in about `2.19s`.
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
 - External full browser import latest run: `887,561` rows, `384,065` pages, `887,561` visits, `763 ms` fetch, `2,469 ms` import, `3,232 ms` total browser-side after page load.
 

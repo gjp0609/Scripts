@@ -257,7 +257,10 @@ async function runImportSmoke() {
   ensure(result.pages === 2, 'import result pages should match aggregated pages');
   ensure(result.visits === 3, 'import result visits should match planned visits');
   ensure(result.writtenVisits === 3, 'import result written visits should match storage writes');
-  ensure(await exportHtuArchivedTsv() === source, 'archived export should round-trip imported HTU backup');
+  ensure(
+    (await exportHtuArchivedTsv()).text === source,
+    'archived export should round-trip imported HTU backup'
+  );
 
   return {
     importRows: result.rows,

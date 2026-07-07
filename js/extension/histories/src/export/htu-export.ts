@@ -11,9 +11,51 @@ export type HtuArchivedExportRow = {
   sourceIndex: number;
 };
 
-export async function exportHtuArchivedTsv(): Promise<string> {
+export type HtuExportProgress = {
+  stage: 'loading' | 'serializing' | 'done';
+  pages: number;
+  visits: number;
+  writtenRows: number;
+  bytes: number;
+};
+
+export type ExportHtuArchivedOptions = {
+  signal?: AbortSignal;
+  onProgress?: (progress: HtuExportProgress) => void | Promise<void>;
+};
+
+export async function exportHtuArchivedTsv(
+  options: ExportHtuArchivedOptions = {}
+): Promise<{ text: string; progress: HtuExportProgress }> {
+  throwIfAborted(options.signal);
   const [pageChunks, visitChunks] = await Promise.all([getPageChunks(), getVisitChunks()]);
-  return serializeHtuArchivedRows(pageChunks, visitChunks);
+  const pages = pageChunks.reduce((total, chunk) => total + chunk.count, 0);
+  const visits = visitChunks.reduce((total, chunk) => total + chunk.count, 0);
+
+  await emitProgress(options, {
+    stage: 'loading',
+    pages,
+    visits,
+    writtenRows: 0,
+    bytes: 0
+  });
+  throwIfAborted(options.signal);
+
+  const text = serializeHtuArchivedRows(pageChunks, visitChunks);
+  const progress = {
+    stage: 'done' as const,
+    pages,
+    visits,
+    writtenRows: visits,
+    bytes: text.length
+  };
+  await emitProgress(options, {
+    ...progress,
+    stage: 'serializing'
+  });
+  throwIfAborted(options.signal);
+  await emitProgress(options, progress);
+  return { text, progress };
 }
 
 export function serializeHtuArchivedRows(
@@ -81,6 +123,20 @@ export function makeHtuBackupFilename(now = new Date()): string {
 
 function pad2(value: number): string {
   return String(value).padStart(2, '0');
+}
+
+async function emitProgress(
+  options: ExportHtuArchivedOptions,
+  progress: HtuExportProgress
+): Promise<void> {
+  throwIfAborted(options.signal);
+  await options.onProgress?.(progress);
+}
+
+function throwIfAborted(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) {
+    throw new DOMException('The operation was aborted.', 'AbortError');
+  }
 }
 
 function decodeTransition(code: number): string {

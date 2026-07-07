@@ -18,6 +18,30 @@ export type BookmarkMoveDestination = {
   index?: number;
 };
 
+export type BookmarkChangedInfo = {
+  title?: string;
+  url?: string;
+};
+
+export type BookmarkRemovedInfo = {
+  parentId?: string;
+  index?: number;
+  node?: BrowserBookmarkNode;
+};
+
+export type BookmarkMovedInfo = {
+  parentId?: string;
+  oldParentId?: string;
+  index?: number;
+  oldIndex?: number;
+};
+
+export type BookmarkEvent =
+  | { type: 'created'; id: string; node: BrowserBookmarkNode }
+  | { type: 'changed'; id: string; changes: BookmarkChangedInfo }
+  | { type: 'removed'; id: string; removeInfo: BookmarkRemovedInfo }
+  | { type: 'moved'; id: string; moveInfo: BookmarkMovedInfo };
+
 export async function getTree(): Promise<BrowserBookmarkNode[]> {
   return browser.bookmarks.getTree() as Promise<BrowserBookmarkNode[]>;
 }
@@ -42,6 +66,11 @@ export async function moveNode(id: string, destination: BookmarkMoveDestination)
   return browser.bookmarks.move(id, destination) as Promise<BrowserBookmarkNode>;
 }
 
+export async function getNode(id: string): Promise<BrowserBookmarkNode | undefined> {
+  const nodes = (await browser.bookmarks.get(id)) as BrowserBookmarkNode[];
+  return nodes[0];
+}
+
 export function getDefaultBookmarkRoot(tree: BrowserBookmarkNode[]): BrowserBookmarkNode | undefined {
   const rootChildren = tree[0]?.children ?? [];
   return (
@@ -51,14 +80,21 @@ export function getDefaultBookmarkRoot(tree: BrowserBookmarkNode[]): BrowserBook
   );
 }
 
-export function onAnyBookmarkChanged(handler: () => void): () => void {
-  const listeners: Array<[{ addListener: (listener: () => void) => void; removeListener: (listener: () => void) => void }, () => void]> = [
-    [browser.bookmarks.onCreated, handler],
-    [browser.bookmarks.onChanged, handler],
-    [browser.bookmarks.onRemoved, handler],
-    [browser.bookmarks.onMoved, handler]
-  ];
+export function onBookmarkEvent(handler: (event: BookmarkEvent) => void): () => void {
+  const createdListener = (id: string, node: BrowserBookmarkNode) => handler({ type: 'created', id, node });
+  const changedListener = (id: string, changes: BookmarkChangedInfo) => handler({ type: 'changed', id, changes });
+  const removedListener = (id: string, removeInfo: BookmarkRemovedInfo) => handler({ type: 'removed', id, removeInfo });
+  const movedListener = (id: string, moveInfo: BookmarkMovedInfo) => handler({ type: 'moved', id, moveInfo });
 
-  listeners.forEach(([event, listener]) => event.addListener(listener));
-  return () => listeners.forEach(([event, listener]) => event.removeListener(listener));
+  browser.bookmarks.onCreated.addListener(createdListener);
+  browser.bookmarks.onChanged.addListener(changedListener);
+  browser.bookmarks.onRemoved.addListener(removedListener);
+  browser.bookmarks.onMoved.addListener(movedListener);
+
+  return () => {
+    browser.bookmarks.onCreated.removeListener(createdListener);
+    browser.bookmarks.onChanged.removeListener(changedListener);
+    browser.bookmarks.onRemoved.removeListener(removedListener);
+    browser.bookmarks.onMoved.removeListener(movedListener);
+  };
 }

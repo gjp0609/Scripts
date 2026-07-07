@@ -41,6 +41,10 @@ function toBookmarkView(node: BrowserBookmarkNode, extras: Record<string, Bookma
   };
 }
 
+export function buildBookmarkView(node: BrowserBookmarkNode, extra?: BookmarkExtra): BookmarkView {
+  return toBookmarkView(node, extra ? { [node.id]: extra } : {});
+}
+
 export async function loadBookmarkWorkspace(): Promise<{ rootId: string; folders: FolderView[] }> {
   const [tree, extras] = await Promise.all([getTree(), getExtras()]);
   const root = getDefaultBookmarkRoot(tree);
@@ -79,7 +83,7 @@ export async function saveBookmarkDetails(input: {
   tags: string[];
   description?: string;
   searchUrl?: string;
-}): Promise<BrowserBookmarkNode> {
+}): Promise<BookmarkView> {
   const node = input.id
     ? await updateBookmark(input.id, { title: input.title, url: input.url })
     : await createBookmark({ parentId: input.parentId, title: input.title, url: input.url });
@@ -88,18 +92,50 @@ export async function saveBookmarkDetails(input: {
     await moveNode(node.id, { parentId: input.parentId });
   }
 
-  await saveExtra({
+  const extra: BookmarkExtra = {
     bookmarkId: node.id,
     tags: input.tags,
     description: input.description,
     searchUrl: input.searchUrl,
     updatedAt: Date.now()
-  });
+  };
 
-  return node;
+  await saveExtra(extra);
+
+  return buildBookmarkView(
+    {
+      ...node,
+      parentId: input.parentId
+    },
+    extra
+  );
 }
 
 export async function deleteBookmarkDetails(bookmarkId: string): Promise<void> {
   await removeBookmark(bookmarkId);
   await removeExtra(bookmarkId);
+}
+
+export type BookmarkMoveSnapshot = {
+  id: string;
+  parentId?: string;
+  index?: number;
+};
+
+export async function moveBookmarkOrder(input: {
+  bookmarkId: string;
+  parentId: string;
+  index: number;
+}): Promise<BrowserBookmarkNode> {
+  return moveNode(input.bookmarkId, {
+    parentId: input.parentId,
+    index: input.index
+  });
+}
+
+export async function restoreBookmarkPosition(snapshot: BookmarkMoveSnapshot): Promise<BrowserBookmarkNode> {
+  return moveNode(snapshot.id, {
+    parentId: snapshot.parentId,
+    index: snapshot.index
+  });
 }

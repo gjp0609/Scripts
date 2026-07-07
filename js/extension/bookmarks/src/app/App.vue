@@ -2,9 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
 import { ChevronDown, Folder } from 'lucide-vue-next';
+import Sortable from 'sortablejs';
 import type { BookmarkView, QuickSearchTarget, SearchResultItem } from '../types/bookmark';
 import { createBookmark } from '../services/bookmarkApi';
-import { deleteBookmarkDetails, saveBookmarkDetails } from '../services/bookmarkRepository';
+import { deleteBookmarkDetails, moveBookmarkOrder, restoreBookmarkPosition, saveBookmarkDetails, type BookmarkMoveSnapshot } from '../services/bookmarkRepository';
 import { buildQuickSearchUrl, getQuickSearchTargets, parseQuickSearch, searchBookmarks } from '../services/searchService';
 import { openUrl } from '../services/extensionRuntime';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
@@ -26,6 +27,9 @@ const folderModalOpen = ref(false);
 const editingBookmark = ref<BookmarkView | undefined>();
 const searchBoxEl = ref<HTMLDivElement | null>(null);
 const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
+const folderListRefs = ref<Record<string, HTMLElement | null>>({});
+const sortableInstances = new Map<string, Sortable>();
+const lastMoveSnapshot = ref<BookmarkMoveSnapshot | undefined>();
 
 const quickSearch = computed(() => parseQuickSearch(query.value));
 const quickTargets = computed(() => getQuickSearchTargets(workspace.folders.value, quickSearch.value?.siteQuery ?? ''));
@@ -139,27 +143,44 @@ function startEditBookmark(bookmark: BookmarkView) {
   bookmarkModalOpen.value = true;
 }
 
+function setFolderListRef(folderId: string, element: Element | { $el?: Element } | null) {
+  const target = element instanceof Element ? element : element?.$el;
+  folderListRefs.value[folderId] = target instanceof HTMLElement ? target : null;
+}
+
 async function saveBookmark(value: Parameters<typeof saveBookmarkDetails>[0]) {
-  await saveBookmarkDetails(value);
+  const savedBookmark = await saveBookmarkDetails(value);
   bookmarkModalOpen.value = false;
-  await workspace.reload();
+  workspace.upsertBookmark(savedBookmark);
 }
 
 async function saveFolder(title: string) {
   if (!title || !workspace.rootId.value) return;
-  await createBookmark({ parentId: workspace.rootId.value, title });
+  const folder = await createBookmark({ parentId: workspace.rootId.value, title });
   folderModalOpen.value = false;
-  await workspace.reload();
+  workspace.upsertFolder(folder);
 }
 
 async function deleteBookmark(bookmark: BookmarkView) {
   if (!confirm(`删除书签“${bookmark.title}”？`)) return;
   await deleteBookmarkDetails(bookmark.id);
-  await workspace.reload();
+  workspace.removeBookmark(bookmark.id);
 }
 
 async function copyUrl(bookmark: BookmarkView) {
   if (bookmark.url) await navigator.clipboard.writeText(bookmark.url);
+}
+
+async function undoLastMove() {
+  if (!lastMoveSnapshot.value) return;
+  const snapshot = lastMoveSnapshot.value;
+  const restoredBookmark = await restoreBookmarkPosition(snapshot);
+  lastMoveSnapshot.value = undefined;
+  workspace.moveBookmark({
+    bookmarkId: restoredBookmark.id,
+    parentId: restoredBookmark.parentId ?? snapshot.parentId ?? '',
+    index: restoredBookmark.index ?? snapshot.index ?? 0
+  });
 }
 
 function updateOverlayPosition() {
@@ -186,6 +207,72 @@ function setSearchBoxElement(element: HTMLDivElement) {
   void nextTick().then(updateOverlayPosition);
 }
 
+function destroySortables() {
+  sortableInstances.forEach((instance) => instance.destroy());
+  sortableInstances.clear();
+}
+
+function setupSortables() {
+  destroySortables();
+  if (mode.value !== 'organize') return;
+
+  workspace.folders.value.forEach((folder) => {
+    const element = folderListRefs.value[folder.id];
+    if (!element) return;
+
+    const sortable = Sortable.create(element, {
+      group: 'bookmark-folders',
+      animation: 150,
+      handle: '.drag-handle',
+      draggable: '.bookmark-card',
+      ghostClass: 'bookmark-card-ghost',
+      chosenClass: 'bookmark-card-chosen',
+      dragClass: 'bookmark-card-dragging',
+      onEnd: async (event) => {
+        const bookmarkId = event.item.getAttribute('data-bookmark-id');
+        const toFolderId = event.to.getAttribute('data-folder-id');
+        const fromFolderId = event.from.getAttribute('data-folder-id');
+
+        if (!bookmarkId || !toFolderId || !fromFolderId || event.newIndex == null) {
+          await workspace.reload({ silent: true });
+          return;
+        }
+
+        const sourceFolder = workspace.folders.value.find((folderItem) => folderItem.id === fromFolderId);
+        const sourceBookmark = sourceFolder?.bookmarks.find((bookmark) => bookmark.id === bookmarkId);
+        if (!sourceBookmark) {
+          await workspace.reload({ silent: true });
+          return;
+        }
+
+        lastMoveSnapshot.value = {
+          id: bookmarkId,
+          parentId: sourceBookmark.parentId,
+          index: sourceBookmark.index
+        };
+
+        const targetIndex =
+          fromFolderId === toFolderId && event.oldIndex != null && event.newIndex > event.oldIndex
+            ? event.newIndex + 1
+            : event.newIndex;
+
+        const movedBookmark = await moveBookmarkOrder({
+          bookmarkId,
+          parentId: toFolderId,
+          index: targetIndex
+        });
+        workspace.moveBookmark({
+          bookmarkId,
+          parentId: movedBookmark.parentId ?? toFolderId,
+          index: movedBookmark.index ?? targetIndex
+        });
+      }
+    });
+
+    sortableInstances.set(folder.id, sortable);
+  });
+}
+
 onMounted(() => {
   window.addEventListener('resize', updateOverlayPosition);
   window.addEventListener('scroll', updateOverlayPosition, { passive: true });
@@ -195,6 +282,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateOverlayPosition);
   window.removeEventListener('scroll', updateOverlayPosition);
+  destroySortables();
 });
 
 watch(query, () => {
@@ -209,6 +297,14 @@ watch(searchResults, (results) => {
 watch(quickTargets, (targets) => {
   activeQuickIndex.value = normalizeIndex(activeQuickIndex.value, targets.length);
 });
+
+watch(
+  () => [mode.value, workspace.folders.value.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')],
+  () => {
+    void nextTick().then(setupSortables);
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -232,7 +328,7 @@ watch(quickTargets, (targets) => {
         v-if="mode === 'organize'"
         @add-bookmark="startAddBookmark"
         @add-folder="folderModalOpen = true"
-        @undo="undefined"
+        @undo="undoLastMove"
       />
 
       <div class="content-pad">
@@ -252,7 +348,13 @@ watch(quickTargets, (targets) => {
             <ChevronDown :size="14" :class="{ collapsed: folder.collapsed }" />
           </button>
 
-          <div v-if="!folder.collapsed" class="bookmark-grid">
+          <div
+            v-if="!folder.collapsed"
+            :ref="(element) => setFolderListRef(folder.id, element)"
+            class="bookmark-grid"
+            :class="{ 'bookmark-grid-organizing': mode === 'organize' }"
+            :data-folder-id="folder.id"
+          >
             <BookmarkCard
               v-for="bookmark in folder.bookmarks"
               :key="bookmark.id"

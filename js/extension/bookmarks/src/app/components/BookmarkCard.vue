@@ -13,11 +13,18 @@ const emit = defineEmits<{
   edit: [bookmark: BookmarkView];
   copy: [bookmark: BookmarkView];
   delete: [bookmark: BookmarkView];
+  dragStart: [bookmark: BookmarkView];
+  dragEnd: [bookmark: BookmarkView];
 }>();
 </script>
 
 <template>
-  <article class="bookmark-card" :class="{ organizing: organize, 'has-tags': bookmark.extra.tags.length > 0 }" @click="emit('open', bookmark)">
+  <article
+    class="bookmark-card"
+    :class="{ organizing: organize, 'has-tags': bookmark.extra.tags.length > 0 }"
+    :data-bookmark-id="bookmark.id"
+    @click="emit('open', bookmark)"
+  >
     <button v-if="organize" class="drag-handle" type="button" aria-label="拖拽排序" @click.stop>
       <GripVertical :size="16" />
     </button>

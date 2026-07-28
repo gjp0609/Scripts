@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { AlertTriangle, X } from 'lucide-vue-next';
+import { useModalEscape } from '../useModalEscape';
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   title: string;
   description: string;
@@ -13,6 +14,8 @@ const emit = defineEmits<{
   close: [];
   confirm: [];
 }>();
+
+useModalEscape(() => props.open, () => emit('close'));
 </script>
 
 <template>

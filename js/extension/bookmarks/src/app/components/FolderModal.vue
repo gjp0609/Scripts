@@ -2,6 +2,7 @@
 import { X } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import type { FolderView } from '../../types/bookmark';
+import { useModalEscape } from '../useModalEscape';
 
 const props = defineProps<{
   open: boolean;
@@ -12,6 +13,8 @@ const emit = defineEmits<{
   close: [];
   save: [value: { id?: string; title: string }];
 }>();
+
+useModalEscape(() => props.open, () => emit('close'));
 
 const title = ref('');
 

@@ -2,6 +2,8 @@
 import { X } from 'lucide-vue-next';
 import { reactive, watch } from 'vue';
 import type { BookmarkView, FolderView } from '../../types/bookmark';
+import { useModalEscape } from '../useModalEscape';
+import FolderSelect from './FolderSelect.vue';
 
 const props = defineProps<{
   open: boolean;
@@ -13,6 +15,8 @@ const emit = defineEmits<{
   close: [];
   save: [value: { id?: string; parentId: string; title: string; url: string; tags: string[]; description?: string; searchUrl?: string }];
 }>();
+
+useModalEscape(() => props.open, () => emit('close'));
 
 const form = reactive({
   title: '',
@@ -71,9 +75,7 @@ function save() {
         </label>
         <label>
           <span>目录</span>
-          <select v-model="form.parentId" required>
-            <option v-for="folder in folders" :key="folder.id" :value="folder.id">{{ folder.title }}</option>
-          </select>
+          <FolderSelect v-model="form.parentId" :folders="folders" />
         </label>
         <label>
           <span>标签</span>
@@ -89,7 +91,7 @@ function save() {
         </label>
         <footer class="modal-foot">
           <button class="ghost-pill" type="button" @click="emit('close')">取消</button>
-          <button class="primary-pill" type="submit">保存</button>
+          <button class="primary-pill" type="submit" :disabled="!form.parentId">保存</button>
         </footer>
       </form>
     </section>

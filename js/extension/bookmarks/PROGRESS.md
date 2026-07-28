@@ -43,13 +43,17 @@
 - `M-08` 当前主要缺口：
   - 目录整理未进入可测
   - 综合验收清单尚未切成当前可测项
-  - 整体交互样式仍存在区域割裂，需要统一
+  - 整体交互样式失败项已修正并进入构建产物，等待真实界面回归
 
 ### 你现在需要做什么
 
-当前先不用继续点测目录删除，等我把交互样式统一完，再切出新一轮当前可测项：
+当前先不用继续点测目录删除，接下来只回归这轮交互样式统一结果：
 
-- 主页面、popup、弹窗、浮层、整理模式工具区的统一样式收口
+- 顶部模式按钮、搜索框、主操作按钮
+- 整理模式工具栏
+- 搜索浮层与快捷浮层
+- 弹窗与确认弹窗
+- popup 输入区、图标按钮、目录列表
 
 ### 现在不要混进来的事项
 
@@ -57,10 +61,8 @@
 
 - 整理模式顶部“新增书签 / 新增目录”和页面顶部按钮重复
 - 复制按钮用途不明确
-- 编辑弹窗 `Esc` 关闭
 - 标签支持中文逗号
 - 浏览模式“更多”按钮无动作
-- 不要使用浏览器原生提示
 - 标签历史提示
 - 内置 `search` / `site` 标签
 - 默认 Bing 策略
@@ -94,7 +96,7 @@
 | R-042 | 快捷站内搜索 | 已完成 | src/app/App.vue, src/services/searchService.ts, src/app/components/QuickSearchOverlay.vue | `searchUrl` 模板替换验证 | 已按最新语法修正并通过当前阶段测试 |
 | R-043 | 搜索框统一输入逻辑 | 已完成 | REQUIREMENTS.md, PROGRESS.md | 文档审阅 | 已按最新口径明确普通搜索第一行是搜索引擎结果，快捷搜索采用 `!筛选词` / `!筛选词 搜索内容` 语法 |
 | R-050 | 进入整理模式 | 已完成 | src/app/App.vue, src/app/components/OrganizeToolbar.vue | 模式切换截图验证 | 用户已确认可进入和退出整理模式 |
-| R-051 | 整理模式工具栏 | 待修复 | src/app/components/OrganizeToolbar.vue, src/app/styles.css | 操作栏功能验证 | 功能重复与观感问题已记录，待与 M-06 一并收口 |
+| R-051 | 整理模式工具栏 | 待修复 | src/app/components/OrganizeToolbar.vue, src/app/styles.css | 操作栏功能验证 | 功能重复与观感问题已记录，待在 M-08 综合验收中收口 |
 | R-052 | 书签整理 | 已完成 | src/app/App.vue, src/app/components/BookmarkCard.vue, src/app/useBookmarkWorkspace.ts, src/services/bookmarkApi.ts, src/services/bookmarkRepository.ts | 排序、跨目录移动、写回验证 | 当前最小整理闭环已通过；目录间移动提示等体验项留待后续 |
 | R-053 | 目录整理 | 未开始 | 待定 | 目录排序、重命名、删除验证 | 当前轮先不推进目录整理 |
 | R-054 | 拖拽反馈 | 进行中 | src/app/styles.css, src/app/components/BookmarkCard.vue, src/app/App.vue | 拖拽截图和撤销验证 | 当前转入撤销闭环；更清晰的目录间移动引导留待后续体验优化 |
@@ -105,14 +107,14 @@
 | R-070 | 插件构建 | 待测试 | wxt.config.ts, src/entrypoints | `npm run build` + 浏览器加载扩展 | 构建已通过；manifest 已补 `favicon` 权限，等待真实浏览器加载验证 |
 | R-071 | 前端技术 | 已完成 | package.json, wxt.config.ts | `npm run build` | 已使用 WXT + Vue 3 + TypeScript + lucide |
 | R-072 | 禁止的实现方式 | 进行中 | 本文档 | 代码审查 | 旧实现已删除，后续持续约束 |
-| R-080 | 视觉风格 | 进行中 | src/app/styles.css, src/popup/popup.css, src/app/components/SiteFavicon.vue, src/services/favicon.ts | 与 tmp 设计稿截图对比 | 删除确认弹窗单点问题已收口；当前转入主页面、popup、弹窗、浮层、整理模式工具区的整体视觉统一 |
-| R-083 | 交互样式一致性 | 进行中 | src/app/styles.css, src/popup/popup.css, src/app/components | 对照统一样式基线截图和真实交互验证 | 当前区域间按钮、输入框、弹窗、浮层的交互样式仍不一致，需本轮统一 |
+| R-080 | 视觉风格 | 待测试 | src/app/styles.css, src/popup/popup.css, src/app/components/SiteFavicon.vue, src/services/favicon.ts | 与 tmp 设计稿截图对比 | 宽焦点外圈已移除，目录选择器已替换为自定义 Listbox，等待真实界面回归 |
+| R-083 | 交互样式一致性 | 待测试 | src/app/styles.css, src/popup/popup.css, src/app/components/FolderSelect.vue, src/app/useModalEscape.ts | 对照统一样式基线截图和真实交互验证 | 焦点态、自定义下拉、自定义确认和弹窗 Esc 已进入构建产物，等待集中回归 |
 | R-081 | 明确不要 | 进行中 | 本文档 | 代码审查和截图审查 | 后续持续约束 |
 | R-082 | 响应式 | 未开始 | 待定 | 桌面/窄屏截图验证 | 无 |
 | R-090 | 基础验收 | 未开始 | 待定 | 真实扩展端到端验证 | 无 |
 | R-091 | 设计验收 | 未开始 | 待定 | 逐页截图对比 | 无 |
 | R-092 | 交互验收 | 未开始 | 待定 | 交互清单验证 | 无 |
-| R-093 | 风险验收 | 进行中 | src/app/components/ConfirmModal.vue, src/app/App.vue | 删除、移动、导入等高风险场景验证 | 目录删除已补自定义确认；书签删除等其余高风险动作待继续统一 |
+| R-093 | 风险验收 | 待测试 | src/app/components/ConfirmModal.vue, src/app/App.vue | 删除、移动、导入等高风险场景验证 | 目录删除和书签删除均已接入自定义确认，等待集中回归 |
 
 ## 里程碑状态
 
@@ -145,6 +147,40 @@
 - 准备执行：
   - 先提交当前目录增删改与确认弹窗收口代码。
   - 再审计现有交互控件，抽出统一 token 和共享 class，分批回落到主页面、popup、弹窗、浮层、整理模式工具栏。
+- 已执行：
+  - 已提交基线代码：`b802660` `收口目录管理与确认弹窗样式`。
+  - 为主页面和 popup 补齐统一的交互 token、focus ring、hover / active / disabled 反馈。
+  - 顶部模式切换、搜索框、主操作按钮、整理模式工具栏按钮已统一一轮。
+  - 搜索浮层、快捷浮层、弹窗、确认弹窗、导入导出弹窗、popup 列表项和图标按钮已统一一轮。
+- 已验证：
+  - `npm run build` 通过，当前统一样式已进入扩展构建产物。
+- 用户回归反馈：
+  - `input` 激活状态的阴影表现异常。
+  - 当前仍残留浏览器原生提示，未完全切到自定义确认弹窗。
+- 用户继续回归反馈：
+  - 当前仍有部分可见元素保留浏览器原生观感，最明显的是弹窗里的目录选择器。
+- 用户继续回归反馈：
+  - 多个交互弹窗仍不支持 `Esc` 关闭。
+- 重新分析结论：
+  - 当前不应标记为待测试；整体交互样式仍有明确失败项，应标记为待修复。
+  - 当前 `2px` 外圈 focus ring 仍不满足要求，需要改为细边框变色。
+  - 当前目录选择器虽然隐藏了原生箭头，但底层仍是原生 `select`，展开菜单仍由浏览器渲染，需要替换为自定义 Listbox。
+  - 删除书签自定义确认和弹窗 `Esc` 已进入代码，但尚未完成用户回归。
+- 当前准备执行：
+  - 移除输入类控件的宽外圈 focus ring。
+  - 用自定义 Listbox 替换书签弹窗中的原生目录选择器。
+  - 重新检查原生提示残留与所有弹窗的 `Esc` 覆盖，再构建并切回待测试。
+- 已执行：
+  - 输入框、搜索框和 popup 搜索框已取消外围 focus ring，只保留控件自身细边框变色。
+  - 新增 `FolderSelect` 自定义 Listbox，支持鼠标、方向键、Home / End、Enter / Space、点击外部关闭和分层 `Esc` 行为。
+  - 删除书签和删除目录均使用自定义确认弹窗。
+  - 添加/编辑书签、添加/编辑目录、导入导出、删除确认弹窗均接入统一 `Esc` 关闭。
+- 已检查：
+  - 源码中没有 `prompt()`、`confirm()`、`alert()` 和可见原生 `<select>`。
+- 已验证：
+  - `npm run build` 通过，Vue 类型检查和 WXT Chrome MV3 构建成功。
+- 当前结论：
+  - 上述失败项已修正，当前切回待测试；暂不扩散到其他功能。
 
 ### 已结束：继续收口 M-08-03 删除确认弹窗样式
 

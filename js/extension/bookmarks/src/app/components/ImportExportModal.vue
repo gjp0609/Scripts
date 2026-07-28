@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Download, FileJson, FileUp, X } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { useModalEscape } from '../useModalEscape';
 
-defineProps<{
+const props = defineProps<{
   open: boolean;
   busy?: boolean;
   error?: string;
@@ -13,6 +14,8 @@ const emit = defineEmits<{
   'export-full': [];
   'import-full': [file: File];
 }>();
+
+useModalEscape(() => props.open, () => emit('close'));
 
 const fullInputRef = ref<HTMLInputElement | null>(null);
 

@@ -1,15 +1,21 @@
 :root {
   --color-primary: #4f6ef7;
+  --color-primary-hover: #3b5ae0;
   --color-primary-light: #eef1fe;
+  --color-primary-border: rgba(79, 110, 247, 0.22);
   --color-bg: #f7f8fa;
   --color-bg-elevated: #ffffff;
   --color-bg-inset: #f0f1f4;
   --color-bg-hover: #eceef3;
+  --color-bg-spot: #f9fafc;
   --color-text-primary: #1a1d26;
   --color-text-secondary: #5f6578;
   --color-text-tertiary: #9499a8;
   --color-border: #e3e5ea;
   --state-error: #ef4444;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 18px rgba(15, 23, 42, 0.08);
+  --transition-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --font-family-ui: "Sarasa Mono SC", "Sarasa Mono Slab SC", "Sarasa UI SC", "Noto Sans Mono CJK SC", "JetBrains Mono", "SF Mono", "Microsoft YaHei UI", monospace;
   font-family: var(--font-family-ui);
   color: var(--color-text-primary);
@@ -29,11 +35,23 @@ body {
 button,
 input {
   font: inherit;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
 }
 
 button {
   border: 0;
   cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 1px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .popup-shell {
@@ -66,9 +84,16 @@ button {
   width: 30px;
   height: 30px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--color-text-secondary);
   background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.icon-button:hover {
+  border-color: var(--color-primary-border);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .current-page {
@@ -77,8 +102,9 @@ button {
   margin-bottom: 10px;
   padding: 10px 12px;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
 }
 
 .current-page span,
@@ -99,13 +125,19 @@ button {
 .popup-search {
   display: flex;
   align-items: center;
-  height: 34px;
+  height: 36px;
   margin-bottom: 10px;
   padding: 0 10px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 12px;
   color: var(--color-text-tertiary);
-  background: var(--color-bg-inset);
+  background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
+}
+
+.popup-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .popup-search input {
@@ -145,18 +177,21 @@ button {
   align-items: center;
   gap: 8px;
   width: 100%;
-  min-height: 34px;
+  min-height: 36px;
   padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
   color: var(--color-text-secondary);
   background: var(--color-bg-elevated);
+  box-shadow: var(--shadow-sm);
   text-align: left;
 }
 
 .folder-row:hover {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-border);
   background: var(--color-primary-light);
+  color: var(--color-primary);
+  transform: translateY(-1px);
 }
 
 .folder-row span {
@@ -171,6 +206,7 @@ button {
 .popup-error {
   margin: 10px 0 0;
   padding: 8px 10px;
+  border: 1px solid rgba(239, 68, 68, 0.12);
   border-radius: 8px;
   font-size: 12px;
 }

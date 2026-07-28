@@ -38,6 +38,7 @@ const folderModalOpen = ref(false);
 const importExportOpen = ref(false);
 const editingBookmark = ref<BookmarkView | undefined>();
 const editingFolder = ref<FolderView | undefined>();
+const bookmarkPendingDelete = ref<BookmarkView | undefined>();
 const folderPendingDelete = ref<FolderView | undefined>();
 const searchBoxEl = ref<HTMLDivElement | null>(null);
 const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
@@ -203,9 +204,15 @@ async function saveFolder(value: { id?: string; title: string }) {
   workspace.upsertFolder(folder);
 }
 
-async function deleteBookmark(bookmark: BookmarkView) {
-  if (!confirm(`删除书签“${bookmark.title}”？`)) return;
+function requestDeleteBookmark(bookmark: BookmarkView) {
+  bookmarkPendingDelete.value = bookmark;
+}
+
+async function confirmDeleteBookmark() {
+  const bookmark = bookmarkPendingDelete.value;
+  if (!bookmark) return;
   await deleteBookmarkDetails(bookmark.id);
+  bookmarkPendingDelete.value = undefined;
   workspace.removeBookmark(bookmark.id);
 }
 
@@ -505,7 +512,7 @@ watch(
               @open="openBookmark"
               @edit="startEditBookmark"
               @copy="copyUrl"
-              @delete="deleteBookmark"
+              @delete="requestDeleteBookmark"
             />
           </div>
         </section>
@@ -544,6 +551,15 @@ watch(
         editingFolder = undefined
       "
       @save="saveFolder"
+    />
+    <ConfirmModal
+      :open="Boolean(bookmarkPendingDelete)"
+      title="删除书签"
+      :description="bookmarkPendingDelete ? `删除书签“${bookmarkPendingDelete.title}”后，将立即从当前目录移除。` : ''"
+      confirm-text="确认删除"
+      danger
+      @close="bookmarkPendingDelete = undefined"
+      @confirm="confirmDeleteBookmark"
     />
     <ConfirmModal
       :open="Boolean(folderPendingDelete)"

@@ -15,6 +15,7 @@ const props = defineProps<{
   engines: SearchEngineOption[];
   engine: SearchEngineOption;
   resetToken: number;
+  activeEngineIndex: number;
 }>();
 
 const emit = defineEmits<{
@@ -25,12 +26,13 @@ const emit = defineEmits<{
   'search-keydown': [event: KeyboardEvent];
   'search-focus': [];
   'engine-menu-open': [value: boolean];
+  'engine-active-change': [value: number];
+  'engine-keydown': [event: KeyboardEvent];
 }>();
 
 const searchBoxEl = ref<HTMLDivElement | null>(null);
 const searchInputEl = ref<HTMLInputElement | null>(null);
 const engineMenuOpen = ref(false);
-const activeEngineIndex = ref(-1);
 let engineCloseTimer: number | undefined;
 
 function selectEngine(value: unknown) {
@@ -42,7 +44,7 @@ function selectEngine(value: unknown) {
 function openEngineMenu() {
   window.clearTimeout(engineCloseTimer);
   if (!engineMenuOpen.value) {
-    activeEngineIndex.value = Math.max(0, props.engines.findIndex((item) => item.id === props.engine.id));
+    emit('engine-active-change', Math.max(0, props.engines.findIndex((item) => item.id === props.engine.id)));
     emit('engine-menu-open', true);
   }
   engineMenuOpen.value = true;
@@ -59,24 +61,10 @@ function closeEngineMenu() {
   engineMenuOpen.value = false;
 }
 
-function activateEngine(index: number) {
-  activeEngineIndex.value = index;
-}
-
 function handleEngineKeydown(event: KeyboardEvent) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter') return;
-  event.preventDefault();
   if (!engineMenuOpen.value) openEngineMenu();
-  if (!props.engines.length) return;
-  if (event.key === 'Enter') {
-    const item = props.engines[activeEngineIndex.value];
-    if (item) selectEngine(item.id);
-    return;
-  }
-  const offset = event.key === 'ArrowDown' ? 1 : -1;
-  activeEngineIndex.value = activeEngineIndex.value < 0
-    ? (offset > 0 ? 0 : props.engines.length - 1)
-    : (activeEngineIndex.value + offset + props.engines.length) % props.engines.length;
+  emit('engine-keydown', event);
 }
 
 onMounted(() => {
@@ -132,8 +120,8 @@ watch(() => props.resetToken, closeEngineMenu);
               :class="{ selected: item.id === engine.id, active: index === activeEngineIndex }"
               type="button"
               :aria-pressed="item.id === engine.id"
-              @pointerenter="activateEngine(index)"
-              @focus="activateEngine(index)"
+              @pointerenter="emit('engine-active-change', index)"
+              @focus="emit('engine-active-change', index)"
               @click="selectEngine(item.id)"
             >
                 <span>{{ item.title }}</span>

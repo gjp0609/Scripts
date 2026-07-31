@@ -180,8 +180,8 @@ button { color: inherit; }
 .bookmark-list { min-height: 0; padding: var(--folder-content-gap) 2rem 0; }
 .bookmark-list-collapsed { height: 0; overflow: hidden; padding-top: 0; }
 .bookmark-list-collapsed .empty-drop-zone { visibility: hidden; }
-.bookmark-list-collapsed.bookmark-drop-active { height: calc(var(--folder-content-gap) + var(--bookmark-row-height)); padding-top: var(--folder-content-gap); }
-.bookmark-list-collapsed.bookmark-drop-active .empty-drop-zone { visibility: visible; border-color: #78968d; background: #eef4f1; }
+.bookmark-list-collapsed[data-drop-active="true"] { height: calc(var(--folder-content-gap) + var(--bookmark-row-height)); padding-top: var(--folder-content-gap); }
+.bookmark-list-collapsed[data-drop-active="true"] .empty-drop-zone { visibility: visible; border-color: #78968d; background: #eef4f1; }
 .bookmark-row {
   position: relative;
   display: block;

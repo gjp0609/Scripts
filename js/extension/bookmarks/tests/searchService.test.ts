@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { BookmarkView, FolderView } from '../src/types/bookmark.ts';
+import { nextSelectedEngineIndex, normalizeSearchIndex } from '../src/app/searchStateModel.ts';
+import { resolveFilteredMoveIndex, resolveFolderBrowserIndex, toBrowserMoveIndex } from '../src/app/organizeMoveModel.ts';
+import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
 import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
 import {
   buildQuickSearchUrl,
   filterFolders,
+  filterFoldersByTitle,
   getQuickSearchTargets,
   getSearchEngineOptions,
   getTagSummaries,
@@ -115,4 +119,60 @@ test('全量 favicon 刷新只穿透扩展原生缓存地址', () => {
     `${nativeSource}&_refresh=123`
   );
   assert.equal(withFaviconRefreshToken('https://cdn.example/icon.png', 123), 'https://cdn.example/icon.png');
+});
+
+test('搜索引擎索引循环由统一纯模型计算', () => {
+  assert.equal(normalizeSearchIndex(-1, 3), 2);
+  assert.equal(normalizeSearchIndex(3, 3), 0);
+  assert.equal(nextSelectedEngineIndex(0, 1, 3), 1);
+  assert.equal(nextSelectedEngineIndex(2, 1, 3), 0);
+  assert.equal(nextSelectedEngineIndex(-1, -1, 3), 2);
+});
+
+test('目录整理普通搜索只匹配目录标题', () => {
+  const input: FolderView[] = [
+    folders[0],
+    { ...folders[0], id: 'folder-2', title: '归档', bookmarks: [bookmark('9', '常用内容', [])] }
+  ];
+
+  assert.deepEqual(filterFoldersByTitle(input, '常用').map((folder) => folder.id), ['folder-1']);
+});
+
+test('筛选拖拽按可见锚点映射到完整顺序', () => {
+  assert.equal(resolveFilteredMoveIndex(['hidden-a', 'move', 'hidden-b', 'anchor'], ['anchor', 'move'], 'move'), 3);
+  assert.equal(resolveFilteredMoveIndex(['hidden-a', 'move', 'hidden-b', 'anchor'], ['move', 'anchor'], 'move'), 2);
+  assert.equal(toBrowserMoveIndex(3, 1, true), 4);
+  assert.equal(toBrowserMoveIndex(0, 1, true), 0);
+});
+
+test('目录预测顺序映射浏览器绝对索引', () => {
+  const indexes = new Map([['a', 0], ['b', 2], ['c', 5]]);
+  assert.equal(resolveFolderBrowserIndex(['a', 'c', 'b'], 'c', indexes), 2);
+  assert.equal(resolveFolderBrowserIndex(['b', 'a', 'c'], 'c', indexes), 1);
+});
+
+test('工作区纯模型移动书签并规范化父级索引', () => {
+  const input: FolderView[] = [
+    { ...folders[0], bookmarks: [bookmark('1', 'Alpha', []), bookmark('2', 'Beta', [])] },
+    { ...folders[0], id: 'folder-2', title: '目标', bookmarks: [bookmark('3', 'Gamma', [])] }
+  ];
+
+  moveWorkspaceBookmark(input, { bookmarkId: '2', parentId: 'folder-2', index: 1 });
+
+  assert.deepEqual(input[0].bookmarks.map((item) => [item.id, item.index]), [['1', 0]]);
+  assert.deepEqual(input[1].bookmarks.map((item) => [item.id, item.parentId, item.index]), [
+    ['3', 'folder-2', 0],
+    ['2', 'folder-2', 1]
+  ]);
+});
+
+test('工作区纯模型移动目录保持相对顺序', () => {
+  const input: FolderView[] = [
+    { ...folders[0], id: 'a' },
+    { ...folders[0], id: 'b' },
+    { ...folders[0], id: 'c' }
+  ];
+
+  moveWorkspaceFolder(input, 'a', 2);
+  assert.deepEqual(input.map((folder) => folder.id), ['b', 'c', 'a']);
 });

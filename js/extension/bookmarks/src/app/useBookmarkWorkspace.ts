@@ -3,11 +3,15 @@ import type { BookmarkView, BrowserBookmarkNode, FolderView } from '../types/boo
 import { getNode, onBookmarkEvent, type BookmarkEvent } from '../services/bookmarkApi';
 import { buildBookmarkView, loadBookmarkWorkspace } from '../services/bookmarkRepository';
 import { getPreferences, savePreferences } from '../services/extraStore';
-
-function sameStringArray(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false;
-  return left.every((value, index) => value === right[index]);
-}
+import {
+  findWorkspaceBookmark,
+  moveWorkspaceBookmark,
+  moveWorkspaceFolder,
+  removeWorkspaceBookmark,
+  removeWorkspaceFolder,
+  upsertWorkspaceBookmark,
+  upsertWorkspaceFolder
+} from './bookmarkWorkspaceModel';
 
 export function useBookmarkWorkspace() {
   const rootId = ref('');
@@ -16,6 +20,8 @@ export function useBookmarkWorkspace() {
   const error = ref('');
   const searchEngine = ref('auto');
   let cleanup: (() => void) | undefined;
+  let reloadVersion = 0;
+  let eventQueue = Promise.resolve();
 
   const allBookmarks = computed(() => folders.value.flatMap((folder) => folder.bookmarks));
   const totalBookmarks = computed(() => allBookmarks.value.length);
@@ -27,57 +33,16 @@ export function useBookmarkWorkspace() {
     return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   });
 
-  function clampIndex(index: number, total: number): number {
-    return Math.min(Math.max(index, 0), total);
-  }
-
-  function normalizeBookmarks(folder: FolderView) {
-    folder.bookmarks.forEach((bookmark, bookmarkIndex) => {
-      bookmark.parentId = folder.id;
-      bookmark.index = bookmarkIndex;
-    });
-  }
-
-  function normalizeFolders() {
-    folders.value.sort((a, b) => a.index - b.index);
-    folders.value.forEach((folder) => {
-      normalizeBookmarks(folder);
-    });
-  }
-
   function findFolder(folderId: string) {
     return folders.value.find((folder) => folder.id === folderId);
   }
 
-  function findFolderIndex(folderId: string) {
-    return folders.value.findIndex((folder) => folder.id === folderId);
-  }
-
   function findBookmark(bookmarkId: string) {
-    for (const folder of folders.value) {
-      const index = folder.bookmarks.findIndex((bookmark) => bookmark.id === bookmarkId);
-      if (index >= 0) {
-        return { folder, index, bookmark: folder.bookmarks[index] };
-      }
-    }
-    return undefined;
+    return findWorkspaceBookmark(folders.value, bookmarkId);
   }
 
   function isVisibleFolderNode(node: BrowserBookmarkNode): boolean {
     return !node.url && Boolean(rootId.value) && node.parentId === rootId.value;
-  }
-
-  function patchBookmark(current: BookmarkView, next: BookmarkView) {
-    current.title = next.title;
-    current.url = next.url;
-    current.parentId = next.parentId;
-    current.index = next.index;
-    current.domain = next.domain;
-    current.accent = next.accent;
-    current.extra = next.extra;
-    if (!sameStringArray(current.faviconUrls, next.faviconUrls)) {
-      current.faviconUrls = [...next.faviconUrls];
-    }
   }
 
   function toBrowserNode(bookmark: BookmarkView): BrowserBookmarkNode {
@@ -91,6 +56,7 @@ export function useBookmarkWorkspace() {
   }
 
   async function reload(options?: { silent?: boolean }) {
+    const version = ++reloadVersion;
     const silent = options?.silent ?? false;
     if (!silent) {
       loading.value = true;
@@ -98,6 +64,7 @@ export function useBookmarkWorkspace() {
     error.value = '';
     try {
       const [workspace, preferences] = await Promise.all([loadBookmarkWorkspace(), getPreferences()]);
+      if (version !== reloadVersion) return;
       rootId.value = workspace.rootId;
       folders.value = workspace.folders.map((folder) => ({
         ...folder,
@@ -105,10 +72,11 @@ export function useBookmarkWorkspace() {
       }));
       searchEngine.value = preferences.searchEngine;
     } catch (err) {
+      if (version !== reloadVersion) return;
       error.value = err instanceof Error ? err.message : '读取书签失败';
       folders.value = [];
     } finally {
-      if (!silent) {
+      if (!silent && version === reloadVersion) {
         loading.value = false;
       }
     }
@@ -142,112 +110,27 @@ export function useBookmarkWorkspace() {
 
   function upsertFolder(node: BrowserBookmarkNode) {
     if (!isVisibleFolderNode(node)) return;
-
-    const existing = findFolder(node.id);
-    if (existing) {
-      existing.title = node.title || '未命名目录';
-      existing.index = node.index ?? existing.index;
-    } else {
-      folders.value.push({
-        id: node.id,
-        title: node.title || '未命名目录',
-        index: node.index ?? folders.value.length,
-        bookmarks: [],
-        collapsed: false
-      });
-    }
-
-    normalizeFolders();
+    upsertWorkspaceFolder(folders.value, node);
   }
 
   function removeFolder(folderId: string) {
-    const folderIndex = findFolderIndex(folderId);
-    if (folderIndex < 0) return;
-    folders.value.splice(folderIndex, 1);
-    normalizeFolders();
+    removeWorkspaceFolder(folders.value, folderId);
   }
 
   function upsertBookmark(bookmark: BookmarkView) {
-    const targetFolder = findFolder(bookmark.parentId ?? '');
-    const current = findBookmark(bookmark.id);
-
-    if (!targetFolder) {
-      if (current) {
-        current.folder.bookmarks.splice(current.index, 1);
-        normalizeBookmarks(current.folder);
-      }
-      return;
-    }
-
-    if (current) {
-      patchBookmark(current.bookmark, bookmark);
-      const desiredIndex = clampIndex(bookmark.index ?? current.index, Math.max(targetFolder.bookmarks.length - 1, 0));
-
-      if (current.folder.id === targetFolder.id && current.index === desiredIndex) {
-        return;
-      }
-
-      current.folder.bookmarks.splice(current.index, 1);
-      const insertIndex = clampIndex(bookmark.index ?? targetFolder.bookmarks.length, targetFolder.bookmarks.length);
-      targetFolder.bookmarks.splice(insertIndex, 0, current.bookmark);
-      normalizeBookmarks(current.folder);
-      if (current.folder.id !== targetFolder.id) {
-        normalizeBookmarks(targetFolder);
-      }
-      return;
-    }
-
-    const insertIndex = clampIndex(bookmark.index ?? targetFolder.bookmarks.length, targetFolder.bookmarks.length);
-    targetFolder.bookmarks.splice(insertIndex, 0, {
-      ...bookmark,
-      faviconUrls: [...bookmark.faviconUrls]
-    });
-    normalizeBookmarks(targetFolder);
+    upsertWorkspaceBookmark(folders.value, bookmark);
   }
 
   function removeBookmark(bookmarkId: string) {
-    const current = findBookmark(bookmarkId);
-    if (!current) return;
-    current.folder.bookmarks.splice(current.index, 1);
-    normalizeBookmarks(current.folder);
+    removeWorkspaceBookmark(folders.value, bookmarkId);
   }
 
   function moveBookmark(input: { bookmarkId: string; parentId: string; index: number }) {
-    const current = findBookmark(input.bookmarkId);
-    if (!current) return;
-
-    const targetFolder = findFolder(input.parentId);
-    if (!targetFolder) {
-      current.folder.bookmarks.splice(current.index, 1);
-      normalizeBookmarks(current.folder);
-      return;
-    }
-
-    const desiredIndex = clampIndex(
-      input.index,
-      current.folder.id === targetFolder.id ? Math.max(targetFolder.bookmarks.length - 1, 0) : targetFolder.bookmarks.length
-    );
-
-    if (current.folder.id === targetFolder.id && current.index === desiredIndex) {
-      return;
-    }
-
-    current.folder.bookmarks.splice(current.index, 1);
-    const insertIndex = clampIndex(input.index, targetFolder.bookmarks.length);
-    current.bookmark.parentId = targetFolder.id;
-    targetFolder.bookmarks.splice(insertIndex, 0, current.bookmark);
-    normalizeBookmarks(current.folder);
-    if (current.folder.id !== targetFolder.id) {
-      normalizeBookmarks(targetFolder);
-    }
+    moveWorkspaceBookmark(folders.value, input);
   }
 
   function moveFolder(folderId: string, index: number) {
-    const currentIndex = findFolderIndex(folderId);
-    if (currentIndex < 0) return;
-    const [folder] = folders.value.splice(currentIndex, 1);
-    folders.value.splice(clampIndex(index, folders.value.length), 0, folder);
-    folders.value.forEach(normalizeBookmarks);
+    moveWorkspaceFolder(folders.value, folderId, index);
   }
 
   async function handleBookmarkEvent(event: BookmarkEvent) {
@@ -337,7 +220,7 @@ export function useBookmarkWorkspace() {
   onMounted(() => {
     void reload();
     cleanup = onBookmarkEvent((event) => {
-      void handleBookmarkEvent(event);
+      eventQueue = eventQueue.then(() => handleBookmarkEvent(event)).catch(() => reload({ silent: true }));
     });
   });
 

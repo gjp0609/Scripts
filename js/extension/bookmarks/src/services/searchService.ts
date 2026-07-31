@@ -3,7 +3,6 @@ import type {
   FolderView,
   QuickSearchTarget,
   SearchEngineOption,
-  SearchResultItem,
   TagSearchState,
   TagSummary
 } from '../types/bookmark';
@@ -155,6 +154,12 @@ export function filterFolders(folders: FolderView[], input: string, tagSearch?: 
     .filter((folder) => folder.bookmarks.length > 0);
 }
 
+export function filterFoldersByTitle(folders: FolderView[], input: string): FolderView[] {
+  const keyword = input.trim().toLocaleLowerCase();
+  if (!keyword) return folders;
+  return folders.filter((folder) => folder.title.toLocaleLowerCase().includes(keyword));
+}
+
 export function getSearchEngineOptions(folders: FolderView[]): SearchEngineOption[] {
   const custom = folders
     .flatMap((folder) => folder.bookmarks)
@@ -183,37 +188,6 @@ export function resolveSearchEngine(options: SearchEngineOption[], selectedId: s
 
 export function buildSearchEngineUrl(engine: SearchEngineOption, keyword: string): string {
   return engine.searchUrl.replace(/\$\{keyword\}|\{keyword\}/g, encodeURIComponent(keyword));
-}
-
-export function searchBookmarks(folders: FolderView[], keyword: string, engine: SearchEngineOption): SearchResultItem[] {
-  const normalized = keyword.trim().toLocaleLowerCase();
-  if (!normalized) return [];
-
-  const bookmarkResults = filterFolders(folders, keyword)
-    .flatMap((folder) => folder.bookmarks.map<SearchResultItem>((bookmark) => ({
-      type: 'bookmark',
-      id: bookmark.id,
-      title: bookmark.title,
-      url: bookmark.url ?? '',
-      domain: bookmark.domain,
-      folderTitle: folder.title,
-      tags: bookmark.extra.tags,
-      accent: bookmark.accent,
-      faviconUrls: bookmark.faviconUrls
-    })));
-
-  const engineResult: SearchResultItem = {
-    type: 'engine',
-    id: engine.id,
-    title: `${engine.title} 搜索 ${keyword.trim()}`,
-    url: buildSearchEngineUrl(engine, keyword.trim()),
-    domain: engine.domain,
-    tags: ['搜索引擎'],
-    accent: '#555555',
-    faviconUrls: engine.faviconUrls
-  };
-
-  return [engineResult, ...bookmarkResults].slice(0, 12);
 }
 
 export function getQuickSearchTargets(folders: FolderView[], keyword: string): QuickSearchTarget[] {

@@ -56,29 +56,6 @@ export type TagSummary = {
   searchCapability: boolean;
 };
 
-export type SearchResultItem =
-  | {
-      type: 'bookmark';
-      id: string;
-      title: string;
-      url: string;
-      domain: string;
-      folderTitle: string;
-      tags: string[];
-      accent: string;
-      faviconUrls: string[];
-    }
-  | {
-      type: 'engine';
-      id: string;
-      title: string;
-      url: string;
-      domain: string;
-      tags: string[];
-      accent: string;
-      faviconUrls: string[];
-    };
-
 export type QuickSearchTarget = {
   bookmarkId: string;
   title: string;

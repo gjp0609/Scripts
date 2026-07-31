@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
 import type { CSSProperties } from 'vue';
-import Macy from 'macy';
-import { FolderPlus, GripVertical, Maximize2, Menu, Minimize2, Pencil, Plus, RefreshCw, Settings, SlidersHorizontal, Trash2 } from 'lucide-vue-next';
+import { FolderPlus, Maximize2, Menu, Minimize2, Plus, RefreshCw, Settings, SlidersHorizontal } from 'lucide-vue-next';
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui';
-import Sortable from 'sortablejs';
 import type { BookmarkView, FolderView, QuickSearchTarget, TagSummary } from '../types/bookmark';
 import {
   deleteBookmarkDetails,
@@ -22,21 +20,21 @@ import {
   buildQuickSearchUrl,
   buildSearchEngineUrl,
   filterFolders,
-  getQuickSearchTargets,
-  getSearchEngineOptions,
-  getTagSummaries,
-  parseQuickSearch,
-  parseTagSearch,
-  resolveSearchEngine
+  filterFoldersByTitle
 } from '../services/searchService';
 import { openUrl } from '../services/extensionRuntime';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
+import { normalizeSearchIndex } from './searchStateModel';
+import { useSearchState } from './useSearchState';
+import { useOrganizeDrag, type BookmarkMoveRequest, type FolderMoveRequest } from './useOrganizeDrag';
 import { faviconRefreshTokenKey } from './faviconRefresh';
-import BookmarkCard from './components/BookmarkCard.vue';
+import BookmarkOrganizeCanvas from './components/BookmarkOrganizeCanvas.vue';
 import BookmarkModal from './components/BookmarkModal.vue';
+import BrowseCanvas from './components/BrowseCanvas.vue';
 import ConfirmModal from './components/ConfirmModal.vue';
 import EmptyState from './components/EmptyState.vue';
 import FolderModal from './components/FolderModal.vue';
+import FolderOrganizeCanvas from './components/FolderOrganizeCanvas.vue';
 import HeaderBar from './components/HeaderBar.vue';
 import ImportExportModal from './components/ImportExportModal.vue';
 import OrganizeToolbar from './components/OrganizeToolbar.vue';
@@ -47,10 +45,15 @@ import TagPanel from './components/TagPanel.vue';
 type MoveState = { kind: 'bookmark' | 'folder'; label: string; snapshot: BookmarkMoveSnapshot };
 
 const workspace = useBookmarkWorkspace();
+const search = useSearchState({
+  folders: workspace.folders,
+  selectedEngineId: workspace.searchEngine,
+  setSearchEngine: workspace.setSearchEngine
+});
 const mode = ref<'browse' | 'organize'>('browse');
 const organizeKind = ref<'bookmark' | 'folder'>('bookmark');
 const organizeCollapsedFolderIds = ref<Set<string>>(new Set());
-const query = ref('');
+const query = search.query;
 const bookmarkModalOpen = ref(false);
 const folderModalOpen = ref(false);
 const importExportOpen = ref(false);
@@ -66,26 +69,19 @@ const lastMove = ref<MoveState>();
 const searchBoxEl = ref<HTMLDivElement>();
 const searchInputEl = ref<HTMLInputElement>();
 const pageContentEl = ref<HTMLElement>();
-const boardEl = ref<HTMLElement>();
-const folderListRefs = ref<Record<string, HTMLElement | null>>({});
 const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
-const overlaySuppressed = ref(false);
-const activeQuickIndex = ref(0);
-const activeTagIndex = ref(0);
+const overlaySuppressed = search.overlaySuppressed;
+const activeQuickIndex = search.activeQuickIndex;
+const activeTagIndex = search.activeTagIndex;
+const activeEngineIndex = search.activeEngineIndex;
 const faviconRefreshToken = ref(Date.now());
 const faviconRefreshing = ref(false);
 const utilityDockOpen = ref(false);
-const engineMenuActive = ref(false);
+const engineMenuActive = search.engineMenuActive;
 const tagPanelActive = ref(false);
 const resetToken = ref(0);
-const sortableInstances = new Map<string, Sortable>();
-let macy: Macy | undefined;
-let macyTrueOrder: boolean | undefined;
-let layoutFrame = 0;
 let restoreScrollY = 0;
 let faviconRefreshTimer: number | undefined;
-let activeBookmarkDropList: HTMLElement | undefined;
-let bookmarkDropLayoutTimer: number | undefined;
 
 provide(faviconRefreshTokenKey, faviconRefreshToken);
 
@@ -93,15 +89,18 @@ function getPageViewport() {
   return pageContentEl.value?.closest<HTMLElement>('[data-reka-scroll-area-viewport]');
 }
 
-const tagSummaries = computed(() => getTagSummaries(workspace.folders.value));
-const quickSearch = computed(() => parseQuickSearch(query.value));
-const tagSearch = computed(() => parseTagSearch(query.value, tagSummaries.value));
-const engineOptions = computed(() => getSearchEngineOptions(workspace.folders.value));
-const currentEngine = computed(() => resolveSearchEngine(engineOptions.value, workspace.searchEngine.value));
-const quickTargets = computed(() => getQuickSearchTargets(workspace.folders.value, quickSearch.value?.siteQuery ?? ''));
-const normalSearch = computed(() => !quickSearch.value && !tagSearch.value && Boolean(query.value.trim()));
+const tagSummaries = search.tagSummaries;
+const quickSearch = search.quickSearch;
+const tagSearch = search.tagSearch;
+const engineOptions = search.engineOptions;
+const currentEngine = search.currentEngine;
+const quickTargets = search.quickTargets;
+const normalSearch = search.normalSearch;
 const visibleFolders = computed(() => {
   if (quickSearch.value) return workspace.folders.value;
+  if (mode.value === 'organize' && organizeKind.value === 'folder' && normalSearch.value) {
+    return filterFoldersByTitle(workspace.folders.value, query.value);
+  }
   const filtered = filterFolders(workspace.folders.value, tagSearch.value ? query.value : normalSearch.value ? query.value : '', tagSearch.value);
   if (mode.value !== 'organize' || organizeKind.value !== 'bookmark' || !query.value.trim()) return filtered;
 
@@ -112,16 +111,28 @@ const visibleFolders = computed(() => {
   }));
 });
 const canUndo = computed(() => Boolean(lastMove.value) && !pendingMoveId.value);
-const showOverlay = computed(() => Boolean(quickSearch.value || tagSearch.value) && !overlaySuppressed.value && !engineMenuActive.value);
+const showOverlay = search.showOverlay;
 const reorderEnabled = computed(() => mode.value === 'organize');
-const folderGridMode = computed(() => mode.value === 'organize' && organizeKind.value === 'folder');
 
 function updateQuery(value: string) {
-  query.value = value;
-  overlaySuppressed.value = false;
-  activeQuickIndex.value = 0;
-  activeTagIndex.value = 0;
+  search.updateQuery(value);
   scheduleOverlayPosition();
+}
+
+function syncEngineActive(index: number) {
+  search.syncEngineActive(index);
+}
+
+function handleEngineKeydown(event: KeyboardEvent) {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter') return;
+  event.preventDefault();
+  if (!engineOptions.value.length) return;
+  if (event.key === 'Enter') {
+    void search.selectEngineAt(activeEngineIndex.value);
+    return;
+  }
+  const offset = event.key === 'ArrowDown' ? 1 : -1;
+  search.moveActiveEngine(offset);
 }
 
 function setSearchBoxElement(element: HTMLDivElement) {
@@ -151,8 +162,7 @@ function scheduleOverlayPosition() {
 }
 
 function normalizeIndex(current: number, total: number): number {
-  if (!total) return 0;
-  return ((current % total) + total) % total;
+  return normalizeSearchIndex(current, total);
 }
 
 function openBookmark(bookmark: BookmarkView) {
@@ -167,9 +177,7 @@ function openQuickSearch(target: QuickSearchTarget) {
 }
 
 function selectTag(tag: TagSummary) {
-  query.value = `#${tag.name}`;
-  overlaySuppressed.value = true;
-  activeTagIndex.value = 0;
+  search.selectTag(tag.name);
   void nextTick(() => {
     searchInputEl.value?.focus();
     overlaySuppressed.value = true;
@@ -186,9 +194,7 @@ function handleSearchKeydown(event: KeyboardEvent) {
   if (!quickSearch.value && !tagSearch.value && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
     event.preventDefault();
     if (!engineOptions.value.length) return;
-    const currentIndex = engineOptions.value.findIndex((engine) => engine.id === currentEngine.value.id);
-    const nextIndex = normalizeIndex((currentIndex < 0 ? 0 : currentIndex) + (event.key === 'ArrowDown' ? 1 : -1), engineOptions.value.length);
-    void workspace.setSearchEngine(engineOptions.value[nextIndex].id);
+    void search.moveSelectedEngine(event.key === 'ArrowDown' ? 1 : -1);
     return;
   }
 
@@ -323,11 +329,6 @@ async function undoLastMove() {
   }
 }
 
-function setFolderListRef(folderId: string, element: Element | { $el?: Element } | null) {
-  const target = element instanceof Element ? element : element?.$el;
-  folderListRefs.value[folderId] = target instanceof HTMLElement ? target : null;
-}
-
 function toggleFolderFromTitle(folderId: string) {
   if (mode.value === 'browse') {
     workspace.toggleFolder(folderId);
@@ -348,232 +349,50 @@ function setOrganizeFoldersCollapsed(collapsed: boolean) {
   organizeCollapsedFolderIds.value = collapsed ? new Set(workspace.folders.value.map((folder) => folder.id)) : new Set();
 }
 
-function isFolderContentVisible(folder: FolderView) {
-  if (mode.value === 'organize') {
-    if (organizeKind.value === 'folder') return !organizeCollapsedFolderIds.value.has(folder.id);
-    return Boolean(query.value) || !organizeCollapsedFolderIds.value.has(folder.id);
+async function applyFolderMove(request: FolderMoveRequest) {
+  pendingMoveId.value = request.folderId;
+  try {
+    lastMove.value = { kind: 'folder', label: '目录排序', snapshot: { id: request.folderId, parentId: workspace.rootId.value, index: request.sourceIndex } };
+    workspace.moveFolder(request.folderId, request.desiredPosition);
+    await moveFolderOrder({ folderId: request.folderId, index: request.apiIndex });
+    await workspace.reload({ silent: true });
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : '目录排序失败';
+    await workspace.reload({ silent: true });
+  } finally {
+    pendingMoveId.value = '';
   }
-  return Boolean(query.value) || !folder.collapsed;
 }
 
-function shouldRenderBookmarkList(folder: FolderView) {
-  return mode.value === 'organize' && organizeKind.value === 'bookmark' ? true : isFolderContentVisible(folder);
-}
-
-function destroySortables() {
-  setActiveBookmarkDropList();
-  sortableInstances.forEach((instance) => instance.destroy());
-  sortableInstances.clear();
-}
-
-function setActiveBookmarkDropList(element?: HTMLElement) {
-  const next = element?.classList.contains('bookmark-list-collapsed') ? element : undefined;
-  if (activeBookmarkDropList === next) return;
-  activeBookmarkDropList?.classList.remove('bookmark-drop-active');
-  activeBookmarkDropList = next;
-  activeBookmarkDropList?.classList.add('bookmark-drop-active');
-  scheduleLayout();
-  window.clearTimeout(bookmarkDropLayoutTimer);
-  bookmarkDropLayoutTimer = window.setTimeout(scheduleLayout, 80);
-}
-
-function getVisibleOrder(container: HTMLElement, selector: string, attribute: string): string[] {
-  return [...container.querySelectorAll<HTMLElement>(selector)]
-    .map((element) => element.getAttribute(attribute) ?? '')
-    .filter(Boolean);
-}
-
-function resolveFilteredMoveIndex(fullOrder: string[], visibleOrder: string[], movedId: string): number {
-  const orderWithoutMoved = fullOrder.filter((id) => id !== movedId);
-  const visibleIndex = visibleOrder.indexOf(movedId);
-  if (visibleIndex < 0) return orderWithoutMoved.length;
-
-  const nextId = visibleOrder[visibleIndex + 1];
-  if (nextId) {
-    const nextIndex = orderWithoutMoved.indexOf(nextId);
-    if (nextIndex >= 0) return nextIndex;
+async function applyBookmarkMove(request: BookmarkMoveRequest) {
+  if (request.expandTarget) {
+    const next = new Set(organizeCollapsedFolderIds.value);
+    next.delete(request.toFolderId);
+    organizeCollapsedFolderIds.value = next;
   }
-
-  const previousId = visibleOrder[visibleIndex - 1];
-  if (previousId) {
-    const previousIndex = orderWithoutMoved.indexOf(previousId);
-    if (previousIndex >= 0) return previousIndex + 1;
+  pendingMoveId.value = request.bookmarkId;
+  try {
+    lastMove.value = { kind: 'bookmark', label: '书签移动', snapshot: { id: request.bookmarkId, parentId: request.fromFolderId, index: request.sourceIndex } };
+    const moved = await moveBookmarkOrder({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.apiIndex });
+    workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: moved.parentId ?? request.toFolderId, index: moved.index ?? request.desiredIndex });
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : '书签移动失败';
+    await workspace.reload({ silent: true });
+  } finally {
+    pendingMoveId.value = '';
   }
-
-  return orderWithoutMoved.length;
 }
 
-function toBrowserMoveIndex(desiredIndex: number, sourceIndex: number, sameParent: boolean): number {
-  return sameParent && desiredIndex > sourceIndex ? desiredIndex + 1 : desiredIndex;
-}
-
-function resolveFolderBrowserIndex(visibleOrder: string[], movedId: string): number {
-  const visibleIndex = visibleOrder.indexOf(movedId);
-  const nextId = visibleOrder[visibleIndex + 1];
-  if (nextId) return workspace.folders.value.find((folder) => folder.id === nextId)?.index ?? 0;
-
-  const previousId = visibleOrder[visibleIndex - 1];
-  if (previousId) return (workspace.folders.value.find((folder) => folder.id === previousId)?.index ?? -1) + 1;
-
-  return workspace.folders.value.find((folder) => folder.id === movedId)?.index ?? 0;
-}
-
-function setupFolderSortable() {
-  if (!boardEl.value) return;
-  const sortable = Sortable.create(boardEl.value, {
-    animation: 150,
-    draggable: '.folder-section',
-    handle: '.folder-drag-handle',
-    ghostClass: 'folder-ghost',
-    chosenClass: 'folder-chosen',
-    dragClass: 'folder-dragging',
-    fallbackClass: 'folder-drag-preview',
-    forceFallback: true,
-    fallbackOnBody: true,
-    fallbackTolerance: 3,
-    scroll: true,
-    scrollSensitivity: 60,
-    scrollSpeed: 12,
-    onEnd: async (event) => {
-      const folderId = event.item.getAttribute('data-folder-id');
-      if (!folderId) return;
-      const source = workspace.folders.value.find((folder) => folder.id === folderId);
-      if (!source || !boardEl.value) return;
-      const sourceIndex = source.index ?? workspace.folders.value.findIndex((folder) => folder.id === folderId);
-      const visibleOrder = getVisibleOrder(boardEl.value, '.folder-section', 'data-folder-id');
-      const sourcePosition = workspace.folders.value.findIndex((folder) => folder.id === folderId);
-      const desiredPosition = resolveFilteredMoveIndex(workspace.folders.value.map((folder) => folder.id), visibleOrder, folderId);
-      if (desiredPosition === sourcePosition) return;
-      pendingMoveId.value = folderId;
-      try {
-        lastMove.value = { kind: 'folder', label: '目录排序', snapshot: { id: folderId, parentId: workspace.rootId.value, index: sourceIndex } };
-        const apiIndex = resolveFolderBrowserIndex(visibleOrder, folderId);
-        workspace.moveFolder(folderId, desiredPosition);
-        await moveFolderOrder({ folderId, index: apiIndex });
-        await workspace.reload({ silent: true });
-      } catch (error) {
-        actionError.value = error instanceof Error ? error.message : '目录排序失败';
-        await workspace.reload({ silent: true });
-      } finally {
-        pendingMoveId.value = '';
-      }
-    }
-  });
-  sortableInstances.set('folders', sortable);
-}
-
-function setupBookmarkSortables() {
-  workspace.folders.value.forEach((folder) => {
-    const element = folderListRefs.value[folder.id];
-    if (!element) return;
-    const sortable = Sortable.create(element, {
-      group: 'bookmark-folders',
-      animation: 150,
-      handle: '.drag-handle',
-      draggable: '.bookmark-row',
-      ghostClass: 'bookmark-ghost',
-      chosenClass: 'bookmark-chosen',
-      dragClass: 'bookmark-dragging',
-      fallbackClass: 'bookmark-drag-preview',
-      forceFallback: true,
-      fallbackOnBody: true,
-      fallbackTolerance: 3,
-      scroll: getPageViewport() ?? true,
-      scrollSensitivity: 60,
-      scrollSpeed: 12,
-      emptyInsertThreshold: 32,
-      onMove: (event) => {
-        setActiveBookmarkDropList(event.to);
-      },
-      onUnchoose: () => setActiveBookmarkDropList(),
-      onEnd: async (event) => {
-        const bookmarkId = event.item.getAttribute('data-bookmark-id');
-        const fromFolderId = event.from.getAttribute('data-folder-id');
-        const toFolderId = event.to.getAttribute('data-folder-id');
-        const expandTarget = Boolean(toFolderId) && organizeCollapsedFolderIds.value.has(toFolderId ?? '');
-        setActiveBookmarkDropList();
-        if (expandTarget && toFolderId) {
-          const next = new Set(organizeCollapsedFolderIds.value);
-          next.delete(toFolderId);
-          organizeCollapsedFolderIds.value = next;
-        }
-        if (!bookmarkId || !fromFolderId || !toFolderId) return;
-        const source = workspace.folders.value.find((folderItem) => folderItem.id === fromFolderId)?.bookmarks.find((bookmark) => bookmark.id === bookmarkId);
-        const targetFolder = workspace.folders.value.find((folderItem) => folderItem.id === toFolderId);
-        if (!source || !targetFolder) return;
-        const sourceIndex = source.index ?? workspace.folders.value.find((folderItem) => folderItem.id === fromFolderId)?.bookmarks.findIndex((bookmark) => bookmark.id === bookmarkId) ?? 0;
-        const visibleOrder = getVisibleOrder(event.to, '.bookmark-row', 'data-bookmark-id');
-        const desiredIndex = resolveFilteredMoveIndex(targetFolder.bookmarks.map((bookmark) => bookmark.id), visibleOrder, bookmarkId);
-        if (fromFolderId === toFolderId && desiredIndex === sourceIndex) return;
-        pendingMoveId.value = bookmarkId;
-        try {
-          lastMove.value = { kind: 'bookmark', label: '书签移动', snapshot: { id: bookmarkId, parentId: fromFolderId, index: sourceIndex } };
-          const apiIndex = toBrowserMoveIndex(desiredIndex, sourceIndex, fromFolderId === toFolderId);
-          const moved = await moveBookmarkOrder({ bookmarkId, parentId: toFolderId, index: apiIndex });
-          workspace.moveBookmark({ bookmarkId, parentId: moved.parentId ?? toFolderId, index: moved.index ?? desiredIndex });
-        } catch (error) {
-          actionError.value = error instanceof Error ? error.message : '书签移动失败';
-          await workspace.reload({ silent: true });
-        } finally {
-          pendingMoveId.value = '';
-        }
-      }
-    });
-    sortableInstances.set(folder.id, sortable);
-  });
-}
-
-function setupSortables() {
-  destroySortables();
-  if (!reorderEnabled.value) return;
-  if (organizeKind.value === 'folder') setupFolderSortable();
-  else setupBookmarkSortables();
-}
-
-function destroyMacy() {
-  cancelAnimationFrame(layoutFrame);
-  macy?.remove();
-  macy = undefined;
-  macyTrueOrder = undefined;
-  boardEl.value?.querySelectorAll<HTMLElement>('.folder-section').forEach((folder) => {
-    folder.style.position = '';
-    folder.style.left = '';
-    folder.style.top = '';
-    folder.style.width = '';
-    folder.style.transform = '';
-  });
-}
-
-function scheduleLayout() {
-  cancelAnimationFrame(layoutFrame);
-  layoutFrame = requestAnimationFrame(() => {
-    void nextTick(() => {
-      if (!boardEl.value || !visibleFolders.value.length) {
-        destroyMacy();
-        return;
-      }
-      if (folderGridMode.value) {
-        destroyMacy();
-        return;
-      }
-      const trueOrder = mode.value === 'organize';
-      if (macy && macyTrueOrder !== trueOrder) destroyMacy();
-      if (!macy) {
-        macy = new Macy({
-          container: boardEl.value,
-          trueOrder,
-          waitForImages: false,
-          margin: { x: 24, y: 24 },
-          columns: 5,
-          useContainerForBreakpoints: true,
-          breakAt: { 2400: 4, 1600: 3, 1200: 2, 800: 1 }
-        });
-        macyTrueOrder = trueOrder;
-      }
-      macy.recalculate(true, true);
-    });
-  });
-}
+const organizeDrag = useOrganizeDrag({
+  enabled: reorderEnabled,
+  kind: organizeKind,
+  folders: workspace.folders,
+  collapsedFolderIds: organizeCollapsedFolderIds,
+  getScrollContainer: getPageViewport,
+  onFolderMove: applyFolderMove,
+  onBookmarkMove: applyBookmarkMove
+});
+const dropTargetFolderId = organizeDrag.dropTargetFolderId;
 
 function openImportExport() {
   importExportError.value = '';
@@ -584,7 +403,6 @@ function refreshAllFavicons() {
   faviconRefreshToken.value = Date.now();
   faviconRefreshing.value = true;
   window.clearTimeout(faviconRefreshTimer);
-  window.clearTimeout(bookmarkDropLayoutTimer);
   faviconRefreshTimer = window.setTimeout(() => {
     faviconRefreshing.value = false;
   }, 650);
@@ -690,6 +508,7 @@ function handleEscape(event: KeyboardEvent) {
 }
 
 function handleGlobalKeydown(event: KeyboardEvent) {
+  if (event.defaultPrevented) return;
   if (event.key === 'Escape') {
     handleEscape(event);
     return;
@@ -726,22 +545,14 @@ function handleGlobalKeydown(event: KeyboardEvent) {
 onMounted(() => {
   window.addEventListener('resize', updateOverlayPosition);
   window.addEventListener('scroll', updateOverlayPosition, { passive: true });
-  window.addEventListener('keydown', handleGlobalKeydown, true);
-  scheduleLayout();
+  window.addEventListener('keydown', handleGlobalKeydown);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateOverlayPosition);
   window.removeEventListener('scroll', updateOverlayPosition);
-  window.removeEventListener('keydown', handleGlobalKeydown, true);
+  window.removeEventListener('keydown', handleGlobalKeydown);
   window.clearTimeout(faviconRefreshTimer);
-  destroySortables();
-  destroyMacy();
-});
-
-watch([quickTargets, () => tagSearch.value?.matches], () => {
-  activeQuickIndex.value = normalizeIndex(activeQuickIndex.value, quickTargets.value.length);
-  activeTagIndex.value = normalizeIndex(activeTagIndex.value, tagSearch.value?.matches.length ?? 0);
 });
 
 watch(
@@ -750,17 +561,6 @@ watch(
   { flush: 'post' }
 );
 
-watch(
-  () => [mode.value, organizeKind.value, reorderEnabled.value, [...organizeCollapsedFolderIds.value].sort().join(','), visibleFolders.value.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')],
-  () => void nextTick(setupSortables),
-  { immediate: true }
-);
-
-watch(
-  () => [mode.value, organizeKind.value, query.value, [...organizeCollapsedFolderIds.value].sort().join(','), visibleFolders.value.map((folder) => `${folder.id}:${folder.collapsed}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')],
-  scheduleLayout,
-  { immediate: true }
-);
 </script>
 
 <template>
@@ -769,12 +569,15 @@ watch(
       :query="query"
       :engines="engineOptions"
       :engine="currentEngine"
+      :active-engine-index="activeEngineIndex"
       :reset-token="resetToken"
       @update:query="updateQuery"
       @update:engine="workspace.setSearchEngine"
       @search-keydown="handleSearchKeydown"
       @search-focus="overlaySuppressed = false"
       @engine-menu-open="engineMenuActive = $event"
+      @engine-active-change="syncEngineActive"
+      @engine-keydown="handleEngineKeydown"
       @search-box-ready="setSearchBoxElement"
       @search-input-ready="setSearchInputElement"
     />
@@ -823,42 +626,38 @@ watch(
       <EmptyState v-else-if="workspace.error.value" title="无法读取书签" :description="workspace.error.value" />
       <EmptyState v-else-if="!visibleFolders.length" :title="query ? '没有匹配结果' : '还没有书签'" :description="query ? '修改搜索内容后继续。' : '请在书签栏下创建一层目录和书签。'" />
 
-      <section v-else ref="boardEl" class="folder-board">
-        <article v-for="folder in visibleFolders" :key="folder.id" class="folder-section" :data-folder-id="folder.id">
-          <header class="folder-head">
-            <button v-if="reorderEnabled && organizeKind === 'folder'" class="folder-drag-handle" type="button" aria-label="拖拽目录"><GripVertical :size="15" /></button>
-            <button class="folder-title" type="button" @click="toggleFolderFromTitle(folder.id)">
-              <strong>{{ folder.title }}</strong>
-              <small v-if="mode === 'organize'">{{ folder.bookmarks.length }}</small>
-            </button>
-            <span v-if="mode === 'organize'" class="folder-actions">
-              <button type="button" title="编辑目录" @click="startEditFolder(folder)"><Pencil :size="13" /></button>
-              <button class="danger" type="button" title="删除目录" @click="folderPendingDelete = folder"><Trash2 :size="13" /></button>
-            </span>
-          </header>
-          <div
-            v-if="shouldRenderBookmarkList(folder)"
-            :ref="(element) => setFolderListRef(folder.id, element)"
-            class="bookmark-list"
-            :class="{ 'bookmark-list-collapsed': mode === 'organize' && organizeKind === 'bookmark' && !isFolderContentVisible(folder) }"
-            :data-folder-id="folder.id"
-          >
-            <template v-if="isFolderContentVisible(folder)">
-              <BookmarkCard
-                v-for="bookmark in folder.bookmarks"
-                :key="bookmark.id"
-                :bookmark="bookmark"
-                :organize="reorderEnabled && organizeKind === 'bookmark'"
-                @open="openBookmark"
-                @edit="startEditBookmark"
-                @delete="bookmarkPendingDelete = $event"
-              />
-            </template>
-            <p v-if="reorderEnabled && organizeKind === 'bookmark' && (!isFolderContentVisible(folder) || !folder.bookmarks.length)" class="empty-drop-zone" aria-label="书签投放区"></p>
-          </div>
-          <button v-else-if="mode === 'browse'" class="folder-collapsed" type="button" @click="toggleFolderFromTitle(folder.id)">...</button>
-        </article>
-      </section>
+      <BrowseCanvas
+        v-else-if="mode === 'browse'"
+        :folders="visibleFolders"
+        :force-expanded="Boolean(query)"
+        @toggle-folder="toggleFolderFromTitle"
+        @open-bookmark="openBookmark"
+      />
+
+      <BookmarkOrganizeCanvas
+        v-else-if="organizeKind === 'bookmark'"
+        :folders="visibleFolders"
+        :collapsed-folder-ids="organizeCollapsedFolderIds"
+        :drop-target-folder-id="dropTargetFolderId"
+        :force-expanded="Boolean(query)"
+        @board-ready="organizeDrag.registerBoard"
+        @folder-list-ready="organizeDrag.registerFolderList"
+        @toggle-folder="toggleFolderFromTitle"
+        @edit-folder="startEditFolder"
+        @delete-folder="folderPendingDelete = $event"
+        @edit-bookmark="startEditBookmark"
+        @delete-bookmark="bookmarkPendingDelete = $event"
+      />
+
+      <FolderOrganizeCanvas
+        v-else
+        :folders="visibleFolders"
+        :collapsed-folder-ids="organizeCollapsedFolderIds"
+        @board-ready="organizeDrag.registerBoard"
+        @toggle-folder="toggleFolderFromTitle"
+        @edit-folder="startEditFolder"
+        @delete-folder="folderPendingDelete = $event"
+      />
         </main>
       </ScrollAreaViewport>
       <ScrollAreaScrollbar class="page-scrollbar" orientation="vertical">

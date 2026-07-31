@@ -2,6 +2,7 @@ import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } fro
 import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
 import { cleanupExtras, getExtras, removeExtra, removeExtras, saveExtra } from './extraStore';
 import { getFaviconSources } from './favicon';
+import { normalizeTag, SEARCH_SITE_TAG, SEARCH_TAG } from './searchService';
 
 const accents = ['#4F6EF7', '#06B6D4', '#22C55E', '#E8853D', '#EF4444', '#8B5CF6', '#F59E0B'];
 
@@ -92,19 +93,47 @@ export async function saveBookmarkDetails(input: {
   description?: string;
   searchUrl?: string;
 }): Promise<BookmarkView> {
-  const node = input.id
+  const tags = input.tags.reduce<string[]>((result, rawTag) => {
+    const tag = rawTag.trim();
+    if (!tag || result.some((current) => normalizeTag(current) === normalizeTag(tag))) return result;
+    result.push(tag);
+    return result;
+  }, []);
+  const hasSearch = tags.some((tag) => normalizeTag(tag) === SEARCH_TAG);
+  const hasSearchSite = tags.some((tag) => normalizeTag(tag) === SEARCH_SITE_TAG);
+
+  if (hasSearch && hasSearchSite) {
+    throw new Error('search 与 search_site 不能同时使用');
+  }
+  if (hasSearch && !/\$\{keyword\}|\{keyword\}/.test(input.searchUrl?.trim() ?? '')) {
+    throw new Error('search 标签需要包含 {keyword} 的搜索 URL 模板');
+  }
+  if (hasSearchSite) {
+    try {
+      const parsed = new URL(input.url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
+    } catch {
+      throw new Error('search_site 标签需要有效的 HTTP(S) 书签 URL');
+    }
+  }
+
+  let node = input.id
     ? await updateBookmark(input.id, { title: input.title, url: input.url })
     : await createBookmark({ parentId: input.parentId, title: input.title, url: input.url });
 
   if (node.parentId !== input.parentId) {
-    await moveNode(node.id, { parentId: input.parentId });
+    const targetFolder = await getSubTree(input.parentId);
+    node = await moveNode(node.id, {
+      parentId: input.parentId,
+      index: targetFolder?.children?.length ?? 0
+    });
   }
 
   const extra: BookmarkExtra = {
     bookmarkId: node.id,
-    tags: input.tags,
+    tags,
     description: input.description,
-    searchUrl: input.searchUrl,
+    searchUrl: hasSearch ? input.searchUrl?.trim() : undefined,
     updatedAt: Date.now()
   };
 
@@ -161,6 +190,10 @@ export async function moveBookmarkOrder(input: {
     parentId: input.parentId,
     index: input.index
   });
+}
+
+export async function moveFolderOrder(input: { folderId: string; index: number }): Promise<BrowserBookmarkNode> {
+  return moveNode(input.folderId, { index: input.index });
 }
 
 export async function restoreBookmarkPosition(snapshot: BookmarkMoveSnapshot): Promise<BrowserBookmarkNode> {

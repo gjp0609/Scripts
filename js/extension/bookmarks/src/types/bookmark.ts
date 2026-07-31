@@ -33,10 +33,28 @@ export type FolderView = {
 
 export type UiPreferences = {
   collapsedFolderIds: string[];
-  searchEngine: SearchEngineId;
+  searchEngine: string;
 };
 
-export type SearchEngineId = 'google' | 'bing';
+export type BuiltinSearchEngineId = 'bing' | 'google';
+export type SearchEngineId = string;
+
+export type SearchEngineOption = {
+  id: string;
+  title: string;
+  searchUrl: string;
+  domain: string;
+  faviconUrls: string[];
+  builtin: boolean;
+  bookmarkId?: string;
+};
+
+export type TagSummary = {
+  name: string;
+  normalizedName: string;
+  count: number;
+  searchCapability: boolean;
+};
 
 export type SearchResultItem =
   | {
@@ -52,7 +70,7 @@ export type SearchResultItem =
     }
   | {
       type: 'engine';
-      id: SearchEngineId;
+      id: string;
       title: string;
       url: string;
       domain: string;
@@ -65,9 +83,17 @@ export type QuickSearchTarget = {
   bookmarkId: string;
   title: string;
   domain: string;
-  searchUrl: string;
+  kind: 'search_site';
+  url: string;
+  tags: string[];
   accent: string;
   faviconUrls: string[];
+};
+
+export type TagSearchState = {
+  query: string;
+  matches: TagSummary[];
+  exactTag?: TagSummary;
 };
 
 export type FullExportData = {

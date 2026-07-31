@@ -1,36 +1,28 @@
 <script setup lang="ts">
-import { FolderPlus, Plus, RotateCcw } from 'lucide-vue-next';
+import { Bookmark, Folder, FolderPlus, Maximize2, Minimize2, Plus, RotateCcw } from 'lucide-vue-next';
+
+defineProps<{ kind: 'bookmark' | 'folder'; canUndo: boolean }>();
 
 const emit = defineEmits<{
+  'update:kind': [value: 'bookmark' | 'folder'];
   'add-bookmark': [];
   'add-folder': [];
+  'expand-all': [];
+  'collapse-all': [];
   undo: [];
-}>();
-
-defineProps<{
-  canUndo?: boolean;
 }>();
 </script>
 
 <template>
-  <div class="organize-toolbar">
-    <div class="organize-title">
-      <strong>整理模式</strong>
-      <span>拖拽调整顺序 · Ctrl Z 撤销</span>
+  <div class="organize-toolbar" aria-label="整理工具栏">
+    <div class="organize-segments" role="group" aria-label="整理类型">
+      <button :class="{ active: kind === 'bookmark' }" type="button" @click="emit('update:kind', 'bookmark')"><Bookmark :size="14" /><span>书签</span></button>
+      <button :class="{ active: kind === 'folder' }" type="button" @click="emit('update:kind', 'folder')"><Folder :size="14" /><span>目录</span></button>
     </div>
-    <div class="organize-actions">
-      <button type="button" @click="emit('add-bookmark')">
-        <Plus :size="12" />
-        <span>新增书签</span>
-      </button>
-      <button type="button" @click="emit('add-folder')">
-        <FolderPlus :size="12" />
-        <span>新增目录</span>
-      </button>
-      <button type="button" :disabled="!canUndo" @click="emit('undo')">
-        <RotateCcw :size="12" />
-        <span>撤销</span>
-      </button>
-    </div>
+    <button type="button" title="全部展开" aria-label="全部展开" @click="emit('expand-all')"><Maximize2 :size="15" /></button>
+    <button type="button" title="全部收缩" aria-label="全部收缩" @click="emit('collapse-all')"><Minimize2 :size="15" /></button>
+    <button type="button" title="添加书签" @click="emit('add-bookmark')"><Plus :size="15" /></button>
+    <button type="button" title="添加目录" @click="emit('add-folder')"><FolderPlus :size="15" /></button>
+    <button type="button" title="撤销最近移动" :disabled="!canUndo" @click="emit('undo')"><RotateCcw :size="15" /></button>
   </div>
 </template>

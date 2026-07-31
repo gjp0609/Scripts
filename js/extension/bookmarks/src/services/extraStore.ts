@@ -6,7 +6,7 @@ const PREFERENCES_KEY = 'markhubPreferences';
 
 const defaultPreferences: UiPreferences = {
   collapsedFolderIds: [],
-  searchEngine: 'google'
+  searchEngine: 'auto'
 };
 
 async function getLocal<T>(key: string): Promise<T | undefined> {

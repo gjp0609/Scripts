@@ -1,45 +1,37 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue';
-import { CornerDownLeft } from 'lucide-vue-next';
-import type { SearchResultItem } from '../../types/bookmark';
-import SiteFavicon from './SiteFavicon.vue';
+import { Hash } from 'lucide-vue-next';
+import type { TagSearchState, TagSummary } from '../../types/bookmark';
 
 defineProps<{
-  query: string;
-  results: SearchResultItem[];
-  activeIndex?: number;
-  overlayStyle?: CSSProperties;
+  tagSearch: TagSearchState;
+  activeIndex: number;
+  overlayStyle: CSSProperties;
 }>();
 
 const emit = defineEmits<{
-  open: [result: SearchResultItem];
+  selectTag: [tag: TagSummary];
+  activate: [index: number];
 }>();
 </script>
 
 <template>
-  <div v-if="query.trim()" class="search-overlay" :style="overlayStyle">
-    <div class="overlay-head">
-      <span>搜索结果</span>
-      <span>{{ results.length }} 个结果</span>
-    </div>
-
+  <section class="search-overlay" :style="overlayStyle">
     <button
-      v-for="(result, index) in results"
-      :key="`${result.type}-${result.id}`"
-      class="search-row"
-      :class="{ active: index === activeIndex }"
+      v-for="(tag, index) in tagSearch.matches"
+      :key="tag.normalizedName"
+      class="search-result tag-result"
+      :class="{ active: index === activeIndex, exact: tagSearch.exactTag?.normalizedName === tag.normalizedName }"
       type="button"
-      :aria-selected="index === activeIndex"
-      @click="emit('open', result)"
+      @mousedown.prevent
+      @pointerenter="emit('activate', index)"
+      @focus="emit('activate', index)"
+      @click="emit('selectTag', tag)"
     >
-      <SiteFavicon class="overlay-favicon" :title="result.title" :accent="result.accent" :sources="result.faviconUrls" />
-      <span class="result-text">
-        <strong>{{ result.title }}</strong>
-        <small>{{ result.domain }}</small>
-      </span>
-      <CornerDownLeft :size="14" />
+      <Hash :size="15" />
+      <span class="result-copy"><strong>{{ tag.name }}</strong><small>{{ tag.searchCapability ? '搜索能力' : `${tag.count} 个书签` }}</small></span>
+      <span class="result-count">{{ tag.count }}</span>
     </button>
-
-    <div class="overlay-foot">↑↓ 选择&nbsp;&nbsp;Enter 打开&nbsp;&nbsp;Esc 关闭</div>
-  </div>
+    <div v-if="!tagSearch.matches.length" class="search-empty">没有匹配标签</div>
+  </section>
 </template>

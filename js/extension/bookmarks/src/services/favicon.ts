@@ -4,41 +4,25 @@ type FaviconInput = {
   override?: string;
 };
 
-function normalizeHostname(input?: string): string | undefined {
-  if (!input) return undefined;
-  return input.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '').trim() || undefined;
-}
+export function getFaviconPageUrls(pageUrl?: string): string[] {
+  const value = pageUrl?.trim();
+  if (!value) return [];
 
-export function resolveHostname(input: FaviconInput): string | undefined {
-  if (input.domain) {
-    return normalizeHostname(input.domain);
-  }
-
-  if (!input.url) {
-    return undefined;
-  }
-
+  const candidates = new Set<string>();
+  candidates.add(value);
   try {
-    return normalizeHostname(new URL(input.url).hostname);
-  } catch {
-    return normalizeHostname(input.url);
-  }
-}
-
-function getPageOrigin(url?: string): string | undefined {
-  if (!url) return undefined;
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      return parsed.origin;
+    const normalized = new URL(value);
+    normalized.hash = '';
+    candidates.add(normalized.toString());
+    if (['http:', 'https:'].includes(normalized.protocol)) {
+      candidates.add(`${normalized.origin}/`);
     }
-    return undefined;
-  } catch {
-    return undefined;
-  }
+  } catch {}
+
+  return [...candidates];
 }
 
-function getNativeChromiumFaviconUrl(pageUrl?: string, size = 32): string | undefined {
+function getNativeChromiumFaviconUrl(pageUrl: string, size = 32): string | undefined {
   if (!pageUrl) return undefined;
   if (globalThis.location?.protocol !== 'chrome-extension:') {
     return undefined;
@@ -50,6 +34,21 @@ function getNativeChromiumFaviconUrl(pageUrl?: string, size = 32): string | unde
   return nativeUrl.toString();
 }
 
+export function withFaviconRefreshToken(source: string, token: number): string {
+  if (!token) return source;
+
+  try {
+    const url = new URL(source);
+    if (url.protocol !== 'chrome-extension:' || url.pathname !== '/_favicon/') {
+      return source;
+    }
+    url.searchParams.set('_refresh', String(token));
+    return url.toString();
+  } catch {
+    return source;
+  }
+}
+
 export function getFaviconSources(input: FaviconInput): string[] {
   const sources = new Set<string>();
 
@@ -57,22 +56,12 @@ export function getFaviconSources(input: FaviconInput): string[] {
     sources.add(input.override);
   }
 
-  const nativeChromiumUrl = getNativeChromiumFaviconUrl(input.url);
-  if (nativeChromiumUrl) {
-    sources.add(nativeChromiumUrl);
+  for (const pageUrl of getFaviconPageUrls(input.url)) {
+    const nativeChromiumUrl = getNativeChromiumFaviconUrl(pageUrl);
+    if (nativeChromiumUrl) {
+      sources.add(nativeChromiumUrl);
+    }
   }
 
-  const pageOrigin = getPageOrigin(input.url);
-  if (pageOrigin) {
-    sources.add(`${pageOrigin}/favicon.ico`);
-  }
-
-  const hostname = resolveHostname(input);
-  if (!hostname) {
-    return [...sources];
-  }
-
-  sources.add(`https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=64`);
-  sources.add(`https://icons.duckduckgo.com/ip3/${hostname}.ico`);
   return [...sources];
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, GripVertical, MoreVertical, Pencil, Trash2 } from 'lucide-vue-next';
+import { GripVertical, Pencil, Trash2 } from 'lucide-vue-next';
 import type { BookmarkView } from '../../types/bookmark';
 import SiteFavicon from './SiteFavicon.vue';
 
@@ -11,49 +11,33 @@ defineProps<{
 const emit = defineEmits<{
   open: [bookmark: BookmarkView];
   edit: [bookmark: BookmarkView];
-  copy: [bookmark: BookmarkView];
   delete: [bookmark: BookmarkView];
-  dragStart: [bookmark: BookmarkView];
-  dragEnd: [bookmark: BookmarkView];
 }>();
 </script>
 
 <template>
   <article
-    class="bookmark-card"
-    :class="{ organizing: organize, 'has-tags': bookmark.extra.tags.length > 0 }"
+    class="bookmark-row"
+    :class="{ organizing: organize }"
     :data-bookmark-id="bookmark.id"
+    tabindex="0"
+    role="link"
     @click="emit('open', bookmark)"
+    @keydown.enter="emit('open', bookmark)"
   >
-    <button v-if="organize" class="drag-handle" type="button" aria-label="拖拽排序" @click.stop>
-      <GripVertical :size="16" />
+    <button v-if="organize" class="drag-handle" type="button" aria-label="拖拽书签" @click.stop>
+      <GripVertical :size="15" />
     </button>
-
-    <div class="card-actions" @click.stop>
-      <button v-if="organize" type="button" aria-label="编辑" @click="emit('edit', bookmark)">
-        <Pencil :size="12" />
-      </button>
-      <button v-if="organize" type="button" aria-label="复制 URL" @click="emit('copy', bookmark)">
-        <Copy :size="12" />
-      </button>
-      <button v-if="organize" type="button" aria-label="删除" @click="emit('delete', bookmark)">
-        <Trash2 :size="12" />
-      </button>
-      <button v-else type="button" aria-label="更多">
-        <MoreVertical :size="14" />
-      </button>
-    </div>
-
-    <div class="card-main">
-      <div class="card-heading">
+    <span class="bookmark-copy">
+      <span class="bookmark-title-line">
         <SiteFavicon :title="bookmark.title" :accent="bookmark.accent" :sources="bookmark.faviconUrls" />
-        <h3 :title="bookmark.title">{{ bookmark.title }}</h3>
-      </div>
-      <p class="card-url" :title="bookmark.url || bookmark.domain">{{ bookmark.url || bookmark.domain }}</p>
-    </div>
-
-    <div v-if="bookmark.extra.tags.length" class="tag-row">
-      <span v-for="tag in bookmark.extra.tags.slice(0, 3)" :key="tag">{{ tag }}</span>
-    </div>
+        <strong :title="bookmark.title">{{ bookmark.title }}</strong>
+      </span>
+      <small :title="bookmark.url || bookmark.domain">{{ bookmark.url || bookmark.domain }}</small>
+    </span>
+    <span v-if="organize" class="bookmark-actions" @click.stop>
+      <button type="button" title="编辑" aria-label="编辑书签" @click="emit('edit', bookmark)"><Pencil :size="13" /></button>
+      <button class="danger" type="button" title="删除" aria-label="删除书签" @click="emit('delete', bookmark)"><Trash2 :size="13" /></button>
+    </span>
   </article>
 </template>

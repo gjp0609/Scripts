@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { AlertTriangle, X } from 'lucide-vue-next';
-import { useModalEscape } from '../useModalEscape';
+import {
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogRoot,
+  AlertDialogTitle
+} from 'reka-ui';
 
 const props = defineProps<{
   open: boolean;
@@ -15,37 +23,39 @@ const emit = defineEmits<{
   confirm: [];
 }>();
 
-useModalEscape(() => props.open, () => emit('close'));
+function updateOpen(value: boolean) {
+  if (!value) emit('close');
+}
 </script>
 
 <template>
-  <div v-if="open" class="modal-layer">
-    <button class="modal-backdrop" type="button" aria-label="关闭" @click="emit('close')"></button>
-    <section class="modal-card confirm-modal">
-      <div class="modal-accent"></div>
-      <header class="modal-head">
+  <AlertDialogRoot :open="open" @update:open="updateOpen">
+    <AlertDialogPortal>
+      <AlertDialogOverlay class="dialog-overlay" />
+      <AlertDialogContent class="dialog-content confirm-dialog">
+      <header class="dialog-head">
         <div class="confirm-title">
           <span class="confirm-icon">
             <AlertTriangle :size="18" />
           </span>
           <div class="confirm-copy">
-            <h2>{{ title }}</h2>
-            <p>此操作会立即写回浏览器书签。</p>
+            <AlertDialogTitle>{{ title }}</AlertDialogTitle>
           </div>
         </div>
         <button type="button" aria-label="关闭" @click="emit('close')">
-          <X :size="20" />
+          <X :size="18" />
         </button>
       </header>
       <div class="confirm-body">
-        <p>{{ description }}</p>
+        <AlertDialogDescription>{{ description }}</AlertDialogDescription>
       </div>
-      <footer class="modal-foot">
-        <button class="ghost-pill" type="button" @click="emit('close')">取消</button>
-        <button class="primary-pill" :class="{ 'danger-pill': danger }" type="button" @click="emit('confirm')">
+      <footer class="dialog-foot confirm-actions">
+        <AlertDialogCancel class="button-secondary" @click="emit('close')">取消</AlertDialogCancel>
+        <button type="button" class="button-primary" :class="{ 'button-danger': danger }" @click="emit('confirm')">
           {{ confirmText || '确认' }}
         </button>
       </footer>
-    </section>
-  </div>
+      </AlertDialogContent>
+    </AlertDialogPortal>
+  </AlertDialogRoot>
 </template>

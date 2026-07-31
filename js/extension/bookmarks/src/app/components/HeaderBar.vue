@@ -1,65 +1,162 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { FolderPlus, Globe2, Plus, Search } from 'lucide-vue-next';
-import type { SearchEngineId } from '../../types/bookmark';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Check } from 'lucide-vue-next';
+import {
+  PopoverAnchor,
+  PopoverContent,
+  PopoverPortal,
+  PopoverRoot
+} from 'reka-ui';
+import type { SearchEngineOption } from '../../types/bookmark';
+import SiteFavicon from './SiteFavicon.vue';
 
-defineProps<{
-  mode: 'browse' | 'organize';
+const props = defineProps<{
   query: string;
-  engine: SearchEngineId;
+  engines: SearchEngineOption[];
+  engine: SearchEngineOption;
+  resetToken: number;
 }>();
 
 const emit = defineEmits<{
-  'update:mode': [value: 'browse' | 'organize'];
   'update:query': [value: string];
-  'update:engine': [value: SearchEngineId];
-  'add-bookmark': [];
-  'add-folder': [];
+  'update:engine': [value: string];
   'search-box-ready': [element: HTMLDivElement];
+  'search-input-ready': [element: HTMLInputElement];
   'search-keydown': [event: KeyboardEvent];
+  'search-focus': [];
+  'engine-menu-open': [value: boolean];
 }>();
 
 const searchBoxEl = ref<HTMLDivElement | null>(null);
+const searchInputEl = ref<HTMLInputElement | null>(null);
+const engineMenuOpen = ref(false);
+const activeEngineIndex = ref(-1);
+let engineCloseTimer: number | undefined;
+
+function selectEngine(value: unknown) {
+  if (typeof value !== 'string') return;
+  emit('update:engine', value);
+  closeEngineMenu();
+}
+
+function openEngineMenu() {
+  window.clearTimeout(engineCloseTimer);
+  if (!engineMenuOpen.value) {
+    activeEngineIndex.value = Math.max(0, props.engines.findIndex((item) => item.id === props.engine.id));
+    emit('engine-menu-open', true);
+  }
+  engineMenuOpen.value = true;
+}
+
+function scheduleCloseEngineMenu() {
+  window.clearTimeout(engineCloseTimer);
+  engineCloseTimer = window.setTimeout(closeEngineMenu, 140);
+}
+
+function closeEngineMenu() {
+  window.clearTimeout(engineCloseTimer);
+  if (engineMenuOpen.value) emit('engine-menu-open', false);
+  engineMenuOpen.value = false;
+}
+
+function activateEngine(index: number) {
+  activeEngineIndex.value = index;
+}
+
+function handleEngineKeydown(event: KeyboardEvent) {
+  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter') return;
+  event.preventDefault();
+  if (!engineMenuOpen.value) openEngineMenu();
+  if (!props.engines.length) return;
+  if (event.key === 'Enter') {
+    const item = props.engines[activeEngineIndex.value];
+    if (item) selectEngine(item.id);
+    return;
+  }
+  const offset = event.key === 'ArrowDown' ? 1 : -1;
+  activeEngineIndex.value = activeEngineIndex.value < 0
+    ? (offset > 0 ? 0 : props.engines.length - 1)
+    : (activeEngineIndex.value + offset + props.engines.length) % props.engines.length;
+}
 
 onMounted(() => {
-  if (searchBoxEl.value) {
-    emit('search-box-ready', searchBoxEl.value);
+  if (searchBoxEl.value) emit('search-box-ready', searchBoxEl.value);
+  if (searchInputEl.value) {
+    emit('search-input-ready', searchInputEl.value);
+    searchInputEl.value.focus();
   }
 });
+
+onBeforeUnmount(() => window.clearTimeout(engineCloseTimer));
+
+watch(() => props.query, closeEngineMenu);
+watch(() => props.resetToken, closeEngineMenu);
 </script>
 
 <template>
-  <header class="topbar">
-    <div class="mode-tabs">
-      <button :class="{ active: mode === 'browse' }" type="button" @click="emit('update:mode', 'browse')">浏览</button>
-      <button :class="{ active: mode === 'organize' }" type="button" @click="emit('update:mode', 'organize')">整理</button>
-    </div>
+  <header class="search-band">
+    <div class="search-composer">
+      <PopoverRoot :open="engineMenuOpen" @update:open="$event ? openEngineMenu() : closeEngineMenu()">
+        <PopoverAnchor as-child>
+          <button
+            class="engine-select"
+            type="button"
+            aria-label="选择搜索引擎"
+            :aria-expanded="engineMenuOpen"
+            @pointerenter="openEngineMenu"
+            @pointerleave="scheduleCloseEngineMenu"
+            @focus="openEngineMenu"
+            @click="openEngineMenu"
+            @keydown="handleEngineKeydown"
+          >
+            <SiteFavicon :title="engine.title" accent="#777777" :sources="engine.faviconUrls" />
+            <span>{{ engine.title }}</span>
+          </button>
+        </PopoverAnchor>
+        <PopoverPortal>
+          <PopoverContent
+            class="engine-menu"
+            side="bottom"
+            align="start"
+            :side-offset="6"
+            @pointerenter="openEngineMenu"
+            @pointerleave="scheduleCloseEngineMenu"
+            @open-auto-focus="$event.preventDefault()"
+            @close-auto-focus="$event.preventDefault()"
+            @keydown="handleEngineKeydown"
+          >
+            <button
+              v-for="(item, index) in props.engines"
+              :key="item.id"
+              class="engine-option"
+              :class="{ selected: item.id === engine.id, active: index === activeEngineIndex }"
+              type="button"
+              :aria-pressed="item.id === engine.id"
+              @pointerenter="activateEngine(index)"
+              @focus="activateEngine(index)"
+              @click="selectEngine(item.id)"
+            >
+                <span>{{ item.title }}</span>
+                <small v-if="!item.builtin">{{ item.domain }}</small>
+                <span v-if="item.id === engine.id" class="engine-check"><Check :size="13" /></span>
+            </button>
+          </PopoverContent>
+        </PopoverPortal>
+      </PopoverRoot>
 
-    <div ref="searchBoxEl" class="search-box">
-      <Search :size="16" />
-      <input
-        :value="query"
-        type="text"
-        placeholder="搜索书签... Ctrl K"
-        autofocus
-        @input="emit('update:query', ($event.target as HTMLInputElement).value)"
-        @keydown="emit('search-keydown', $event)"
-      />
-      <button class="engine-button" type="button" @click="emit('update:engine', engine === 'google' ? 'bing' : 'google')">
-        <Globe2 :size="14" />
-        <span>{{ engine === 'google' ? 'Google' : 'Bing' }}</span>
-      </button>
-    </div>
-
-    <div class="top-actions">
-      <button class="primary-action" type="button" @click="emit('add-bookmark')">
-        <Plus :size="14" />
-        <span>书签</span>
-      </button>
-      <button class="ghost-action" type="button" @click="emit('add-folder')">
-        <FolderPlus :size="14" />
-        <span>目录</span>
-      </button>
+      <div ref="searchBoxEl" class="search-input-shell">
+        <input
+          ref="searchInputEl"
+          :value="query"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="搜索书签"
+          @focus="emit('search-focus')"
+          @input="emit('update:query', ($event.target as HTMLInputElement).value)"
+          @keydown="emit('search-keydown', $event)"
+        />
+      </div>
     </div>
   </header>
 </template>

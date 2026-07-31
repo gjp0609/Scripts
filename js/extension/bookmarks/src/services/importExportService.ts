@@ -104,7 +104,7 @@ function validateFullImportData(data: unknown): { folders: NormalizedImportFolde
     if (Array.isArray(data.preferences.collapsedFolderIds)) {
       preferences.collapsedFolderIds = data.preferences.collapsedFolderIds.filter((id): id is string => typeof id === 'string');
     }
-    if (data.preferences.searchEngine === 'google' || data.preferences.searchEngine === 'bing') {
+    if (typeof data.preferences.searchEngine === 'string') {
       preferences.searchEngine = data.preferences.searchEngine;
     }
   }

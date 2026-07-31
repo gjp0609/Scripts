@@ -1,5 +1,5 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import type { BookmarkView, BrowserBookmarkNode, FolderView, SearchEngineId } from '../types/bookmark';
+import type { BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
 import { getNode, onBookmarkEvent, type BookmarkEvent } from '../services/bookmarkApi';
 import { buildBookmarkView, loadBookmarkWorkspace } from '../services/bookmarkRepository';
 import { getPreferences, savePreferences } from '../services/extraStore';
@@ -14,7 +14,7 @@ export function useBookmarkWorkspace() {
   const folders = ref<FolderView[]>([]);
   const loading = ref(true);
   const error = ref('');
-  const searchEngine = ref<SearchEngineId>('google');
+  const searchEngine = ref('auto');
   let cleanup: (() => void) | undefined;
 
   const allBookmarks = computed(() => folders.value.flatMap((folder) => folder.bookmarks));
@@ -40,8 +40,7 @@ export function useBookmarkWorkspace() {
 
   function normalizeFolders() {
     folders.value.sort((a, b) => a.index - b.index);
-    folders.value.forEach((folder, folderIndex) => {
-      folder.index = folderIndex;
+    folders.value.forEach((folder) => {
       normalizeBookmarks(folder);
     });
   }
@@ -115,7 +114,7 @@ export function useBookmarkWorkspace() {
     }
   }
 
-  async function setSearchEngine(engine: SearchEngineId) {
+  async function setSearchEngine(engine: string) {
     searchEngine.value = engine;
     const preferences = await getPreferences();
     await savePreferences({ ...preferences, searchEngine: engine });
@@ -128,6 +127,17 @@ export function useBookmarkWorkspace() {
     const preferences = await getPreferences();
     const collapsedFolderIds = folders.value.filter((item) => item.collapsed).map((item) => item.id);
     await savePreferences({ ...preferences, collapsedFolderIds });
+  }
+
+  async function setAllFoldersCollapsed(collapsed: boolean) {
+    folders.value.forEach((folder) => {
+      folder.collapsed = collapsed;
+    });
+    const preferences = await getPreferences();
+    await savePreferences({
+      ...preferences,
+      collapsedFolderIds: collapsed ? folders.value.map((folder) => folder.id) : []
+    });
   }
 
   function upsertFolder(node: BrowserBookmarkNode) {
@@ -232,6 +242,14 @@ export function useBookmarkWorkspace() {
     }
   }
 
+  function moveFolder(folderId: string, index: number) {
+    const currentIndex = findFolderIndex(folderId);
+    if (currentIndex < 0) return;
+    const [folder] = folders.value.splice(currentIndex, 1);
+    folders.value.splice(clampIndex(index, folders.value.length), 0, folder);
+    folders.value.forEach(normalizeBookmarks);
+  }
+
   async function handleBookmarkEvent(event: BookmarkEvent) {
     try {
       if (!rootId.value) return;
@@ -293,8 +311,7 @@ export function useBookmarkWorkspace() {
             if (event.moveInfo.parentId !== rootId.value) {
               removeFolder(event.id);
             } else {
-              currentFolder.index = event.moveInfo.index ?? currentFolder.index;
-              normalizeFolders();
+              await reload({ silent: true });
             }
             break;
           }
@@ -337,10 +354,12 @@ export function useBookmarkWorkspace() {
     reload,
     setSearchEngine,
     toggleFolder,
+    setAllFoldersCollapsed,
     upsertFolder,
     upsertBookmark,
     removeFolder,
     removeBookmark,
-    moveBookmark
+    moveBookmark,
+    moveFolder
   };
 }

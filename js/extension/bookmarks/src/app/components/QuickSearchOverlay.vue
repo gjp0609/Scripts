@@ -7,37 +7,36 @@ import SiteFavicon from './SiteFavicon.vue';
 defineProps<{
   targets: QuickSearchTarget[];
   keyword: string;
-  activeIndex?: number;
-  overlayStyle?: CSSProperties;
+  activeIndex: number;
+  overlayStyle: CSSProperties;
 }>();
 
 const emit = defineEmits<{
   open: [target: QuickSearchTarget];
+  activate: [index: number];
 }>();
 </script>
 
 <template>
-  <div class="search-overlay quick-overlay" :style="overlayStyle">
-    <div class="overlay-head">
-      <span>快捷站内搜索</span>
-      <span>{{ targets.length }} 个站点</span>
-    </div>
-
+  <section class="search-overlay quick-overlay" :style="overlayStyle">
     <button
       v-for="(target, index) in targets"
       :key="target.bookmarkId"
-      class="search-row"
+      class="search-result"
       :class="{ active: index === activeIndex }"
       type="button"
-      :aria-selected="index === activeIndex"
+      @mousedown.prevent
+      @pointerenter="emit('activate', index)"
+      @focus="emit('activate', index)"
       @click="emit('open', target)"
     >
-      <SiteFavicon class="overlay-favicon" :title="target.title" :accent="target.accent" :sources="target.faviconUrls" />
-      <span class="result-text">
+      <SiteFavicon :title="target.title" :accent="target.accent" :sources="target.faviconUrls" />
+      <span class="result-copy">
         <strong>{{ target.title }}</strong>
-        <small>{{ target.domain }} · {{ keyword || '输入关键词' }}</small>
+        <small>site:{{ target.domain }}</small>
       </span>
       <Search :size="14" />
     </button>
-  </div>
+    <div v-if="!targets.length" class="search-empty">还没有配置搜索目标</div>
+  </section>
 </template>

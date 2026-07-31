@@ -46,9 +46,9 @@ ICBC -> PC: 支付完成跳转
 PC -> BC: 支付完成跳转
 deactivate PC
 activate BC
-ICBC --> PS: 支付结果通知 
+ICBC --> PS: 支付结果通知
 deactivate ICBC
-PS --> BS: 支付结果通知 
+PS --> BS: 支付结果通知
 BC -> BS: 查询支付结果
 BS -> PS: 查询支付结果
 PS -> BS: 返回支付结果

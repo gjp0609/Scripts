@@ -57,8 +57,12 @@ function postBuildInject() {
             console.log(`[InjectPlugin] 开始进行构建后注入...`);
             try {
                 // 读取 UserScript 头部
+                const version = formatBuildVersion(new Date());
                 const bannerHeader =
-                    fs.readFileSync(input, 'utf-8').split('==/UserScript==')[0] + '==/UserScript==\n\n';
+                    fs
+                        .readFileSync(input, 'utf-8')
+                        .split('==/UserScript==')[0]
+                        .replace(/^(\/\/\s*@version\s+).*$/m, `$1${version}`) + '==/UserScript==\n\n';
 
                 // 尝试读取 CSS 文件
                 let cssContent = '';
@@ -91,4 +95,13 @@ function postBuildInject() {
             }
         },
     };
+}
+
+function formatBuildVersion(date) {
+    const pad = (value) => String(value).padStart(2, '0');
+
+    return (
+        `${date.getFullYear().toString().substring(2)}${pad(date.getMonth() + 1)}${pad(date.getDate())}.` +
+        `${pad(date.getHours())}${pad(date.getMinutes())}`
+    );
 }

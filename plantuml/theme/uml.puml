@@ -7,7 +7,7 @@
 !$LINE = "#66A895"
 
 skinparam default {
-    FontName                    "TsukuARd"
+    FontName                    "Sarasa Mono SC"
     FontSize                    12
 }
 skinparam shadowing false

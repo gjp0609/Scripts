@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         金山文档 防闲置超时 - 低频有效版
+// @name         * 金山文档 防闲置超时 - 低频有效版
 // @namespace    https://github.com/gjp0609/Scripts/
 // @version      0.4
 // @description  每段时间轻微抖动鼠标 + 派发事件，防止金山文档闲置重载。影响最小，频率低。
@@ -7,7 +7,6 @@
 // @match        https://*.kdocs.cn/*
 // @grant        none
 // @run-at       document-end
-// @require      file:///R://Files/Workspace/Mine/Scripts/js/tampermonkey/kdocs.js
 // ==/UserScript==
 
 (function() {

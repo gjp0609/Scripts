@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         * 多源翻译
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      1.2
-// @description  支持 阿里/百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
-// @author       onysakura
+// @version      1.3
+// @description  支持 AI/阿里/百度/必应/彩云/DeepL/谷歌/搜狗/腾讯/有道 翻译
+// @author       noif
 // @require      https://cdn.staticfile.org/jquery/3.6.4/jquery.slim.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/core.min.js
 // @require      https://cdn.staticfile.org/crypto-js/4.1.1/hmac.min.js
@@ -222,12 +222,12 @@
                                                               },
                                                               [h('span', {}, [translator.name]), h('span', {}, ['：'])],
                                                           ),
-                                                          translator.result.confidence
-                                                              ? h('abbr', { title: translator.result.confidence }, [
-                                                                    translator.result.text,
+                                                          translator.result?.confidence
+                                                              ? h('abbr', { title: translator.result?.confidence }, [
+                                                                    translator.result?.text,
                                                                 ])
                                                               : h('span', {}, [
-                                                                    translator.result.text
+                                                                    translator.result?.text
                                                                         .split(/(`[^`]+`|```[^`]+```)/g)
                                                                         .map((part, i) =>
                                                                             i % 2
@@ -240,8 +240,11 @@
                                                                                   )
                                                                                 : part,
                                                                         ),
+                                                                    ...(translator.result?.comment
+                                                                        ? [h('br'), translator.result?.comment]
+                                                                        : []),
                                                                 ]),
-                                                          translator.result.dict?.map((it) =>
+                                                          translator.result?.dict?.map((it) =>
                                                               h('div', { class: 'OnySakuraTranslator_dict' }, [
                                                                   h(
                                                                       'span',
@@ -413,6 +416,9 @@
                                                       ]),
                                                   ],
                                               ),
+                                              h('div', { style: { textAlign: 'center' } }, [
+                                                  h('button', { onClick: () => this.save() }, ['Save']),
+                                              ]),
                                           ],
                                       ),
                                   ],
@@ -441,7 +447,7 @@
             onMounted(() => {
                 console.log('onMounted');
                 // 恢复配置
-                let config = GM_getValue('OnySakuraTranslatorConfig1', false);
+                let config = GM_getValue('OnySakuraTranslatorConfig', false);
                 if (config) {
                     config = JSON.parse(config);
                     fixPos.value = config.fixPos || false;
@@ -460,29 +466,6 @@
                     showIcon.value = false;
                     showResult.value = false;
                     showConfig.value = false;
-                    let enabled = {};
-                    for (let key in translatorList.value) {
-                        let translator = translatorList.value[key];
-                        enabled[key] = translator.enabled;
-                        translator.result = {
-                            text: '',
-                            dict: [],
-                        };
-                    }
-                    // save config
-                    GM_setValue(
-                        'OnySakuraTranslatorConfig1',
-                        JSON.stringify({
-                            enabled: enabled,
-                            fixPos: fixPos.value,
-                            resultPos: {
-                                top: resultPos.value.top,
-                                right: resultPos.value.right,
-                                bottom: resultPos.value.bottom,
-                                left: resultPos.value.left,
-                            },
-                        }),
-                    );
                 });
 
                 document.addEventListener('mouseup', (ev) => {
@@ -495,6 +478,33 @@
                     }
                 });
             });
+
+            const save = () => {
+                let enabled = {};
+                for (let key in translatorList.value) {
+                    let translator = translatorList.value[key];
+                    enabled[key] = translator.enabled;
+                    translator.result = {
+                        text: '',
+                        comment: '',
+                        dict: [],
+                    };
+                }
+                // save config
+                GM_setValue(
+                    'OnySakuraTranslatorConfig',
+                    JSON.stringify({
+                        enabled: enabled,
+                        fixPos: fixPos.value,
+                        resultPos: {
+                            top: resultPos.value.top,
+                            right: resultPos.value.right,
+                            bottom: resultPos.value.bottom,
+                            left: resultPos.value.left,
+                        },
+                    }),
+                );
+            };
             const showResultModal = () => {
                 showIcon.value = false;
                 if (translateText) {
@@ -526,20 +536,22 @@
                     for (let key in translatorList.value) {
                         let translator = translatorList.value[key];
                         if (translator.enabled) {
-                            try {
-                                translator.result = {
-                                    text: '',
-                                    dict: [],
-                                };
-                                translator.startTranslate(translateText.value);
-                            } catch (e) {
-                                console.log(
-                                    '%cOnySakuraTranslator ' + key + ' Error\n',
-                                    'font-size: 1rem; color: red;',
-                                    e,
-                                );
-                                translator.result.text = 'Error: ' + e.message;
-                            }
+                            setTimeout(() => {
+                                try {
+                                    translator.result = {
+                                        text: '',
+                                        dict: [],
+                                    };
+                                    translator.startTranslate(translateText.value);
+                                } catch (e) {
+                                    console.log(
+                                        '%cOnySakuraTranslator ' + key + ' Error\n',
+                                        'font-size: 1rem; color: red;',
+                                        e,
+                                    );
+                                    translator.result.text = 'Error: ' + e.message;
+                                }
+                            });
                         }
                     }
                 }
@@ -560,6 +572,7 @@
                 fixPos,
                 translatorList,
                 // func
+                save,
                 showResultModal,
                 showConfigModal,
             };
@@ -576,6 +589,7 @@
     // ai
     translatorMap.ai.startTranslate = function (translateText) {
         let partialText = '';
+        let partialComment = '';
 
         // 发起请求，开启 stream 模式
         GM_xmlhttpRequest({
@@ -583,11 +597,12 @@
             url: this.api.url,
             data: JSON.stringify({
                 model: 'deepseek-chat',
+                temperature: 1.3,
                 messages: [
                     {
                         role: 'system',
                         content:
-                            '你是一个翻译软件，用户输入一段话，你翻译为中文，只需要输出翻译结果，总长度超过500字时，只翻译前500字；如果输入为单词或缩写，详细解释单词或缩写的含义但不能超过100字；如果输入为中文，则翻译为英文。',
+                            '你是一个翻译专家，你需要将输入的文本翻译为*中文*，保证准确表达原始含义并符合中文用语习惯，只需要输出翻译结果，如果输入为单词或缩写，详细解释单词或缩写的含义但不能超过100字。最后你需要添加一些你对原始文本的看法或扩展性说明并以 💬 开头。',
                     },
                     {
                         role: 'user',
@@ -632,8 +647,17 @@
 
                                     const json = JSON.parse(jsonStr);
                                     const content = json.choices?.[0]?.delta?.content || '';
-                                    partialText += content;
-                                    that.result.text = partialText;
+                                    if (content === '💬') {
+                                        partialComment = '💬';
+                                        continue;
+                                    }
+                                    if (partialComment) {
+                                        partialComment += content;
+                                        that.result.comment = partialComment;
+                                    } else {
+                                        partialText += content;
+                                        that.result.text = partialText;
+                                    }
                                 }
                             } catch (e) {
                                 console.error('Stream parsing error:', e);

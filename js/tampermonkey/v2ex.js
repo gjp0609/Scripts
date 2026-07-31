@@ -1,13 +1,12 @@
 // ==UserScript==
-// @name         * v2ex
+// @name         * V2EX 用户名跳转
 // @namespace    https://github.com/gjp0609/Scripts/
-// @version      1.1
+// @version      1.2
 // @description  点击回复用户名跳转
 // @author       noif
 // @match        *://*.v2ex.com/*
 // @grant        none
 // @noframes
-// @require      file:///R:/Files/Workspace/Mine/Scripts/js/tampermonkey/v2ex.js
 // ==/UserScript==
 
 (function () {

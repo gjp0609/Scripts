@@ -4,7 +4,7 @@
 
 [source,powershell]
 ----
-scoop bucket add extras https://mirror.ghproxy.com/https://github.com/ScoopInstaller/Extras
+scoop bucket add extras https://github.com/ScoopInstaller/Extras
 ----
 
 ==== image:https://raw.githubusercontent.com/RamonUnch/AltSnap/main/media/icon.ico[,16,16] AltSnap

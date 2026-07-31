@@ -4,7 +4,7 @@
 !$TEXT = "#000000"
 
 skinparam default {
-    FontName "TsukuARd"
+    FontName "Sarasa Mono SC"
 }
 
 skinparam roundcorner 5

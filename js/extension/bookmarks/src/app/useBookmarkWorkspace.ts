@@ -15,6 +15,7 @@ import {
 
 export function useBookmarkWorkspace() {
   const rootId = ref('');
+  const rootChildIds = ref<string[]>([]);
   const folders = ref<FolderView[]>([]);
   const loading = ref(true);
   const error = ref('');
@@ -66,6 +67,7 @@ export function useBookmarkWorkspace() {
       const [workspace, preferences] = await Promise.all([loadBookmarkWorkspace(), getPreferences()]);
       if (version !== reloadVersion) return;
       rootId.value = workspace.rootId;
+      rootChildIds.value = workspace.rootChildIds;
       folders.value = workspace.folders.map((folder) => ({
         ...folder,
         collapsed: preferences.collapsedFolderIds.includes(folder.id)
@@ -111,10 +113,12 @@ export function useBookmarkWorkspace() {
   function upsertFolder(node: BrowserBookmarkNode) {
     if (!isVisibleFolderNode(node)) return;
     upsertWorkspaceFolder(folders.value, node);
+    if (!rootChildIds.value.includes(node.id)) rootChildIds.value.splice(node.index ?? rootChildIds.value.length, 0, node.id);
   }
 
   function removeFolder(folderId: string) {
     removeWorkspaceFolder(folders.value, folderId);
+    rootChildIds.value = rootChildIds.value.filter((id) => id !== folderId);
   }
 
   function upsertBookmark(bookmark: BookmarkView) {
@@ -139,6 +143,9 @@ export function useBookmarkWorkspace() {
 
       switch (event.type) {
         case 'created': {
+          if (event.node.parentId === rootId.value && !rootChildIds.value.includes(event.id)) {
+            rootChildIds.value.splice(event.node.index ?? rootChildIds.value.length, 0, event.id);
+          }
           if (event.node.url) {
             if (findFolder(event.node.parentId ?? '')) {
               upsertBookmark(buildBookmarkView(event.node));
@@ -171,6 +178,9 @@ export function useBookmarkWorkspace() {
           break;
         }
         case 'removed': {
+          if (event.removeInfo.parentId === rootId.value) {
+            rootChildIds.value = rootChildIds.value.filter((id) => id !== event.id);
+          }
           if (findBookmark(event.id)) {
             removeBookmark(event.id);
           } else {
@@ -179,6 +189,13 @@ export function useBookmarkWorkspace() {
           break;
         }
         case 'moved': {
+          if (event.moveInfo.oldParentId === rootId.value || event.moveInfo.parentId === rootId.value) {
+            const nextRootOrder = rootChildIds.value.filter((id) => id !== event.id);
+            if (event.moveInfo.parentId === rootId.value) {
+              nextRootOrder.splice(event.moveInfo.index ?? nextRootOrder.length, 0, event.id);
+            }
+            rootChildIds.value = nextRootOrder;
+          }
           const currentBookmark = findBookmark(event.id);
           if (currentBookmark) {
             moveBookmark({
@@ -228,6 +245,7 @@ export function useBookmarkWorkspace() {
 
   return {
     rootId,
+    rootChildIds,
     folders,
     loading,
     error,

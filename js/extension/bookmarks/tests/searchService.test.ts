@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { BookmarkView, FolderView } from '../src/types/bookmark.ts';
 import { nextSelectedEngineIndex, normalizeSearchIndex } from '../src/app/searchStateModel.ts';
-import { resolveFilteredMoveIndex, resolveFolderBrowserIndex, toBrowserMoveIndex } from '../src/app/organizeMoveModel.ts';
+import {
+  projectVisibleOrder,
+  resolveFilteredMoveIndex,
+  resolveFolderBrowserIndex,
+  resolveRootMoveIndex,
+  toBrowserMoveIndex
+} from '../src/app/organizeMoveModel.ts';
 import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
 import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
 import {
@@ -145,10 +151,22 @@ test('筛选拖拽按可见锚点映射到完整顺序', () => {
   assert.equal(toBrowserMoveIndex(0, 1, true), 0);
 });
 
+test('预测顺序与筛选后的真实落点共用同一结果', () => {
+  const projected = projectVisibleOrder(['move', 'anchor'], 'move', 'anchor', true);
+  assert.deepEqual(projected, ['anchor', 'move']);
+  assert.equal(resolveFilteredMoveIndex(['hidden-a', 'move', 'hidden-b', 'anchor'], projected, 'move'), 3);
+});
+
 test('目录预测顺序映射浏览器绝对索引', () => {
   const indexes = new Map([['a', 0], ['b', 2], ['c', 5]]);
   assert.equal(resolveFolderBrowserIndex(['a', 'c', 'b'], 'c', indexes), 2);
   assert.equal(resolveFolderBrowserIndex(['b', 'a', 'c'], 'c', indexes), 1);
+});
+
+test('目录根节点索引先移除源项并保留直属书签位置', () => {
+  const rootOrder = ['direct-a', 'folder-a', 'direct-b', 'folder-b', 'folder-c'];
+  assert.equal(resolveRootMoveIndex(rootOrder, ['folder-b', 'folder-c', 'folder-a'], 'folder-a'), 5);
+  assert.equal(resolveRootMoveIndex(rootOrder, ['folder-c', 'folder-a', 'folder-b'], 'folder-c'), 1);
 });
 
 test('工作区纯模型移动书签并规范化父级索引', () => {

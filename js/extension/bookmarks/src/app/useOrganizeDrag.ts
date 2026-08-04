@@ -1,7 +1,7 @@
 import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
 import Sortable from 'sortablejs';
 import type { FolderView } from '../types/bookmark';
-import { resolveFilteredMoveIndex, resolveFolderBrowserIndex, toBrowserMoveIndex } from './organizeMoveModel';
+import { projectVisibleOrder, resolveFilteredMoveIndex, resolveRootMoveIndex, toBrowserMoveIndex } from './organizeMoveModel';
 
 export type FolderMoveRequest = {
   folderId: string;
@@ -20,10 +20,17 @@ export type BookmarkMoveRequest = {
   expandTarget: boolean;
 };
 
+export type BookmarkDropProjection = {
+  folderId: string;
+  anchorId?: string;
+  insertAfter: boolean;
+};
+
 type OrganizeDragOptions = {
   enabled: Ref<boolean>;
   kind: Ref<'bookmark' | 'folder'>;
   folders: Ref<FolderView[]>;
+  rootChildIds: Ref<string[]>;
   collapsedFolderIds: Ref<Set<string>>;
   getScrollContainer: () => HTMLElement | null | undefined;
   onFolderMove: (request: FolderMoveRequest) => Promise<void>;
@@ -36,27 +43,184 @@ function getVisibleOrder(container: HTMLElement, selector: string, attribute: st
     .filter(Boolean);
 }
 
+function eventClientY(event: Event | undefined): number | undefined {
+  if (event instanceof MouseEvent) return event.clientY;
+  if (event instanceof TouchEvent) return event.touches[0]?.clientY;
+  return undefined;
+}
+
 export function useOrganizeDrag(options: OrganizeDragOptions) {
-  const dropTargetFolderId = ref('');
+  const isDragging = ref(false);
+  const draggingItemId = ref('');
+  const bookmarkProjection = ref<BookmarkDropProjection>();
+  const folderProjectedOrder = ref<string[]>([]);
   const folderLists = new Map<string, HTMLElement>();
   const instances = new Map<string, Sortable>();
   let board: HTMLElement | undefined;
+  let bookmarkPlan: BookmarkMoveRequest | undefined;
+  let folderPlan: FolderMoveRequest | undefined;
+  let cancelled = false;
+  let pointerY: number | undefined;
+  let draggedId = '';
+  let sourceFolderId = '';
+  let scrollFrame = 0;
 
-  function destroy() {
-    dropTargetFolderId.value = '';
+  function stopAutoScroll() {
+    cancelAnimationFrame(scrollFrame);
+    scrollFrame = 0;
+    pointerY = undefined;
+    window.removeEventListener('mousemove', trackPointer, true);
+    window.removeEventListener('touchmove', trackPointer, true);
+    window.removeEventListener('wheel', forwardWheel, true);
+  }
+
+  function autoScroll() {
+    if (!isDragging.value) return;
+    const viewport = options.getScrollContainer();
+    if (viewport && pointerY != null) {
+      const rect = viewport.getBoundingClientRect();
+      const edge = Math.min(96, rect.height * 0.18);
+      let delta = 0;
+      if (pointerY < rect.top + edge) delta = -Math.ceil((rect.top + edge - pointerY) / 5);
+      else if (pointerY > rect.bottom - edge) delta = Math.ceil((pointerY - (rect.bottom - edge)) / 5);
+      if (delta) viewport.scrollTop += Math.max(-18, Math.min(18, delta));
+    }
+    scrollFrame = requestAnimationFrame(autoScroll);
+  }
+
+  function trackPointer(event: MouseEvent | TouchEvent) {
+    pointerY = eventClientY(event);
+    updateProjection(event instanceof MouseEvent ? event.clientX : event.touches[0]?.clientX, pointerY);
+  }
+
+  function forwardWheel(event: WheelEvent) {
+    const viewport = options.getScrollContainer();
+    if (!viewport || !isDragging.value) return;
+    event.preventDefault();
+    viewport.scrollTop += event.deltaY;
+  }
+
+  function beginDrag(event: Sortable.SortableEvent) {
+    cancelled = false;
+    isDragging.value = true;
+    draggingItemId.value = event.item.getAttribute(options.kind.value === 'folder' ? 'data-folder-id' : 'data-bookmark-id') ?? '';
+    draggedId = draggingItemId.value;
+    sourceFolderId = event.from.getAttribute('data-folder-id') ?? '';
+    window.addEventListener('mousemove', trackPointer, true);
+    window.addEventListener('touchmove', trackPointer, { capture: true, passive: true });
+    window.addEventListener('wheel', forwardWheel, { capture: true, passive: false });
+    scrollFrame = requestAnimationFrame(autoScroll);
+  }
+
+  function finishDrag() {
+    isDragging.value = false;
+    draggingItemId.value = '';
+    draggedId = '';
+    sourceFolderId = '';
+    bookmarkProjection.value = undefined;
+    folderProjectedOrder.value = [];
+    bookmarkPlan = undefined;
+    folderPlan = undefined;
+    stopAutoScroll();
+  }
+
+  function destroyInstances() {
     instances.forEach((instance) => instance.destroy());
     instances.clear();
   }
 
+  function destroy() {
+    cancelled = true;
+    destroyInstances();
+    finishDrag();
+  }
+
+  function cancelDrag() {
+    if (!isDragging.value) return false;
+    cancelled = true;
+    destroyInstances();
+    finishDrag();
+    void nextTick(setup);
+    return true;
+  }
+
   function registerBoard(element: HTMLElement) {
     board = element;
-    void nextTick(setup);
+    if (!isDragging.value) void nextTick(setup);
   }
 
   function registerFolderList(folderId: string, element: HTMLElement | null) {
     if (element) folderLists.set(folderId, element);
     else folderLists.delete(folderId);
-    void nextTick(setup);
+    if (!isDragging.value) void nextTick(setup);
+  }
+
+  function updateFolderProjection(clientX: number, clientY: number) {
+    if (!board || !draggedId) return;
+    const folders = [...board.querySelectorAll<HTMLElement>('.folder-section')];
+    const related = folders.find((element) => {
+      const rect = element.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+    });
+    if (!related) return;
+    const anchorId = related.getAttribute('data-folder-id') ?? undefined;
+    const rect = related.getBoundingClientRect();
+    const projectedOrder = projectVisibleOrder(
+      folders.map((element) => element.getAttribute('data-folder-id') ?? '').filter(Boolean),
+      draggedId,
+      anchorId,
+      clientY >= rect.top + rect.height / 2
+    );
+    folderProjectedOrder.value = projectedOrder;
+    const source = options.folders.value.find((folder) => folder.id === draggedId);
+    if (!source) return;
+    folderPlan = {
+      folderId: draggedId,
+      sourceIndex: source.index,
+      desiredPosition: resolveFilteredMoveIndex(options.folders.value.map((folder) => folder.id), projectedOrder, draggedId),
+      apiIndex: resolveRootMoveIndex(options.rootChildIds.value, projectedOrder, draggedId)
+    };
+  }
+
+  function updateBookmarkProjection(clientX: number, clientY: number) {
+    if (!board || !draggedId || !sourceFolderId) return;
+    const folderElements = [...board.querySelectorAll<HTMLElement>('.folder-section')];
+    const folderElement = folderElements.find((element) => {
+      const rect = element.getBoundingClientRect();
+      return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+    });
+    const toFolderId = folderElement?.getAttribute('data-folder-id') ?? '';
+    if (!folderElement || !toFolderId) return;
+    const list = folderLists.get(toFolderId);
+    const rows = list ? [...list.querySelectorAll<HTMLElement>('.bookmark-row')].filter((row) => row.getAttribute('data-bookmark-id') !== draggedId) : [];
+    const anchor = rows.find((row) => {
+      const rect = row.getBoundingClientRect();
+      return clientY <= rect.bottom;
+    });
+    const anchorId = anchor?.getAttribute('data-bookmark-id') ?? undefined;
+    const anchorRect = anchor?.getBoundingClientRect();
+    const insertAfter = Boolean(anchorRect && clientY >= anchorRect.top + anchorRect.height / 2);
+    const source = options.folders.value.find((item) => item.id === sourceFolderId)?.bookmarks.find((item) => item.id === draggedId);
+    const targetFolder = options.folders.value.find((item) => item.id === toFolderId);
+    if (!source || !targetFolder) return;
+    const projectedOrder = projectVisibleOrder(rows.map((row) => row.getAttribute('data-bookmark-id') ?? '').filter(Boolean), draggedId, anchorId, insertAfter);
+    const desiredIndex = resolveFilteredMoveIndex(targetFolder.bookmarks.map((item) => item.id), projectedOrder, draggedId);
+    bookmarkProjection.value = { folderId: toFolderId, anchorId, insertAfter };
+    bookmarkPlan = {
+      bookmarkId: draggedId,
+      fromFolderId: sourceFolderId,
+      toFolderId,
+      sourceIndex: source.index ?? 0,
+      desiredIndex,
+      apiIndex: toBrowserMoveIndex(desiredIndex, source.index ?? 0, sourceFolderId === toFolderId),
+      expandTarget: options.collapsedFolderIds.value.has(toFolderId)
+    };
+  }
+
+  function updateProjection(clientX?: number, clientY?: number) {
+    if (clientX == null || clientY == null || !isDragging.value) return;
+    if (options.kind.value === 'folder') updateFolderProjection(clientX, clientY);
+    else updateBookmarkProjection(clientX, clientY);
   }
 
   function setupFolderDrag() {
@@ -72,24 +236,20 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
       forceFallback: true,
       fallbackOnBody: true,
       fallbackTolerance: 3,
-      scroll: true,
-      scrollSensitivity: 60,
-      scrollSpeed: 12,
-      onEnd: (event) => {
-        const folderId = event.item.getAttribute('data-folder-id');
-        if (!folderId || !board) return;
-        const source = options.folders.value.find((folder) => folder.id === folderId);
-        if (!source) return;
-        const visibleOrder = getVisibleOrder(board, '.folder-section', 'data-folder-id');
-        const sourcePosition = options.folders.value.findIndex((folder) => folder.id === folderId);
-        const desiredPosition = resolveFilteredMoveIndex(options.folders.value.map((folder) => folder.id), visibleOrder, folderId);
-        if (desiredPosition === sourcePosition) return;
-        const apiIndex = resolveFolderBrowserIndex(
-          visibleOrder,
-          folderId,
-          new Map(options.folders.value.map((folder) => [folder.id, folder.index]))
-        );
-        void options.onFolderMove({ folderId, sourceIndex: source.index, desiredPosition, apiIndex });
+      scroll: false,
+      onStart: beginDrag,
+      onMove: (event, originalEvent) => {
+        pointerY = eventClientY(originalEvent);
+        const clientX = originalEvent instanceof MouseEvent ? originalEvent.clientX : originalEvent instanceof TouchEvent ? originalEvent.touches[0]?.clientX : undefined;
+        updateProjection(clientX, pointerY);
+        return false;
+      },
+      onEnd: () => {
+        const plan = folderPlan;
+        const shouldApply = !cancelled && plan && options.folders.value.findIndex((folder) => folder.id === plan.folderId) !== plan.desiredPosition;
+        finishDrag();
+        void nextTick(setup);
+        if (shouldApply && plan) void options.onFolderMove(plan);
       }
     });
     instances.set('folders', instance);
@@ -111,38 +271,21 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
         forceFallback: true,
         fallbackOnBody: true,
         fallbackTolerance: 3,
-        scroll: options.getScrollContainer() ?? true,
-        scrollSensitivity: 60,
-        scrollSpeed: 12,
-        emptyInsertThreshold: 32,
-        onMove: (event) => {
-          const folderId = event.to.getAttribute('data-folder-id') ?? '';
-          dropTargetFolderId.value = options.collapsedFolderIds.value.has(folderId) ? folderId : '';
+        scroll: false,
+        emptyInsertThreshold: 48,
+        onStart: beginDrag,
+      onMove: (event, originalEvent) => {
+        pointerY = eventClientY(originalEvent);
+          const clientX = originalEvent instanceof MouseEvent ? originalEvent.clientX : originalEvent instanceof TouchEvent ? originalEvent.touches[0]?.clientX : undefined;
+          updateProjection(clientX, pointerY);
+          return false;
         },
-        onUnchoose: () => { dropTargetFolderId.value = ''; },
-        onEnd: (event) => {
-          const bookmarkId = event.item.getAttribute('data-bookmark-id');
-          const fromFolderId = event.from.getAttribute('data-folder-id');
-          const toFolderId = event.to.getAttribute('data-folder-id');
-          const expandTarget = Boolean(toFolderId) && options.collapsedFolderIds.value.has(toFolderId ?? '');
-          dropTargetFolderId.value = '';
-          if (!bookmarkId || !fromFolderId || !toFolderId) return;
-          const source = options.folders.value.find((item) => item.id === fromFolderId)?.bookmarks.find((item) => item.id === bookmarkId);
-          const targetFolder = options.folders.value.find((item) => item.id === toFolderId);
-          if (!source || !targetFolder) return;
-          const sourceIndex = source.index ?? 0;
-          const visibleOrder = getVisibleOrder(event.to, '.bookmark-row', 'data-bookmark-id');
-          const desiredIndex = resolveFilteredMoveIndex(targetFolder.bookmarks.map((item) => item.id), visibleOrder, bookmarkId);
-          if (fromFolderId === toFolderId && desiredIndex === sourceIndex) return;
-          void options.onBookmarkMove({
-            bookmarkId,
-            fromFolderId,
-            toFolderId,
-            sourceIndex,
-            desiredIndex,
-            apiIndex: toBrowserMoveIndex(desiredIndex, sourceIndex, fromFolderId === toFolderId),
-            expandTarget
-          });
+        onEnd: () => {
+          const plan = bookmarkPlan;
+          const shouldApply = !cancelled && plan && (plan.fromFolderId !== plan.toFolderId || plan.desiredIndex !== plan.sourceIndex);
+          finishDrag();
+          void nextTick(setup);
+          if (shouldApply && plan) void options.onBookmarkMove(plan);
         }
       });
       instances.set(folder.id, instance);
@@ -150,7 +293,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
   }
 
   function setup() {
-    destroy();
+    destroyInstances();
     if (!options.enabled.value) return;
     if (options.kind.value === 'folder') setupFolderDrag();
     else setupBookmarkDrag();
@@ -163,11 +306,20 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
       [...options.collapsedFolderIds.value].sort().join(','),
       options.folders.value.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')
     ],
-    () => void nextTick(setup),
+    () => { if (!isDragging.value) void nextTick(setup); },
     { immediate: true }
   );
 
   onBeforeUnmount(destroy);
 
-  return { dropTargetFolderId, registerBoard, registerFolderList, destroy };
+  return {
+    isDragging,
+    draggingItemId,
+    bookmarkProjection,
+    folderProjectedOrder,
+    registerBoard,
+    registerFolderList,
+    cancelDrag,
+    destroy
+  };
 }

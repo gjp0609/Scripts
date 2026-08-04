@@ -57,7 +57,7 @@
 - 建立整理模式-目录独立 Grid 画布和预测槽。
 - 两套 Sortable 生命周期互斥且可独立销毁。
 
-当前进展：`BookmarkOrganizeCanvas` 独立持有保序 Macy，`FolderOrganizeCanvas` 使用 Grid；`useOrganizeDrag` 独立管理 Sortable 并只上报语义移动请求；动态投放目标由响应式 ID 驱动，不再使用 classList 和 80ms 定时器。
+当前进展：`BookmarkOrganizeCanvas` 独立持有保序 Macy，空闲状态不再渲染假投放框；拖动会话通过指针命中动态展开真实目标列表并显示唯一插入线。`FolderOrganizeCanvas` 始终使用只含标题的等高 Grid，预测顺序由应用状态渲染。`useOrganizeDrag` 统一持有 MovePlan、滚轮与边缘自动滚动，Sortable 不再决定预测 DOM 顺序。根目录完整 children 顺序已进入工作区，用于适配 Chrome 同父级绝对索引。
 
 ### 阶段 4：交互组件收口（进行中）
 

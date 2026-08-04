@@ -3,12 +3,14 @@ import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Pencil, Trash2 } from 'lucide-vue-next';
 import Macy from 'macy';
 import type { BookmarkView, FolderView } from '../../types/bookmark';
+import type { BookmarkDropProjection } from '../useOrganizeDrag';
 import BookmarkCard from './BookmarkCard.vue';
 
 const props = defineProps<{
   folders: FolderView[];
   collapsedFolderIds: Set<string>;
-  dropTargetFolderId: string;
+  dragging: boolean;
+  dropProjection?: BookmarkDropProjection;
   forceExpanded: boolean;
 }>();
 
@@ -65,7 +67,10 @@ onBeforeUnmount(destroyLayout);
 watch(
   () => [
     props.forceExpanded,
-    props.dropTargetFolderId,
+    props.dragging,
+    props.dropProjection?.folderId,
+    props.dropProjection?.anchorId,
+    props.dropProjection?.insertAfter,
     [...props.collapsedFolderIds].sort().join(','),
     props.folders.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')
   ],
@@ -76,6 +81,16 @@ watch(
 function setFolderListRef(folderId: string, element: Element | { $el?: Element } | null) {
   const target = element instanceof Element ? element : element?.$el;
   emit('folder-list-ready', folderId, target instanceof HTMLElement ? target : null);
+}
+
+
+function isFolderExpanded(folderId: string) {
+  return props.forceExpanded || !props.collapsedFolderIds.has(folderId) || props.dropProjection?.folderId === folderId;
+}
+
+function dropLineClass(bookmarkId: string) {
+  if (props.dropProjection?.anchorId !== bookmarkId) return undefined;
+  return props.dropProjection.insertAfter ? 'drop-line-after' : 'drop-line-before';
 }
 </script>
 
@@ -95,21 +110,30 @@ function setFolderListRef(folderId: string, element: Element | { $el?: Element }
       <div
         :ref="(element) => setFolderListRef(folder.id, element)"
         class="bookmark-list"
-        :class="{ 'bookmark-list-collapsed': !forceExpanded && collapsedFolderIds.has(folder.id) }"
+        :class="{
+          'bookmark-list-collapsed': !isFolderExpanded(folder.id),
+          'bookmark-list-empty': !folder.bookmarks.length
+        }"
         :data-folder-id="folder.id"
-        :data-drop-active="dropTargetFolderId === folder.id ? 'true' : undefined"
+        :data-dragging="dragging ? 'true' : undefined"
+        :data-drop-active="dropProjection?.folderId === folder.id ? 'true' : undefined"
       >
-        <template v-if="forceExpanded || !collapsedFolderIds.has(folder.id)">
+        <template v-if="isFolderExpanded(folder.id)">
           <BookmarkCard
             v-for="bookmark in folder.bookmarks"
             :key="bookmark.id"
             :bookmark="bookmark"
             organize
+            :class="dropLineClass(bookmark.id)"
             @edit="emit('edit-bookmark', $event)"
             @delete="emit('delete-bookmark', $event)"
           />
         </template>
-        <p v-if="(!forceExpanded && collapsedFolderIds.has(folder.id)) || !folder.bookmarks.length" class="empty-drop-zone" aria-label="书签投放区"></p>
+        <span
+          v-if="dragging && dropProjection?.folderId === folder.id && !dropProjection.anchorId"
+          class="empty-drop-indicator"
+          aria-hidden="true"
+        ></span>
       </div>
     </article>
   </section>

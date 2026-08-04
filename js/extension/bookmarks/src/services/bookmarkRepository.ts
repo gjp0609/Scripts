@@ -46,7 +46,7 @@ export function buildBookmarkView(node: BrowserBookmarkNode, extra?: BookmarkExt
   return toBookmarkView(node, extra ? { [node.id]: extra } : {});
 }
 
-export async function loadBookmarkWorkspace(): Promise<{ rootId: string; folders: FolderView[] }> {
+export async function loadBookmarkWorkspace(): Promise<{ rootId: string; rootChildIds: string[]; folders: FolderView[] }> {
   const [tree, extras] = await Promise.all([getTree(), getExtras()]);
   const root = getDefaultBookmarkRoot(tree);
 
@@ -69,7 +69,7 @@ export async function loadBookmarkWorkspace(): Promise<{ rootId: string; folders
   const validIds = new Set(folders.flatMap((folder) => folder.bookmarks.map((bookmark) => bookmark.id)));
   await cleanupExtras(validIds);
 
-  return { rootId: root.id, folders };
+  return { rootId: root.id, rootChildIds: (root.children ?? []).map((node) => node.id), folders };
 }
 
 export async function addCurrentBookmark(parentId: string, title: string, url: string): Promise<BrowserBookmarkNode> {
@@ -150,7 +150,7 @@ export async function saveBookmarkDetails(input: {
 
 export async function deleteBookmarkDetails(bookmarkId: string): Promise<void> {
   await removeBookmark(bookmarkId);
-  await removeExtra(bookmarkId);
+  await removeExtra(bookmarkId).catch(() => undefined);
 }
 
 function collectBookmarkIds(node?: BrowserBookmarkNode): string[] {
@@ -172,7 +172,7 @@ export async function deleteFolderDetails(folderId: string): Promise<void> {
   const subtree = await getSubTree(folderId);
   const bookmarkIds = collectBookmarkIds(subtree);
   await removeFolder(folderId);
-  await removeExtras(bookmarkIds);
+  await removeExtras(bookmarkIds).catch(() => undefined);
 }
 
 export type BookmarkMoveSnapshot = {

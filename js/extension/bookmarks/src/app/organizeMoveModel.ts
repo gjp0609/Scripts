@@ -18,6 +18,20 @@ export function resolveFilteredMoveIndex(fullOrder: string[], visibleOrder: stri
   return orderWithoutMoved.length;
 }
 
+export function projectVisibleOrder(
+  visibleOrder: string[],
+  movedId: string,
+  anchorId: string | undefined,
+  insertAfter: boolean
+): string[] {
+  const order = visibleOrder.filter((id) => id !== movedId);
+  if (!anchorId) return [...order, movedId];
+  const anchorIndex = order.indexOf(anchorId);
+  if (anchorIndex < 0) return [...order, movedId];
+  order.splice(anchorIndex + (insertAfter ? 1 : 0), 0, movedId);
+  return order;
+}
+
 export function toBrowserMoveIndex(desiredIndex: number, sourceIndex: number, sameParent: boolean): number {
   return sameParent && desiredIndex > sourceIndex ? desiredIndex + 1 : desiredIndex;
 }
@@ -33,4 +47,28 @@ export function resolveFolderBrowserIndex(
   const previousId = visibleOrder[visibleIndex - 1];
   if (previousId) return (absoluteIndexes.get(previousId) ?? -1) + 1;
   return absoluteIndexes.get(movedId) ?? 0;
+}
+
+export function resolveRootMoveIndex(rootOrder: string[], projectedFolderOrder: string[], movedId: string): number {
+  const rootWithoutMoved = rootOrder.filter((id) => id !== movedId);
+  const sourceIndex = rootOrder.indexOf(movedId);
+  const movedIndex = projectedFolderOrder.indexOf(movedId);
+  if (movedIndex < 0) return rootWithoutMoved.length;
+
+  let desiredIndex: number;
+  const nextFolderId = projectedFolderOrder[movedIndex + 1];
+  if (nextFolderId) {
+    const nextIndex = rootWithoutMoved.indexOf(nextFolderId);
+    if (nextIndex >= 0) desiredIndex = nextIndex;
+    else desiredIndex = rootWithoutMoved.length;
+  } else {
+    const previousFolderId = projectedFolderOrder[movedIndex - 1];
+    if (previousFolderId) {
+      const previousIndex = rootWithoutMoved.indexOf(previousFolderId);
+      desiredIndex = previousIndex >= 0 ? previousIndex + 1 : rootWithoutMoved.length;
+    } else {
+      desiredIndex = Math.min(movedIndex, rootWithoutMoved.length);
+    }
+  }
+  return sourceIndex >= 0 && desiredIndex > sourceIndex ? desiredIndex + 1 : desiredIndex;
 }

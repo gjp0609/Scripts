@@ -19,8 +19,8 @@ const emit = defineEmits<{
       <button :class="{ active: kind === 'bookmark' }" type="button" @click="emit('update:kind', 'bookmark')"><Bookmark :size="14" /><span>书签</span></button>
       <button :class="{ active: kind === 'folder' }" type="button" @click="emit('update:kind', 'folder')"><Folder :size="14" /><span>目录</span></button>
     </div>
-    <button type="button" title="全部展开" aria-label="全部展开" @click="emit('expand-all')"><Maximize2 :size="15" /></button>
-    <button type="button" title="全部收缩" aria-label="全部收缩" @click="emit('collapse-all')"><Minimize2 :size="15" /></button>
+    <button v-if="kind === 'bookmark'" type="button" title="全部展开" aria-label="全部展开" @click="emit('expand-all')"><Maximize2 :size="15" /></button>
+    <button v-if="kind === 'bookmark'" type="button" title="全部收缩" aria-label="全部收缩" @click="emit('collapse-all')"><Minimize2 :size="15" /></button>
     <button type="button" title="添加书签" @click="emit('add-bookmark')"><Plus :size="15" /></button>
     <button type="button" title="添加目录" @click="emit('add-folder')"><FolderPlus :size="15" /></button>
     <button type="button" title="撤销最近移动" :disabled="!canUndo" @click="emit('undo')"><RotateCcw :size="15" /></button>

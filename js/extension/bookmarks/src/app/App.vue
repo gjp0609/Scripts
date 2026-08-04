@@ -373,6 +373,7 @@ async function applyBookmarkMove(request: BookmarkMoveRequest) {
   pendingMoveId.value = request.bookmarkId;
   try {
     lastMove.value = { kind: 'bookmark', label: '书签移动', snapshot: { id: request.bookmarkId, parentId: request.fromFolderId, index: request.sourceIndex } };
+    workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.desiredIndex });
     const moved = await moveBookmarkOrder({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.apiIndex });
     workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: moved.parentId ?? request.toFolderId, index: moved.index ?? request.desiredIndex });
   } catch (error) {
@@ -387,12 +388,13 @@ const organizeDrag = useOrganizeDrag({
   enabled: reorderEnabled,
   kind: organizeKind,
   folders: workspace.folders,
+  rootChildIds: workspace.rootChildIds,
   collapsedFolderIds: organizeCollapsedFolderIds,
   getScrollContainer: getPageViewport,
   onFolderMove: applyFolderMove,
   onBookmarkMove: applyBookmarkMove
 });
-const dropTargetFolderId = organizeDrag.dropTargetFolderId;
+const organizeForceExpanded = computed(() => Boolean(query.value.trim()) && !quickSearch.value);
 
 function openImportExport() {
   importExportError.value = '';
@@ -474,6 +476,11 @@ function resetTransientSurfaces() {
 }
 
 function handleEscape(event: KeyboardEvent) {
+  if (organizeDrag.cancelDrag()) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
   if (hasOpenModal()) {
     if (importExportBusy.value) {
       event.preventDefault();
@@ -638,8 +645,9 @@ watch(
         v-else-if="organizeKind === 'bookmark'"
         :folders="visibleFolders"
         :collapsed-folder-ids="organizeCollapsedFolderIds"
-        :drop-target-folder-id="dropTargetFolderId"
-        :force-expanded="Boolean(query)"
+        :dragging="organizeDrag.isDragging.value"
+        :drop-projection="organizeDrag.bookmarkProjection.value"
+        :force-expanded="organizeForceExpanded"
         @board-ready="organizeDrag.registerBoard"
         @folder-list-ready="organizeDrag.registerFolderList"
         @toggle-folder="toggleFolderFromTitle"
@@ -652,9 +660,9 @@ watch(
       <FolderOrganizeCanvas
         v-else
         :folders="visibleFolders"
-        :collapsed-folder-ids="organizeCollapsedFolderIds"
+        :projected-order="organizeDrag.folderProjectedOrder.value"
+        :dragging-folder-id="organizeDrag.draggingItemId.value"
         @board-ready="organizeDrag.registerBoard"
-        @toggle-folder="toggleFolderFromTitle"
         @edit-folder="startEditFolder"
         @delete-folder="folderPendingDelete = $event"
       />

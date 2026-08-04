@@ -1,7 +1,13 @@
 import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
 import Sortable from 'sortablejs';
 import type { FolderView } from '../types/bookmark';
-import { projectVisibleOrder, resolveFilteredMoveIndex, resolveRootMoveIndex, toBrowserMoveIndex } from './organizeMoveModel';
+import {
+  projectVisibleOrder,
+  resolveFilteredMoveIndex,
+  resolveRootMoveIndex,
+  shouldInsertAfterToOccupySlot,
+  toBrowserMoveIndex
+} from './organizeMoveModel';
 
 export type FolderMoveRequest = {
   folderId: string;
@@ -63,6 +69,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
   let pointerY: number | undefined;
   let draggedId = '';
   let sourceFolderId = '';
+  let folderDragOrder: string[] = [];
   let scrollFrame = 0;
 
   function stopAutoScroll() {
@@ -106,6 +113,10 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     draggingItemId.value = event.item.getAttribute(options.kind.value === 'folder' ? 'data-folder-id' : 'data-bookmark-id') ?? '';
     draggedId = draggingItemId.value;
     sourceFolderId = event.from.getAttribute('data-folder-id') ?? '';
+    if (options.kind.value === 'folder' && board) {
+      folderDragOrder = getVisibleOrder(board, '.folder-section', 'data-folder-id');
+      folderProjectedOrder.value = [...folderDragOrder];
+    }
     window.addEventListener('mousemove', trackPointer, true);
     window.addEventListener('touchmove', trackPointer, { capture: true, passive: true });
     window.addEventListener('wheel', forwardWheel, { capture: true, passive: false });
@@ -117,6 +128,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     draggingItemId.value = '';
     draggedId = '';
     sourceFolderId = '';
+    folderDragOrder = [];
     bookmarkProjection.value = undefined;
     folderProjectedOrder.value = [];
     bookmarkPlan = undefined;
@@ -164,13 +176,14 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     });
     if (!related) return;
     const anchorId = related.getAttribute('data-folder-id') ?? undefined;
-    const rect = related.getBoundingClientRect();
+    if (!anchorId || anchorId === draggedId) return;
     const projectedOrder = projectVisibleOrder(
-      folders.map((element) => element.getAttribute('data-folder-id') ?? '').filter(Boolean),
+      folderDragOrder,
       draggedId,
       anchorId,
-      clientY >= rect.top + rect.height / 2
+      shouldInsertAfterToOccupySlot(folderDragOrder, draggedId, anchorId)
     );
+    if (projectedOrder.every((id, index) => folderProjectedOrder.value[index] === id)) return;
     folderProjectedOrder.value = projectedOrder;
     const source = options.folders.value.find((folder) => folder.id === draggedId);
     if (!source) return;

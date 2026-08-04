@@ -32,6 +32,12 @@ export function projectVisibleOrder(
   return order;
 }
 
+export function shouldInsertAfterToOccupySlot(order: string[], movedId: string, targetId: string): boolean {
+  const sourceIndex = order.indexOf(movedId);
+  const targetIndex = order.indexOf(targetId);
+  return sourceIndex >= 0 && targetIndex >= 0 && sourceIndex < targetIndex;
+}
+
 export function toBrowserMoveIndex(desiredIndex: number, sourceIndex: number, sameParent: boolean): number {
   return sameParent && desiredIndex > sourceIndex ? desiredIndex + 1 : desiredIndex;
 }

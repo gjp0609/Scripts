@@ -7,6 +7,7 @@ import {
   resolveFilteredMoveIndex,
   resolveFolderBrowserIndex,
   resolveRootMoveIndex,
+  shouldInsertAfterToOccupySlot,
   toBrowserMoveIndex
 } from '../src/app/organizeMoveModel.ts';
 import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
@@ -161,6 +162,14 @@ test('目录预测顺序映射浏览器绝对索引', () => {
   const indexes = new Map([['a', 0], ['b', 2], ['c', 5]]);
   assert.equal(resolveFolderBrowserIndex(['a', 'c', 'b'], 'c', indexes), 2);
   assert.equal(resolveFolderBrowserIndex(['b', 'a', 'c'], 'c', indexes), 1);
+});
+
+test('目录预占位直接占据目标原槽位', () => {
+  const order = ['a', 'b', 'c', 'd'];
+  assert.equal(shouldInsertAfterToOccupySlot(order, 'a', 'c'), true);
+  assert.deepEqual(projectVisibleOrder(order, 'a', 'c', true), ['b', 'c', 'a', 'd']);
+  assert.equal(shouldInsertAfterToOccupySlot(order, 'd', 'b'), false);
+  assert.deepEqual(projectVisibleOrder(order, 'd', 'b', false), ['a', 'd', 'b', 'c']);
 });
 
 test('目录根节点索引先移除源项并保留直属书签位置', () => {

@@ -39,6 +39,7 @@ const props = defineProps<{
   folders: FolderView[];
   tags: TagSummary[];
   bookmark?: BookmarkView;
+  error?: string;
 }>();
 
 const emit = defineEmits<{
@@ -49,7 +50,7 @@ const emit = defineEmits<{
 const form = reactive({ title: '', url: '', parentId: '', tags: [] as string[], description: '', searchUrl: '' });
 const tagInput = ref('');
 const tagMenuOpen = ref(false);
-const error = ref('');
+const validationError = ref('');
 
 const knownTags = computed(() => {
   const values = new Map(props.tags.map((tag) => [tag.normalizedName, tag.name]));
@@ -104,7 +105,7 @@ watch(
     form.description = props.bookmark?.extra.description ?? '';
     form.searchUrl = props.bookmark?.extra.searchUrl ?? '';
     tagInput.value = '';
-    error.value = '';
+    validationError.value = '';
   },
   { immediate: true }
 );
@@ -168,17 +169,17 @@ function removeTag(value: string) {
 }
 
 function save() {
-  error.value = '';
+  validationError.value = '';
   if (!form.parentId || !form.title.trim() || !form.url.trim()) {
-    error.value = '请填写标题、URL 和目录';
+    validationError.value = '请填写标题、URL 和目录';
     return;
   }
   if (hasSearch.value && !/\$\{keyword\}|\{keyword\}/.test(form.searchUrl)) {
-    error.value = '搜索模板必须包含 {keyword}';
+    validationError.value = '搜索模板必须包含 {keyword}';
     return;
   }
   if (hasSearchSite.value && !siteDomain.value) {
-    error.value = 'search_site 需要有效的 HTTP(S) URL';
+    validationError.value = 'search_site 需要有效的 HTTP(S) URL';
     return;
   }
   emit('save', {
@@ -196,7 +197,7 @@ function save() {
 <template>
   <DialogRoot :open="open" @update:open="updateOpen">
     <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
+      <DialogOverlay class="dialog-overlay" @pointerdown.self="emit('close')" />
       <DialogContent class="dialog-content bookmark-dialog" @escape-key-down.stop>
         <header class="dialog-head">
           <div><DialogTitle>{{ bookmark ? '编辑书签' : '添加书签' }}</DialogTitle><DialogDescription class="sr-only">编辑书签信息</DialogDescription></div>
@@ -253,7 +254,7 @@ function save() {
           <label><span>备注</span><textarea v-model="form.description" rows="3" /></label>
           <label v-if="hasSearch"><span>搜索 URL 模板</span><input v-model="form.searchUrl" type="text" /></label>
           <div v-if="hasSearchSite" class="site-preview"><span>站点搜索</span><strong>{{ siteDomain ? `site:${siteDomain}` : '请填写有效 URL' }}</strong></div>
-          <p v-if="error" class="form-error">{{ error }}</p>
+          <p v-if="validationError || error" class="form-error" role="alert">{{ validationError || error }}</p>
           <footer class="dialog-foot"><button class="button-secondary" type="button" @click="emit('close')">取消</button><button class="button-primary" type="submit">保存</button></footer>
         </form>
       </DialogContent>

@@ -16,6 +16,7 @@ const props = defineProps<{
   description: string;
   confirmText?: string;
   danger?: boolean;
+  error?: string;
 }>();
 
 const emit = defineEmits<{
@@ -48,6 +49,7 @@ function updateOpen(value: boolean) {
       </header>
       <div class="confirm-body">
         <AlertDialogDescription>{{ description }}</AlertDialogDescription>
+        <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       </div>
       <footer class="dialog-foot confirm-actions">
         <AlertDialogCancel class="button-secondary" @click="emit('close')">取消</AlertDialogCancel>

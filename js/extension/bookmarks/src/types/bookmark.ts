@@ -74,18 +74,18 @@ export type TagSearchState = {
 };
 
 export type FullExportData = {
-  version: 1;
+  version: 2;
   exportedAt: string;
-  folders: Array<{
-    title: string;
-    index?: number;
-    bookmarks: Array<{
-      title: string;
-      url: string;
-      index?: number;
-      extra?: BookmarkExtra;
-    }>;
-  }>;
-  extras?: Record<string, BookmarkExtra>;
-  preferences?: Partial<UiPreferences>;
+  root: {
+    children: ExportBookmarkNode[];
+  };
+  preferences: UiPreferences;
+};
+
+export type ExportBookmarkNode = {
+  sourceId: string;
+  title: string;
+  url?: string;
+  children?: ExportBookmarkNode[];
+  extra?: BookmarkExtra;
 };

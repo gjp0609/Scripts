@@ -66,7 +66,7 @@ export async function loadBookmarkWorkspace(): Promise<{ rootId: string; rootChi
     }))
     .sort((a, b) => a.index - b.index);
 
-  const validIds = new Set(folders.flatMap((folder) => folder.bookmarks.map((bookmark) => bookmark.id)));
+  const validIds = new Set(collectBookmarkIds(tree[0]));
   await cleanupExtras(validIds);
 
   return { rootId: root.id, rootChildIds: (root.children ?? []).map((node) => node.id), folders };
@@ -175,12 +175,6 @@ export async function deleteFolderDetails(folderId: string): Promise<void> {
   await removeExtras(bookmarkIds).catch(() => undefined);
 }
 
-export type BookmarkMoveSnapshot = {
-  id: string;
-  parentId?: string;
-  index?: number;
-};
-
 export async function moveBookmarkOrder(input: {
   bookmarkId: string;
   parentId: string;
@@ -194,11 +188,4 @@ export async function moveBookmarkOrder(input: {
 
 export async function moveFolderOrder(input: { folderId: string; index: number }): Promise<BrowserBookmarkNode> {
   return moveNode(input.folderId, { index: input.index });
-}
-
-export async function restoreBookmarkPosition(snapshot: BookmarkMoveSnapshot): Promise<BrowserBookmarkNode> {
-  return moveNode(snapshot.id, {
-    parentId: snapshot.parentId,
-    index: snapshot.index
-  });
 }

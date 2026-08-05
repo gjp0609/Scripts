@@ -223,8 +223,8 @@ export function useBookmarkWorkspace() {
             if (findFolder(movedNode.parentId ?? '')) {
               upsertBookmark(buildBookmarkView(movedNode));
             }
-          } else {
-            upsertFolder(movedNode);
+          } else if (movedNode.parentId === rootId.value) {
+            await reload({ silent: true });
           }
           break;
         }

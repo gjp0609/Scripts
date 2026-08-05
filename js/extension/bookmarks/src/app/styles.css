@@ -228,22 +228,12 @@ button { color: inherit; }
 .utility-dock.with-tags { top: 196px; }
 .utility-dock-actions {
   order: 2;
-  display: grid;
+  display: none;
   gap: 3px;
-  max-height: 0;
-  margin-top: 0;
-  overflow: hidden;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-6px);
-  transition: max-height 180ms ease, margin-top 180ms ease, opacity 120ms ease, transform 180ms ease;
 }
 .utility-dock.open .utility-dock-actions {
-  max-height: 270px;
+  display: grid;
   margin-top: 3px;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
 }
 .utility-dock button, .tag-panel-trigger { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: #626965; cursor: pointer; }
 .utility-dock > .utility-dock-trigger, .tag-panel-trigger { background: var(--surface-soft); }
@@ -331,6 +321,7 @@ button { color: inherit; }
 .organize-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 34px; height: 32px; padding: 0 9px; border: 0; border-radius: 5px; background: transparent; font-size: 11px; cursor: pointer; }
 .organize-toolbar button:hover:not(:disabled), .organize-segments button.active { background: #edf1ef; color: #31594e; }
 .organize-toolbar button:disabled { opacity: 0.35; cursor: default; }
+.organize-toolbar .organize-exit { margin-left: 2px; }
 .organize-segments { display: flex; flex: 0 0 auto; gap: 2px; }
 .page-error { width: fit-content; margin: 0 auto 18px; padding: 6px 10px; border-radius: 5px; background: #f3f5f4; color: #6d736f; font-size: 10px; }
 .page-error { background: #fbf1f0; color: var(--danger); }
@@ -410,6 +401,7 @@ button { color: inherit; }
 .confirm-icon { display: grid; place-items: center; color: var(--danger); }
 .confirm-body { padding: 10px 20px 18px; }
 .confirm-body p { margin: 0; color: #5c625e; font-size: 12px; line-height: 1.6; }
+.confirm-body .form-error { margin-top: 10px; color: var(--danger); font-size: 10px; }
 .confirm-actions { padding: 0 20px 20px; }
 .import-export-dialog { width: min(620px, calc(100vw - 28px)); }
 .import-export-body { display: grid; gap: 14px; padding: 10px 20px 20px; }

@@ -38,8 +38,8 @@ function emitSelectedFile(event: Event) {
 <template>
   <DialogRoot :open="open" @update:open="updateOpen">
     <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
-      <DialogContent class="dialog-content import-export-dialog" :disable-outside-pointer-events="busy" @escape-key-down="busy && $event.preventDefault()" @pointer-down-outside="busy && $event.preventDefault()">
+      <DialogOverlay class="dialog-overlay" @pointerdown.self="!busy && emit('close')" />
+      <DialogContent class="dialog-content import-export-dialog" @escape-key-down="busy && $event.preventDefault()" @pointer-down-outside="busy && $event.preventDefault()">
       <header class="dialog-head">
         <div>
           <DialogTitle>导入与导出</DialogTitle>
@@ -54,8 +54,8 @@ function emitSelectedFile(event: Event) {
         <section class="import-export-group">
           <div class="import-export-row">
             <div class="import-export-copy">
-              <strong>导出当前数据</strong>
-              <span>导出当前书签、标签、备注、搜索 URL 和界面偏好；文件名自动带日期时间。</span>
+              <strong>导出完整数据</strong>
+              <span>递归导出书签栏中的直属书签、嵌套目录、全部书签数据和界面偏好。</span>
             </div>
             <button class="button-secondary import-export-action" type="button" :disabled="busy" @click="emit('export-full')">
               <Download :size="14" />
@@ -65,7 +65,7 @@ function emitSelectedFile(event: Event) {
           <div class="import-export-row">
             <div class="import-export-copy">
               <strong>导入全量数据</strong>
-              <span>增量新增导入；同名目录合并，新导入内容追加到目标目录末尾；完全相同的数据会直接跳过。</span>
+              <span>按同级结构增量恢复；已有节点复用，新节点追加，并同步恢复标签、备注和界面偏好。</span>
             </div>
             <button class="button-primary import-export-action" type="button" :disabled="busy" @click="pickFile(fullInputRef)">
               <FileUp :size="14" />

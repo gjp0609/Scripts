@@ -7,6 +7,7 @@ import type { FolderView } from '../../types/bookmark';
 const props = defineProps<{
   open: boolean;
   folder?: FolderView;
+  error?: string;
 }>();
 
 const emit = defineEmits<{
@@ -32,7 +33,7 @@ function updateOpen(value: boolean) {
 <template>
   <DialogRoot :open="open" @update:open="updateOpen">
     <DialogPortal>
-      <DialogOverlay class="dialog-overlay" />
+      <DialogOverlay class="dialog-overlay" @pointerdown.self="emit('close')" />
       <DialogContent class="dialog-content folder-dialog">
       <header class="dialog-head">
         <div>
@@ -48,6 +49,7 @@ function updateOpen(value: boolean) {
           <span>目录名称</span>
           <input v-model="title" required type="text" autofocus />
         </label>
+        <p v-if="error" class="form-error" role="alert">{{ error }}</p>
         <footer class="dialog-foot">
           <button class="button-secondary" type="button" @click="emit('close')">取消</button>
           <button class="button-primary" type="submit">保存</button>

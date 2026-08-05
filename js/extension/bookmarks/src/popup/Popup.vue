@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { Bookmark, ExternalLink, Plus, Search, Zap } from 'lucide-vue-next';
+import { ExternalLink, Plus, Search, Zap } from 'lucide-vue-next';
 import type { FolderView } from '../types/bookmark';
 import { addCurrentBookmark, loadBookmarkWorkspace } from '../services/bookmarkRepository';
 import type { CurrentTab } from '../services/extensionRuntime';
@@ -26,6 +26,7 @@ const bookmarklets = computed(() =>
 );
 
 async function load() {
+  error.value = '';
   try {
     const [workspace, tab] = await Promise.all([loadBookmarkWorkspace(), getCurrentTab()]);
     folders.value = workspace.folders;
@@ -41,15 +42,24 @@ async function saveToFolder(folder: FolderView) {
     return;
   }
 
-  await addCurrentBookmark(folder.id, currentTab.value.title || currentTab.value.url, currentTab.value.url);
   error.value = '';
-  closePopup();
+  try {
+    await addCurrentBookmark(folder.id, currentTab.value.title || currentTab.value.url, currentTab.value.url);
+    closePopup();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '保存书签失败';
+  }
 }
 
 async function runBookmarklet(bookmarklet: { url?: string }) {
   if (!currentTab.value?.id || !bookmarklet.url) return;
-  await executeBookmarklet(currentTab.value.id, bookmarklet.url);
-  closePopup();
+  error.value = '';
+  try {
+    await executeBookmarklet(currentTab.value.id, bookmarklet.url);
+    closePopup();
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '执行 Bookmarklet 失败';
+  }
 }
 
 onMounted(() => {
@@ -59,19 +69,14 @@ onMounted(() => {
 
 <template>
   <main class="popup-shell">
-    <header class="popup-head">
-      <div class="popup-brand">
-        <Bookmark :size="18" />
-        <strong>MarkHub</strong>
+    <section class="current-page">
+      <div class="current-page-copy">
+        <span>当前页面</span>
+        <strong>{{ currentTab?.title || '未读取到当前标签页' }}</strong>
       </div>
       <button class="icon-button" type="button" aria-label="打开主页面" @click="openAppPage">
         <ExternalLink :size="16" />
       </button>
-    </header>
-
-    <section class="current-page">
-      <span>当前页面</span>
-      <strong>{{ currentTab?.title || '未读取到当前标签页' }}</strong>
     </section>
 
     <div class="popup-search">

@@ -31,8 +31,8 @@ UI 组件
 
 - `searchService`：纯函数解析普通、`#`、`!` 查询，引擎和 tag 候选，构造安全 URL。
 - `layout/`：维护三种画布的布局生命周期，不拥有书签数据写回。
-- `organize/`：维护完整顺序、可见锚点、预测落点和撤销快照的纯函数。
-- `interaction/`：维护顶层模式、浮层互斥和 Esc 回退顺序。
+- `organize/`：维护完整顺序、可见锚点和预测落点的纯函数。
+- `interaction/`：维护顶层模式、必要的浮层关系和 Esc 回退顺序。
 - `organize/filtering`：分别定义整理模式-书签的书签字段过滤和整理模式-目录的目录标题过滤。
 
 领域层应尽可能无 DOM、无计时器、可单元测试。
@@ -44,7 +44,7 @@ UI 组件
 - `useBookmarkPage`：加载、刷新、页面错误和全局生命周期。
 - `useSearchState`：唯一 query、解析状态、active 索引和浮层互斥。
 - `useBrowseMode`：浏览折叠偏好、浏览画布和工具命令。
-- `useOrganizeMode`：整理顶层状态、子模式切换、临时折叠和撤销。
+- `useOrganizeMode`：整理顶层状态、子模式切换和临时折叠。
 - `useBookmarkCrud`：添加、编辑、删除和错误上下文。
 - `useImportExport`：导入导出忙碌、文件校验和结果。
 
@@ -113,8 +113,8 @@ app/
 - query 只有一个来源。
 - 引擎 selected 和 active 属于搜索状态；组件不得内部复制业务索引。
 - 浏览折叠偏好属于浏览状态；整理临时折叠属于整理状态。
-- `pendingMove`、撤销快照和写回忙碌属于整理用例；不能通过按钮 class 表达。
-- 浮层互斥属于页面交互协调器；组件只能请求打开/关闭。
+- `pendingMove` 和写回忙碌属于整理用例；不能通过按钮 class 表达。
+- 搜索下拉与引擎菜单的互斥属于搜索协调器；独立鼠标浮层不强制进入同一个全局状态机。
 - 搜索引擎 selected、active、hover 由 `useSearchState` 唯一持有；`HeaderBar` 只能受控渲染，不得拥有自己的 active 索引。
 - `!` 查询隐藏普通书签搜索结果，但保留书签部分背景和当前引擎入口。
 
@@ -148,6 +148,8 @@ type CanvasLayout = {
 - 根目录完整 children 顺序属于工作区数据，目录 API index 不得仅从可见目录或目录自身 index 猜测。
 
 外部书签事件与本地乐观移动必须通过 repository 协调：写回请求带操作令牌或快照版本，重复事件只确认结果，不得覆盖更新中的本地预测。
+
+完整备份不得依赖单层 UI 投影。导出从书签栏完整子树递归生成；导入先校验完整 JSON，再在匹配或创建节点时建立 `sourceId -> targetId`，最后统一写入 extra 和引用节点 ID 的偏好。Chrome 节点 ID 是基础设施标识，不是可原样恢复的领域标识。
 
 ## 6. 拖拽落点算法
 

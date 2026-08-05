@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Bookmark, Folder, FolderPlus, Maximize2, Minimize2, Plus, RotateCcw } from 'lucide-vue-next';
+import { Bookmark, Folder, FolderPlus, Maximize2, Minimize2, Plus, X } from 'lucide-vue-next';
 
-defineProps<{ kind: 'bookmark' | 'folder'; canUndo: boolean }>();
+defineProps<{ kind: 'bookmark' | 'folder' }>();
 
 const emit = defineEmits<{
   'update:kind': [value: 'bookmark' | 'folder'];
@@ -9,7 +9,7 @@ const emit = defineEmits<{
   'add-folder': [];
   'expand-all': [];
   'collapse-all': [];
-  undo: [];
+  exit: [];
 }>();
 </script>
 
@@ -23,6 +23,6 @@ const emit = defineEmits<{
     <button v-if="kind === 'bookmark'" type="button" title="全部收缩" aria-label="全部收缩" @click="emit('collapse-all')"><Minimize2 :size="15" /></button>
     <button type="button" title="添加书签" @click="emit('add-bookmark')"><Plus :size="15" /></button>
     <button type="button" title="添加目录" @click="emit('add-folder')"><FolderPlus :size="15" /></button>
-    <button type="button" title="撤销最近移动" :disabled="!canUndo" @click="emit('undo')"><RotateCcw :size="15" /></button>
+    <button class="organize-exit" type="button" title="退出整理" aria-label="退出整理" @click="emit('exit')"><X :size="15" /></button>
   </div>
 </template>

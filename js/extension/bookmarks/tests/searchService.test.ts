@@ -12,6 +12,7 @@ import {
 } from '../src/app/organizeMoveModel.ts';
 import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
 import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
+import { remapImportedPreferences } from '../src/services/backupModel.ts';
 import {
   buildQuickSearchUrl,
   filterFolders,
@@ -202,4 +203,26 @@ test('工作区纯模型移动目录保持相对顺序', () => {
 
   moveWorkspaceFolder(input, 'a', 2);
   assert.deepEqual(input.map((folder) => folder.id), ['b', 'c', 'a']);
+});
+
+test('备份恢复将目录和自定义引擎引用映射为新的 Chrome ID', () => {
+  const idMap = new Map([
+    ['folder-old', 'folder-new'],
+    ['engine-old', 'engine-new']
+  ]);
+
+  assert.deepEqual(
+    remapImportedPreferences(
+      { collapsedFolderIds: ['folder-old', 'missing'], searchEngine: 'bookmark:engine-old' },
+      idMap,
+      { collapsedFolderIds: [], searchEngine: 'builtin:bing' }
+    ),
+    { collapsedFolderIds: ['folder-new'], searchEngine: 'bookmark:engine-new' }
+  );
+});
+
+test('备份恢复保持内置引擎 ID，自定义引擎缺失时保留当前选择', () => {
+  const current = { collapsedFolderIds: [], searchEngine: 'builtin:google' };
+  assert.equal(remapImportedPreferences({ collapsedFolderIds: [], searchEngine: 'builtin:bing' }, new Map(), current).searchEngine, 'builtin:bing');
+  assert.equal(remapImportedPreferences({ collapsedFolderIds: [], searchEngine: 'bookmark:missing' }, new Map(), current).searchEngine, 'builtin:google');
 });

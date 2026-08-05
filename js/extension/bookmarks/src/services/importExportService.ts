@@ -1,23 +1,22 @@
-import type { BookmarkExtra, BrowserBookmarkNode, FolderView, FullExportData, UiPreferences } from '../types/bookmark';
-import { createBookmark, getDefaultBookmarkRoot, getTree } from './bookmarkApi';
+import type {
+  BookmarkExtra,
+  BrowserBookmarkNode,
+  ExportBookmarkNode,
+  FullExportData,
+  UiPreferences
+} from '../types/bookmark';
+import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, removeBookmark, removeFolder } from './bookmarkApi';
+import { remapImportedPreferences } from './backupModel';
 import { getExtras, getPreferences, replaceExtras, savePreferences } from './extraStore';
 
-type NormalizedImportFolder = {
-  title: string;
-  bookmarks: Array<{
-    title: string;
-    url: string;
-    extra?: BookmarkExtra;
-  }>;
+type ImportData = {
+  children: ExportBookmarkNode[];
+  preferences: UiPreferences;
 };
 
-type BookmarkSignatureInput = {
-  folderTitle: string;
-  title: string;
-  url: string;
-  tags?: string[];
-  searchUrl?: string;
-  description?: string;
+type CreatedNode = {
+  id: string;
+  folder: boolean;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -25,40 +24,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizeTitle(value: unknown, fallback: string): string {
-  if (typeof value !== 'string') {
-    return fallback;
-  }
-
-  const trimmed = value.trim();
-  return trimmed || fallback;
+  if (typeof value !== 'string') return fallback;
+  return value.trim() || fallback;
 }
 
-function normalizeText(value: string | undefined): string {
-  return value?.trim() ?? '';
-}
-
-function normalizeTags(tags?: string[]): string[] {
-  return (tags ?? []).map((tag) => tag.trim()).filter(Boolean).sort((left, right) => left.localeCompare(right));
-}
-
-function buildBookmarkSignature(input: BookmarkSignatureInput): string {
-  return JSON.stringify({
-    folderTitle: normalizeText(input.folderTitle),
-    title: normalizeText(input.title),
-    url: normalizeText(input.url),
-    tags: normalizeTags(input.tags),
-    searchUrl: normalizeText(input.searchUrl),
-    description: normalizeText(input.description)
-  });
-}
-
-function normalizeBookmarkExtra(value: unknown): BookmarkExtra | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
+function normalizeBookmarkExtra(value: unknown, sourceId: string): BookmarkExtra | undefined {
+  if (!isRecord(value)) return undefined;
 
   return {
-    bookmarkId: typeof value.bookmarkId === 'string' ? value.bookmarkId : '',
+    bookmarkId: sourceId,
     tags: Array.isArray(value.tags) ? value.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     description: typeof value.description === 'string' ? value.description : undefined,
     searchUrl: typeof value.searchUrl === 'string' ? value.searchUrl : undefined,
@@ -67,187 +41,177 @@ function normalizeBookmarkExtra(value: unknown): BookmarkExtra | undefined {
   };
 }
 
-function validateFullImportData(data: unknown): { folders: NormalizedImportFolder[]; preferences?: Partial<UiPreferences> } {
-  if (!isRecord(data) || data.version !== 1 || !Array.isArray(data.folders)) {
+function normalizeImportNode(value: unknown, path: string, sourceIds: Set<string>): ExportBookmarkNode {
+  if (!isRecord(value)) throw new Error(`${path}数据无效`);
+
+  if (typeof value.sourceId !== 'string' || !value.sourceId.trim()) {
+    throw new Error(`${path}缺少源节点 ID`);
+  }
+  const sourceId = value.sourceId.trim();
+  if (sourceIds.has(sourceId)) throw new Error(`${path}的源节点 ID 重复`);
+  sourceIds.add(sourceId);
+
+  const title = normalizeTitle(value.title, '未命名');
+  if (typeof value.url === 'string') {
+    const url = value.url.trim();
+    if (!url) throw new Error(`${path}“${title}”缺少有效 URL`);
+    if (value.children !== undefined) throw new Error(`${path}“${title}”不能同时包含 URL 和子节点`);
+    return {
+      sourceId,
+      title,
+      url,
+      extra: normalizeBookmarkExtra(value.extra, sourceId)
+    };
+  }
+
+  if (!Array.isArray(value.children)) throw new Error(`${path}目录“${title}”缺少子节点数组`);
+  return {
+    sourceId,
+    title,
+    children: value.children.map((child, index) => normalizeImportNode(child, `${path}第 ${index + 1} 个节点`, sourceIds))
+  };
+}
+
+function validateFullImportData(data: unknown): ImportData {
+  if (!isRecord(data) || data.version !== 2 || !isRecord(data.root) || !Array.isArray(data.root.children)) {
     throw new Error('全量导入文件格式无效');
   }
+  if (!isRecord(data.preferences)) throw new Error('全量导入文件缺少偏好数据');
 
-  const folders = data.folders.map((folderValue, folderIndex) => {
-    if (!isRecord(folderValue) || !Array.isArray(folderValue.bookmarks)) {
-      throw new Error(`第 ${folderIndex + 1} 个目录数据无效`);
-    }
-
-    const title = normalizeTitle(folderValue.title, '未命名目录');
-    const bookmarks = folderValue.bookmarks.map((bookmarkValue, bookmarkIndex) => {
-      if (!isRecord(bookmarkValue)) {
-        throw new Error(`目录“${title}”中的第 ${bookmarkIndex + 1} 个书签数据无效`);
-      }
-
-      const bookmarkTitle = normalizeTitle(bookmarkValue.title, '未命名书签');
-      if (typeof bookmarkValue.url !== 'string' || !bookmarkValue.url.trim()) {
-        throw new Error(`目录“${title}”中的书签“${bookmarkTitle}”缺少有效 URL`);
-      }
-
-      return {
-        title: bookmarkTitle,
-        url: bookmarkValue.url.trim(),
-        extra: normalizeBookmarkExtra(bookmarkValue.extra)
-      };
-    });
-
-    return { title, bookmarks };
-  });
-
-  let preferences: Partial<UiPreferences> | undefined;
-  if (isRecord(data.preferences)) {
-    preferences = {};
-    if (Array.isArray(data.preferences.collapsedFolderIds)) {
-      preferences.collapsedFolderIds = data.preferences.collapsedFolderIds.filter((id): id is string => typeof id === 'string');
-    }
-    if (typeof data.preferences.searchEngine === 'string') {
-      preferences.searchEngine = data.preferences.searchEngine;
-    }
+  const collapsedFolderIds = data.preferences.collapsedFolderIds;
+  const searchEngine = data.preferences.searchEngine;
+  if (!Array.isArray(collapsedFolderIds) || !collapsedFolderIds.every((id) => typeof id === 'string')) {
+    throw new Error('折叠目录偏好格式无效');
   }
+  if (typeof searchEngine !== 'string') throw new Error('搜索引擎偏好格式无效');
 
-  return { folders, preferences };
+  const sourceIds = new Set<string>();
+  return {
+    children: data.root.children.map((child, index) => normalizeImportNode(child, `根目录第 ${index + 1} 个节点`, sourceIds)),
+    preferences: {
+      collapsedFolderIds: [...collapsedFolderIds],
+      searchEngine
+    }
+  };
 }
 
 function findNodeById(nodes: BrowserBookmarkNode[], id: string): BrowserBookmarkNode | undefined {
   for (const node of nodes) {
-    if (node.id === id) {
-      return node;
-    }
-
-    if (node.children?.length) {
-      const found = findNodeById(node.children, id);
-      if (found) {
-        return found;
-      }
-    }
+    if (node.id === id) return node;
+    const found = node.children?.length ? findNodeById(node.children, id) : undefined;
+    if (found) return found;
   }
-
   return undefined;
 }
 
-export function exportFullData(folders: FolderView[], extras: Record<string, BookmarkExtra>, preferences: UiPreferences): FullExportData {
+function toExportNode(node: BrowserBookmarkNode, extras: Record<string, BookmarkExtra>): ExportBookmarkNode {
+  if (node.url) {
+    return {
+      sourceId: node.id,
+      title: node.title,
+      url: node.url,
+      extra: extras[node.id]
+    };
+  }
+
   return {
-    version: 1,
+    sourceId: node.id,
+    title: node.title,
+    children: (node.children ?? []).map((child) => toExportNode(child, extras))
+  };
+}
+
+function matchesSourceNode(source: ExportBookmarkNode, target: BrowserBookmarkNode): boolean {
+  if (source.url) return target.url === source.url && target.title === source.title;
+  return !target.url && target.title === source.title;
+}
+
+async function rollbackCreatedNodes(createdNodes: CreatedNode[]): Promise<void> {
+  for (const node of [...createdNodes].reverse()) {
+    try {
+      if (node.folder) await removeFolder(node.id);
+      else await removeBookmark(node.id);
+    } catch {
+      // A created child may already have been removed with its parent.
+    }
+  }
+}
+
+export async function exportFullData(rootId: string, preferences: UiPreferences): Promise<FullExportData> {
+  const [root, extras] = await Promise.all([getSubTree(rootId), getExtras()]);
+  if (!root) throw new Error('未找到可导出的书签根目录');
+
+  return {
+    version: 2,
     exportedAt: new Date().toISOString(),
-    folders: folders.map((folder) => ({
-      title: folder.title,
-      index: folder.index,
-      bookmarks: folder.bookmarks.map((bookmark) => ({
-        title: bookmark.title,
-        url: bookmark.url ?? '',
-        index: bookmark.index,
-        extra: bookmark.extra
-      }))
-    })),
-    extras,
+    root: {
+      children: (root.children ?? []).map((child) => toExportNode(child, extras))
+    },
     preferences
   };
 }
 
 export async function importFullData(parentId: string, data: FullExportData): Promise<void> {
   const parsed = validateFullImportData(data);
-  const tree = await getTree();
+  const [tree, originalExtras, originalPreferences] = await Promise.all([getTree(), getExtras(), getPreferences()]);
   const root = findNodeById(tree, parentId) ?? getDefaultBookmarkRoot(tree);
+  if (!root) throw new Error('未找到可导入的书签根目录');
 
-  if (!root) {
-    throw new Error('未找到可导入的书签根目录');
-  }
+  const idMap = new Map<string, string>();
+  const createdNodes: CreatedNode[] = [];
+  const nextExtras: Record<string, BookmarkExtra> = { ...originalExtras };
 
-  const existingFolders = new Map<string, BrowserBookmarkNode>();
-  (root.children ?? [])
-    .filter((node) => !node.url)
-    .forEach((folder) => {
-      const title = normalizeTitle(folder.title, '未命名目录');
-      if (!existingFolders.has(title)) {
-        existingFolders.set(title, folder);
+  async function restoreChildren(
+    targetParentId: string,
+    sources: ExportBookmarkNode[],
+    targetChildren: BrowserBookmarkNode[]
+  ): Promise<void> {
+    const claimedTargetIds = new Set<string>();
+
+    for (const source of sources) {
+      let target = targetChildren.find((candidate) => !claimedTargetIds.has(candidate.id) && matchesSourceNode(source, candidate));
+
+      if (!target) {
+        target = await createBookmark({
+          parentId: targetParentId,
+          title: source.title,
+          url: source.url
+        });
+        target.children = source.url ? undefined : [];
+        targetChildren.push(target);
+        createdNodes.push({ id: target.id, folder: !source.url });
       }
-    });
 
-  const existingExtras = await getExtras();
-  const nextExtras: Record<string, BookmarkExtra> = { ...existingExtras };
-  const existingSignaturesByFolder = new Map<string, Set<string>>();
+      claimedTargetIds.add(target.id);
+      idMap.set(source.sourceId, target.id);
 
-  for (const folderNode of root.children ?? []) {
-    if (folderNode.url) {
-      continue;
-    }
-
-    const folderTitle = normalizeTitle(folderNode.title, '未命名目录');
-    const signatures = new Set<string>();
-    for (const bookmarkNode of folderNode.children ?? []) {
-      if (!bookmarkNode.url) {
+      if (source.url) {
+        if (source.extra) {
+          nextExtras[target.id] = {
+            ...source.extra,
+            bookmarkId: target.id,
+            updatedAt: Date.now()
+          };
+        }
         continue;
       }
 
-      const extra = existingExtras[bookmarkNode.id];
-      signatures.add(
-        buildBookmarkSignature({
-          folderTitle,
-          title: bookmarkNode.title,
-          url: bookmarkNode.url,
-          tags: extra?.tags,
-          searchUrl: extra?.searchUrl,
-          description: extra?.description
-        })
-      );
-    }
-    existingSignaturesByFolder.set(folderTitle, signatures);
-  }
-
-  for (const folder of parsed.folders) {
-    let targetFolder = existingFolders.get(folder.title);
-
-    if (!targetFolder) {
-      targetFolder = await createBookmark({ parentId: root.id, title: folder.title });
-      existingFolders.set(folder.title, targetFolder);
-    }
-
-    const folderSignatures = existingSignaturesByFolder.get(folder.title) ?? new Set<string>();
-    existingSignaturesByFolder.set(folder.title, folderSignatures);
-
-    for (const bookmark of folder.bookmarks) {
-      const signature = buildBookmarkSignature({
-        folderTitle: folder.title,
-        title: bookmark.title,
-        url: bookmark.url,
-        tags: bookmark.extra?.tags,
-        searchUrl: bookmark.extra?.searchUrl,
-        description: bookmark.extra?.description
-      });
-
-      if (folderSignatures.has(signature)) {
-        continue;
-      }
-
-      const createdBookmark = await createBookmark({
-        parentId: targetFolder.id,
-        title: bookmark.title,
-        url: bookmark.url
-      });
-
-      folderSignatures.add(signature);
-
-      if (bookmark.extra) {
-        nextExtras[createdBookmark.id] = {
-          ...bookmark.extra,
-          bookmarkId: createdBookmark.id,
-          updatedAt: Date.now()
-        };
-      }
+      await restoreChildren(target.id, source.children ?? [], target.children ?? (target.children = []));
     }
   }
 
-  await replaceExtras(nextExtras);
-
-  if (parsed.preferences) {
-    const currentPreferences = await getPreferences();
-    await savePreferences({
-      ...currentPreferences,
-      ...parsed.preferences
-    });
+  let storageChanged = false;
+  try {
+    await restoreChildren(root.id, parsed.children, root.children ?? (root.children = []));
+    await replaceExtras(nextExtras);
+    storageChanged = true;
+    await savePreferences(remapImportedPreferences(parsed.preferences, idMap, originalPreferences));
+  } catch (error) {
+    if (storageChanged) {
+      await replaceExtras(originalExtras).catch(() => undefined);
+      await savePreferences(originalPreferences).catch(() => undefined);
+    }
+    await rollbackCreatedNodes(createdNodes);
+    throw error;
   }
 }

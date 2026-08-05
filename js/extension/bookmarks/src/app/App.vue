@@ -3,19 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } f
 import type { CSSProperties } from 'vue';
 import { FolderPlus, Maximize2, Menu, Minimize2, Plus, RefreshCw, Settings, SlidersHorizontal } from 'lucide-vue-next';
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui';
-import type { BookmarkView, FolderView, QuickSearchTarget, TagSummary } from '../types/bookmark';
-import {
-  deleteBookmarkDetails,
-  deleteFolderDetails,
-  moveBookmarkOrder,
-  moveFolderOrder,
-  restoreBookmarkPosition,
-  saveBookmarkDetails,
-  saveFolderDetails,
-  type BookmarkMoveSnapshot
-} from '../services/bookmarkRepository';
-import { getExtras, getPreferences } from '../services/extraStore';
-import { exportFullData, importFullData } from '../services/importExportService';
+import type { BookmarkView, QuickSearchTarget, TagSummary } from '../types/bookmark';
+import { moveBookmarkOrder, moveFolderOrder } from '../services/bookmarkRepository';
 import {
   buildQuickSearchUrl,
   buildSearchEngineUrl,
@@ -24,6 +13,9 @@ import {
 } from '../services/searchService';
 import { openUrl } from '../services/extensionRuntime';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
+import { useBookmarkCrud } from './useBookmarkCrud';
+import { useImportExport } from './useImportExport';
+import { useOrganizeMode } from './useOrganizeMode';
 import { normalizeSearchIndex } from './searchStateModel';
 import { useSearchState } from './useSearchState';
 import { useOrganizeDrag, type BookmarkMoveRequest, type FolderMoveRequest } from './useOrganizeDrag';
@@ -42,30 +34,47 @@ import QuickSearchOverlay from './components/QuickSearchOverlay.vue';
 import SearchOverlay from './components/SearchOverlay.vue';
 import TagPanel from './components/TagPanel.vue';
 
-type MoveState = { kind: 'bookmark' | 'folder'; label: string; snapshot: BookmarkMoveSnapshot };
-
 const workspace = useBookmarkWorkspace();
 const search = useSearchState({
   folders: workspace.folders,
   selectedEngineId: workspace.searchEngine,
   setSearchEngine: workspace.setSearchEngine
 });
-const mode = ref<'browse' | 'organize'>('browse');
-const organizeKind = ref<'bookmark' | 'folder'>('bookmark');
-const organizeCollapsedFolderIds = ref<Set<string>>(new Set());
+const organize = useOrganizeMode({ folders: workspace.folders, getScrollContainer: getPageViewport });
+const mode = organize.mode;
+const organizeKind = organize.kind;
+const organizeCollapsedFolderIds = organize.collapsedFolderIds;
+const crud = useBookmarkCrud(workspace);
+const {
+  bookmarkModalOpen,
+  folderModalOpen,
+  editingBookmark,
+  editingFolder,
+  bookmarkPendingDelete,
+  folderPendingDelete,
+  bookmarkError,
+  folderError,
+  bookmarkDeleteError,
+  folderDeleteError,
+  startAddBookmark,
+  startEditBookmark,
+  closeBookmark,
+  startAddFolder,
+  startEditFolder,
+  closeFolder,
+  requestBookmarkDelete,
+  closeBookmarkDelete,
+  requestFolderDelete,
+  closeFolderDelete,
+  saveBookmark,
+  saveFolder,
+  confirmDeleteBookmark,
+  confirmDeleteFolder
+} = crud;
+const importExport = useImportExport(workspace);
 const query = search.query;
-const bookmarkModalOpen = ref(false);
-const folderModalOpen = ref(false);
-const importExportOpen = ref(false);
-const editingBookmark = ref<BookmarkView>();
-const editingFolder = ref<FolderView>();
-const bookmarkPendingDelete = ref<BookmarkView>();
-const folderPendingDelete = ref<FolderView>();
-const importExportBusy = ref(false);
-const importExportError = ref('');
-const actionError = ref('');
+const moveError = ref('');
 const pendingMoveId = ref('');
-const lastMove = ref<MoveState>();
 const searchBoxEl = ref<HTMLDivElement>();
 const searchInputEl = ref<HTMLInputElement>();
 const pageContentEl = ref<HTMLElement>();
@@ -80,13 +89,12 @@ const utilityDockOpen = ref(false);
 const engineMenuActive = search.engineMenuActive;
 const tagPanelActive = ref(false);
 const resetToken = ref(0);
-let restoreScrollY = 0;
 let faviconRefreshTimer: number | undefined;
 
 provide(faviconRefreshTokenKey, faviconRefreshToken);
 
 function getPageViewport() {
-  return pageContentEl.value?.closest<HTMLElement>('[data-reka-scroll-area-viewport]');
+  return pageContentEl.value?.closest<HTMLElement>('[data-reka-scroll-area-viewport]') ?? undefined;
 }
 
 const tagSummaries = search.tagSummaries;
@@ -110,7 +118,6 @@ const visibleFolders = computed(() => {
     bookmarks: filteredByFolder.get(folder.id) ?? []
   }));
 });
-const canUndo = computed(() => Boolean(lastMove.value) && !pendingMoveId.value);
 const showOverlay = search.showOverlay;
 const reorderEnabled = computed(() => mode.value === 'organize');
 
@@ -230,103 +237,12 @@ function handleSearchKeydown(event: KeyboardEvent) {
 }
 
 function enterOrganize() {
-  restoreScrollY = getPageViewport()?.scrollTop ?? window.scrollY;
-  organizeCollapsedFolderIds.value = new Set();
-  mode.value = 'organize';
+  organize.enter();
   overlaySuppressed.value = true;
 }
 
 function exitOrganize() {
-  mode.value = 'browse';
-  void nextTick(() => {
-    const viewport = getPageViewport();
-    if (viewport) viewport.scrollTo({ top: restoreScrollY });
-    else window.scrollTo({ top: restoreScrollY });
-  });
-}
-
-function startAddBookmark() {
-  editingBookmark.value = undefined;
-  bookmarkModalOpen.value = true;
-}
-
-function startAddFolder() {
-  editingFolder.value = undefined;
-  folderModalOpen.value = true;
-}
-
-function startEditBookmark(bookmark: BookmarkView) {
-  editingBookmark.value = bookmark;
-  bookmarkModalOpen.value = true;
-}
-
-function startEditFolder(folder: FolderView) {
-  editingFolder.value = folder;
-  folderModalOpen.value = true;
-}
-
-async function saveBookmark(value: Parameters<typeof saveBookmarkDetails>[0]) {
-  actionError.value = '';
-  try {
-    const bookmark = await saveBookmarkDetails(value);
-    workspace.upsertBookmark(bookmark);
-    bookmarkModalOpen.value = false;
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '保存书签失败';
-  }
-}
-
-async function saveFolder(value: { id?: string; title: string }) {
-  if (!value.title || !workspace.rootId.value) return;
-  actionError.value = '';
-  try {
-    const folder = await saveFolderDetails({ id: value.id, parentId: workspace.rootId.value, title: value.title });
-    workspace.upsertFolder(folder);
-    folderModalOpen.value = false;
-    editingFolder.value = undefined;
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '保存目录失败';
-  }
-}
-
-async function confirmDeleteBookmark() {
-  const bookmark = bookmarkPendingDelete.value;
-  if (!bookmark) return;
-  actionError.value = '';
-  try {
-    await deleteBookmarkDetails(bookmark.id);
-    workspace.removeBookmark(bookmark.id);
-    bookmarkPendingDelete.value = undefined;
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '删除书签失败';
-  }
-}
-
-async function confirmDeleteFolder() {
-  const folder = folderPendingDelete.value;
-  if (!folder) return;
-  actionError.value = '';
-  try {
-    await deleteFolderDetails(folder.id);
-    workspace.removeFolder(folder.id);
-    folderPendingDelete.value = undefined;
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '删除目录失败';
-  }
-}
-
-async function undoLastMove() {
-  const move = lastMove.value;
-  if (!move) return;
-  pendingMoveId.value = move.snapshot.id;
-  try {
-    const restored = await restoreBookmarkPosition(move.snapshot);
-    if (move.kind === 'folder') await workspace.reload({ silent: true });
-    else workspace.moveBookmark({ bookmarkId: restored.id, parentId: restored.parentId ?? move.snapshot.parentId ?? '', index: restored.index ?? move.snapshot.index ?? 0 });
-    lastMove.value = undefined;
-  } finally {
-    pendingMoveId.value = '';
-  }
+  organize.exit();
 }
 
 function toggleFolderFromTitle(folderId: string) {
@@ -334,30 +250,26 @@ function toggleFolderFromTitle(folderId: string) {
     workspace.toggleFolder(folderId);
     return;
   }
-  const next = new Set(organizeCollapsedFolderIds.value);
-  if (next.has(folderId)) next.delete(folderId);
-  else next.add(folderId);
-  organizeCollapsedFolderIds.value = next;
+  organize.toggleFolder(folderId);
 }
 
 function setOrganizeKind(kind: 'bookmark' | 'folder') {
-  organizeKind.value = kind;
-  organizeCollapsedFolderIds.value = kind === 'folder' ? new Set(workspace.folders.value.map((folder) => folder.id)) : new Set();
+  organize.setKind(kind);
 }
 
 function setOrganizeFoldersCollapsed(collapsed: boolean) {
-  organizeCollapsedFolderIds.value = collapsed ? new Set(workspace.folders.value.map((folder) => folder.id)) : new Set();
+  organize.setAllCollapsed(collapsed);
 }
 
 async function applyFolderMove(request: FolderMoveRequest) {
   pendingMoveId.value = request.folderId;
+  moveError.value = '';
   try {
-    lastMove.value = { kind: 'folder', label: '目录排序', snapshot: { id: request.folderId, parentId: workspace.rootId.value, index: request.sourceIndex } };
     workspace.moveFolder(request.folderId, request.desiredPosition);
     await moveFolderOrder({ folderId: request.folderId, index: request.apiIndex });
     await workspace.reload({ silent: true });
   } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '目录排序失败';
+    moveError.value = error instanceof Error ? error.message : '目录排序失败';
     await workspace.reload({ silent: true });
   } finally {
     pendingMoveId.value = '';
@@ -371,13 +283,13 @@ async function applyBookmarkMove(request: BookmarkMoveRequest) {
     organizeCollapsedFolderIds.value = next;
   }
   pendingMoveId.value = request.bookmarkId;
+  moveError.value = '';
   try {
-    lastMove.value = { kind: 'bookmark', label: '书签移动', snapshot: { id: request.bookmarkId, parentId: request.fromFolderId, index: request.sourceIndex } };
     workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.desiredIndex });
     const moved = await moveBookmarkOrder({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.apiIndex });
     workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: moved.parentId ?? request.toFolderId, index: moved.index ?? request.desiredIndex });
   } catch (error) {
-    actionError.value = error instanceof Error ? error.message : '书签移动失败';
+    moveError.value = error instanceof Error ? error.message : '书签移动失败';
     await workspace.reload({ silent: true });
   } finally {
     pendingMoveId.value = '';
@@ -397,8 +309,7 @@ const organizeDrag = useOrganizeDrag({
 const organizeForceExpanded = computed(() => Boolean(query.value.trim()) && !quickSearch.value);
 
 function openImportExport() {
-  importExportError.value = '';
-  importExportOpen.value = true;
+  importExport.show();
 }
 
 function refreshAllFavicons() {
@@ -420,52 +331,12 @@ function handleUtilityFocusOut(event: FocusEvent) {
   if (!(event.relatedTarget instanceof Node) || !dock.contains(event.relatedTarget)) utilityDockOpen.value = false;
 }
 
-function ensureRootId() {
-  if (!workspace.rootId.value) throw new Error('当前未读取到可导入的书签根目录');
-  return workspace.rootId.value;
-}
-
-function downloadFile(filename: string, content: BlobPart, type: string) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
-async function exportFullBookmarkData() {
-  importExportBusy.value = true;
-  try {
-    const [extras, preferences] = await Promise.all([getExtras(), getPreferences()]);
-    const data = exportFullData(workspace.folders.value, extras, preferences);
-    downloadFile(`markhub-bookmarks-${Date.now()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
-  } catch (error) {
-    importExportError.value = error instanceof Error ? error.message : '导出失败';
-  } finally {
-    importExportBusy.value = false;
-  }
-}
-
-async function importFullBookmarkData(file: File) {
-  importExportBusy.value = true;
-  try {
-    await importFullData(ensureRootId(), JSON.parse(await file.text()));
-    await workspace.reload();
-    importExportOpen.value = false;
-  } catch (error) {
-    importExportError.value = error instanceof Error ? error.message : '导入失败';
-  } finally {
-    importExportBusy.value = false;
-  }
-}
-
 function isEditableTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
 }
 
 function hasOpenModal() {
-  return Boolean(bookmarkModalOpen.value || folderModalOpen.value || bookmarkPendingDelete.value || folderPendingDelete.value || importExportOpen.value);
+  return Boolean(bookmarkModalOpen.value || folderModalOpen.value || bookmarkPendingDelete.value || folderPendingDelete.value || importExport.open.value);
 }
 
 function resetTransientSurfaces() {
@@ -482,7 +353,7 @@ function handleEscape(event: KeyboardEvent) {
     return;
   }
   if (hasOpenModal()) {
-    if (importExportBusy.value) {
+    if (importExport.busy.value) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -543,10 +414,6 @@ function handleGlobalKeydown(event: KeyboardEvent) {
       return;
     }
   }
-  if (mode.value === 'organize' && canUndo.value && (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z' && !isEditableTarget(event.target)) {
-    event.preventDefault();
-    void undoLastMove();
-  }
 }
 
 onMounted(() => {
@@ -594,13 +461,12 @@ watch(
     <OrganizeToolbar
       v-if="mode === 'organize'"
       :kind="organizeKind"
-      :can-undo="canUndo"
       @update:kind="setOrganizeKind"
       @add-bookmark="startAddBookmark"
       @add-folder="startAddFolder"
       @expand-all="setOrganizeFoldersCollapsed(false)"
       @collapse-all="setOrganizeFoldersCollapsed(true)"
-      @undo="undoLastMove"
+      @exit="exitOrganize"
     />
 
     <nav
@@ -628,7 +494,7 @@ watch(
     <ScrollAreaRoot class="page-scroll-area" type="hover" :scroll-hide-delay="350">
       <ScrollAreaViewport class="page-scroll-viewport">
         <main ref="pageContentEl" class="page-content">
-      <p v-if="actionError" class="page-error">{{ actionError }}</p>
+      <p v-if="moveError" class="page-error">{{ moveError }}</p>
       <EmptyState v-if="workspace.loading.value" title="正在读取书签" description="正在同步浏览器书签。" />
       <EmptyState v-else-if="workspace.error.value" title="无法读取书签" :description="workspace.error.value" />
       <EmptyState v-else-if="!visibleFolders.length" :title="query ? '没有匹配结果' : '还没有书签'" :description="query ? '修改搜索内容后继续。' : '请在书签栏下创建一层目录和书签。'" />
@@ -652,9 +518,9 @@ watch(
         @folder-list-ready="organizeDrag.registerFolderList"
         @toggle-folder="toggleFolderFromTitle"
         @edit-folder="startEditFolder"
-        @delete-folder="folderPendingDelete = $event"
+        @delete-folder="requestFolderDelete"
         @edit-bookmark="startEditBookmark"
-        @delete-bookmark="bookmarkPendingDelete = $event"
+        @delete-bookmark="requestBookmarkDelete"
       />
 
       <FolderOrganizeCanvas
@@ -664,7 +530,7 @@ watch(
         :dragging-folder-id="organizeDrag.draggingItemId.value"
         @board-ready="organizeDrag.registerBoard"
         @edit-folder="startEditFolder"
-        @delete-folder="folderPendingDelete = $event"
+        @delete-folder="requestFolderDelete"
       />
         </main>
       </ScrollAreaViewport>
@@ -691,10 +557,10 @@ watch(
       @activate="activeTagIndex = $event"
     />
 
-    <BookmarkModal :open="bookmarkModalOpen" :folders="workspace.folders.value" :tags="tagSummaries" :bookmark="editingBookmark" @close="bookmarkModalOpen = false" @save="saveBookmark" />
-    <FolderModal :open="folderModalOpen" :folder="editingFolder" @close="folderModalOpen = false; editingFolder = undefined" @save="saveFolder" />
-    <ConfirmModal :open="Boolean(bookmarkPendingDelete)" title="删除书签" :description="bookmarkPendingDelete ? `确认删除“${bookmarkPendingDelete.title}”？` : ''" confirm-text="删除" danger @close="bookmarkPendingDelete = undefined" @confirm="confirmDeleteBookmark" />
-    <ConfirmModal :open="Boolean(folderPendingDelete)" title="删除目录" :description="folderPendingDelete ? `目录“${folderPendingDelete.title}”及其中书签都会删除。` : ''" confirm-text="删除" danger @close="folderPendingDelete = undefined" @confirm="confirmDeleteFolder" />
-    <ImportExportModal :open="importExportOpen" :busy="importExportBusy" :error="importExportError" @close="importExportOpen = false" @export-full="exportFullBookmarkData" @import-full="importFullBookmarkData" />
+    <BookmarkModal :open="bookmarkModalOpen" :folders="workspace.folders.value" :tags="tagSummaries" :bookmark="editingBookmark" :error="bookmarkError" @close="closeBookmark" @save="saveBookmark" />
+    <FolderModal :open="folderModalOpen" :folder="editingFolder" :error="folderError" @close="closeFolder" @save="saveFolder" />
+    <ConfirmModal :open="Boolean(bookmarkPendingDelete)" title="删除书签" :description="bookmarkPendingDelete ? `确认删除“${bookmarkPendingDelete.title}”？` : ''" :error="bookmarkDeleteError" confirm-text="删除" danger @close="closeBookmarkDelete" @confirm="confirmDeleteBookmark" />
+    <ConfirmModal :open="Boolean(folderPendingDelete)" title="删除目录" :description="folderPendingDelete ? `目录“${folderPendingDelete.title}”及其中书签都会删除。` : ''" :error="folderDeleteError" confirm-text="删除" danger @close="closeFolderDelete" @confirm="confirmDeleteFolder" />
+    <ImportExportModal :open="importExport.open.value" :busy="importExport.busy.value" :error="importExport.error.value" @close="importExport.close" @export-full="importExport.exportAll" @import-full="importExport.importAll" />
   </div>
 </template>

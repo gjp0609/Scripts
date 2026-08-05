@@ -8,10 +8,11 @@
     "jsx": "preserve",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts", "src/**/*.vue", "wxt.config.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue", "tests/**/*.ts", "wxt.config.ts"],
   "references": []
 }

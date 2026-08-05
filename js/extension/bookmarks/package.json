@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wxt",
     "build": "wxt prepare && vue-tsc --noEmit && wxt build",
-    "test": "node --test tests/searchService.test.ts",
+    "test": "node --test \"tests/**/*.test.ts\"",
     "typecheck": "wxt prepare && vue-tsc --noEmit",
     "zip": "wxt zip"
   },

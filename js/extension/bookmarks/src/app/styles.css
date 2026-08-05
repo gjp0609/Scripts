@@ -1,27 +1,12 @@
+@import url('../shared/tokens.css');
+
 :root {
-  font-family: "等距更纱黑体 SC", "Sarasa Mono SC", "mononoki regular", Consolas, monospace;
+  font-family: var(--font-family-ui);
   color: #171918;
   background: #ffffff;
   font-synthesis: none;
-  --border-fixed: #cfd3d1;
-  --border-soft: #e7e9e8;
   --border: var(--border-fixed);
-  --surface-soft: #f5f6f5;
-  --surface-hover: #eef1ef;
-  --surface-selected: #e3e9e6;
-  --surface-active: #d8e3de;
-  --muted: #747a77;
-  --focus: #3f675c;
-  --danger: #a64d45;
-  --shadow-active: 0 12px 28px rgba(25, 31, 28, 0.14);
-  --shadow-band: 0 10px 24px rgba(25, 31, 28, 0.09);
-  --shadow-modal: 0 22px 60px rgba(20, 25, 22, 0.2);
   --shadow: var(--shadow-active);
-  --radius-float: 7px;
-  --radius-modal: 8px;
-  --folder-head-height: 36px;
-  --folder-content-gap: 10px;
-  --bookmark-row-height: 48px;
 }
 
 * {
@@ -40,7 +25,11 @@ html { min-width: 320px; height: 100%; overflow: hidden; background: #fff; }
 body { margin: 0; min-width: 320px; height: 100%; overflow: hidden; background: #fff; }
 button, input, textarea { font: inherit; letter-spacing: 0; }
 button { color: inherit; }
-*:focus, *:focus-visible { outline: none !important; outline-offset: 0 !important; }
+*:focus { outline: none; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, [role='button']:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 2px rgba(63, 103, 92, 0.28);
+}
 
 .bookmarks-page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #fff; }
 

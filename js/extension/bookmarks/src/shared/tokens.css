@@ -1,0 +1,33 @@
+:root {
+  --font-family-ui: "等距更纱黑体 SC", "Sarasa Mono SC", "Sarasa Mono Slab SC", "Sarasa UI SC", "Noto Sans Mono CJK SC", "mononoki regular", Consolas, monospace;
+  --border-fixed: #cfd3d1;
+  --border-soft: #e7e9e8;
+  --surface-soft: #f5f6f5;
+  --surface-hover: #eef1ef;
+  --surface-selected: #e3e9e6;
+  --surface-active: #d8e3de;
+  --muted: #747a77;
+  --focus: #3f675c;
+  --danger: #a64d45;
+  --shadow-active: 0 12px 28px rgba(25, 31, 28, 0.14);
+  --shadow-band: 0 10px 24px rgba(25, 31, 28, 0.09);
+  --shadow-modal: 0 22px 60px rgba(20, 25, 22, 0.2);
+  --radius-float: 7px;
+  --radius-modal: 8px;
+  --folder-head-height: 36px;
+  --folder-content-gap: 10px;
+  --bookmark-row-height: 48px;
+  --color-primary: var(--focus);
+  --color-primary-light: var(--surface-hover);
+  --color-primary-border: var(--border-fixed);
+  --color-bg: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-text-primary: #171918;
+  --color-text-secondary: #505652;
+  --color-text-tertiary: var(--muted);
+  --color-border: var(--border-fixed);
+  --state-error: var(--danger);
+  --shadow-sm: none;
+  --shadow-md: var(--shadow-active);
+  --transition-fast: 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}

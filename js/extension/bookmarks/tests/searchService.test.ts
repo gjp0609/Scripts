@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import type { BookmarkView, FolderView } from '../src/types/bookmark.ts';
+import type { BookmarkView, BrowserBookmarkNode, ExportBookmarkNode, FolderView } from '../src/types/bookmark.ts';
 import { nextSelectedEngineIndex, normalizeSearchIndex } from '../src/app/searchStateModel.ts';
 import {
   projectVisibleOrder,
@@ -12,7 +12,7 @@ import {
 } from '../src/app/organizeMoveModel.ts';
 import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
 import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
-import { remapImportedPreferences } from '../src/services/backupModel.ts';
+import { remapImportedPreferences, selectRestoreCandidate } from '../src/services/backupModel.ts';
 import {
   buildQuickSearchUrl,
   filterFolders,
@@ -35,13 +35,12 @@ function bookmark(id: string, title: string, tags: string[], extra: Partial<Book
     domain: `${title.toLowerCase()}.example`,
     accent: '#555555',
     faviconUrls: [],
-    extra: { tags, ...extra }
+    extra: { bookmarkId: id, tags, updatedAt: 0, ...extra }
   };
 }
 
 const folders: FolderView[] = [{
   id: 'folder-1',
-  parentId: '1',
   index: 0,
   title: '常用',
   bookmarks: [
@@ -225,4 +224,43 @@ test('备份恢复保持内置引擎 ID，自定义引擎缺失时保留当前�
   const current = { collapsedFolderIds: [], searchEngine: 'builtin:google' };
   assert.equal(remapImportedPreferences({ collapsedFolderIds: [], searchEngine: 'builtin:bing' }, new Map(), current).searchEngine, 'builtin:bing');
   assert.equal(remapImportedPreferences({ collapsedFolderIds: [], searchEngine: 'bookmark:missing' }, new Map(), current).searchEngine, 'builtin:google');
+});
+
+test('同一实例恢复按 sourceId 找回被移动节点而不是创建副本', () => {
+  const source: ExportBookmarkNode = { sourceId: 'source-id', title: '旧标题', url: 'https://source.example' };
+  const moved: BrowserBookmarkNode = {
+    id: 'source-id',
+    parentId: 'other-folder',
+    title: '已修改标题',
+    url: 'https://changed.example'
+  };
+  const duplicate: BrowserBookmarkNode = {
+    id: 'duplicate-id',
+    parentId: 'target-folder',
+    title: '旧标题',
+    url: 'https://source.example'
+  };
+
+  assert.equal(
+    selectRestoreCandidate(source, [duplicate], new Map([[moved.id, moved], [duplicate.id, duplicate]]), new Set(), true)?.id,
+    'source-id'
+  );
+});
+
+test('跨实例恢复忽略碰巧相同的 ID，并按父目录内重复项顺序匹配', () => {
+  const source: ExportBookmarkNode = { sourceId: '42', title: '重复书签', url: 'https://same.example' };
+  const unrelatedSameId: BrowserBookmarkNode = { id: '42', parentId: 'elsewhere', title: '其他书签', url: 'https://other.example' };
+  const first: BrowserBookmarkNode = { id: '100', parentId: 'target', title: '重复书签', url: 'https://same.example' };
+  const second: BrowserBookmarkNode = { id: '101', parentId: 'target', title: '重复书签', url: 'https://same.example' };
+  const nodesById = new Map([[unrelatedSameId.id, unrelatedSameId], [first.id, first], [second.id, second]]);
+
+  assert.equal(selectRestoreCandidate(source, [first, second], nodesById, new Set(), false)?.id, '100');
+  assert.equal(selectRestoreCandidate(source, [first, second], nodesById, new Set(['100']), false)?.id, '101');
+});
+
+test('同一实例 sourceId 已不存在时不拿相同内容书签冒充原节点', () => {
+  const source: ExportBookmarkNode = { sourceId: 'missing', title: '重复书签', url: 'https://same.example' };
+  const duplicate: BrowserBookmarkNode = { id: 'other', parentId: 'target', title: '重复书签', url: 'https://same.example' };
+
+  assert.equal(selectRestoreCandidate(source, [duplicate], new Map([[duplicate.id, duplicate]]), new Set(), true), undefined);
 });

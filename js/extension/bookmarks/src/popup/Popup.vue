@@ -10,6 +10,7 @@ const folders = ref<FolderView[]>([]);
 const currentTab = ref<CurrentTab | undefined>();
 const query = ref('');
 const error = ref('');
+const pendingAction = ref('');
 
 const filteredFolders = computed(() => {
   const keyword = query.value.trim().toLocaleLowerCase();
@@ -37,28 +38,35 @@ async function load() {
 }
 
 async function saveToFolder(folder: FolderView) {
+  if (pendingAction.value) return;
   if (!currentTab.value?.url) {
     error.value = '当前标签页没有可保存的 URL';
     return;
   }
 
   error.value = '';
+  pendingAction.value = `folder:${folder.id}`;
   try {
     await addCurrentBookmark(folder.id, currentTab.value.title || currentTab.value.url, currentTab.value.url);
     closePopup();
   } catch (err) {
     error.value = err instanceof Error ? err.message : '保存书签失败';
+  } finally {
+    pendingAction.value = '';
   }
 }
 
 async function runBookmarklet(bookmarklet: { url?: string }) {
-  if (!currentTab.value?.id || !bookmarklet.url) return;
+  if (!currentTab.value?.id || !bookmarklet.url || pendingAction.value) return;
   error.value = '';
+  pendingAction.value = 'bookmarklet';
   try {
     await executeBookmarklet(currentTab.value.id, bookmarklet.url);
     closePopup();
   } catch (err) {
     error.value = err instanceof Error ? err.message : '执行 Bookmarklet 失败';
+  } finally {
+    pendingAction.value = '';
   }
 }
 
@@ -87,7 +95,7 @@ onMounted(() => {
     <p v-if="error" class="popup-error">{{ error }}</p>
 
     <section class="folder-list">
-      <button v-for="folder in filteredFolders" :key="folder.id" class="folder-row" type="button" @click="saveToFolder(folder)">
+      <button v-for="folder in filteredFolders" :key="folder.id" class="folder-row" type="button" :disabled="Boolean(pendingAction)" @click="saveToFolder(folder)">
         <span>{{ folder.title }}</span>
         <small>{{ folder.bookmarks.length }}</small>
         <Plus :size="14" />
@@ -99,7 +107,7 @@ onMounted(() => {
         <Zap :size="13" />
         <span>Bookmarklet</span>
       </div>
-      <button v-for="bookmarklet in bookmarklets" :key="bookmarklet.id" class="folder-row" type="button" @click="runBookmarklet(bookmarklet)">
+      <button v-for="bookmarklet in bookmarklets" :key="bookmarklet.id" class="folder-row" type="button" :disabled="Boolean(pendingAction)" @click="runBookmarklet(bookmarklet)">
         <span>{{ bookmarklet.title }}</span>
         <small>{{ bookmarklet.folderTitle }}</small>
       </button>

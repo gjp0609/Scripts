@@ -4,7 +4,6 @@ import type { CSSProperties } from 'vue';
 import { FolderPlus, Maximize2, Menu, Minimize2, Plus, RefreshCw, Settings, SlidersHorizontal } from 'lucide-vue-next';
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui';
 import type { BookmarkView, QuickSearchTarget, TagSummary } from '../types/bookmark';
-import { moveBookmarkOrder, moveFolderOrder } from '../services/bookmarkRepository';
 import {
   buildQuickSearchUrl,
   buildSearchEngineUrl,
@@ -16,9 +15,10 @@ import { useBookmarkWorkspace } from './useBookmarkWorkspace';
 import { useBookmarkCrud } from './useBookmarkCrud';
 import { useImportExport } from './useImportExport';
 import { useOrganizeMode } from './useOrganizeMode';
+import { useOrganizeMove } from './useOrganizeMove';
 import { normalizeSearchIndex } from './searchStateModel';
 import { useSearchState } from './useSearchState';
-import { useOrganizeDrag, type BookmarkMoveRequest, type FolderMoveRequest } from './useOrganizeDrag';
+import { useOrganizeDrag } from './useOrganizeDrag';
 import { faviconRefreshTokenKey } from './faviconRefresh';
 import BookmarkOrganizeCanvas from './components/BookmarkOrganizeCanvas.vue';
 import BookmarkModal from './components/BookmarkModal.vue';
@@ -56,6 +56,10 @@ const {
   folderError,
   bookmarkDeleteError,
   folderDeleteError,
+  bookmarkSaving,
+  folderSaving,
+  bookmarkDeleting,
+  folderDeleting,
   startAddBookmark,
   startEditBookmark,
   closeBookmark,
@@ -73,8 +77,6 @@ const {
 } = crud;
 const importExport = useImportExport(workspace);
 const query = search.query;
-const moveError = ref('');
-const pendingMoveId = ref('');
 const searchBoxEl = ref<HTMLDivElement>();
 const searchInputEl = ref<HTMLInputElement>();
 const pageContentEl = ref<HTMLElement>();
@@ -261,40 +263,8 @@ function setOrganizeFoldersCollapsed(collapsed: boolean) {
   organize.setAllCollapsed(collapsed);
 }
 
-async function applyFolderMove(request: FolderMoveRequest) {
-  pendingMoveId.value = request.folderId;
-  moveError.value = '';
-  try {
-    workspace.moveFolder(request.folderId, request.desiredPosition);
-    await moveFolderOrder({ folderId: request.folderId, index: request.apiIndex });
-    await workspace.reload({ silent: true });
-  } catch (error) {
-    moveError.value = error instanceof Error ? error.message : '目录排序失败';
-    await workspace.reload({ silent: true });
-  } finally {
-    pendingMoveId.value = '';
-  }
-}
-
-async function applyBookmarkMove(request: BookmarkMoveRequest) {
-  if (request.expandTarget) {
-    const next = new Set(organizeCollapsedFolderIds.value);
-    next.delete(request.toFolderId);
-    organizeCollapsedFolderIds.value = next;
-  }
-  pendingMoveId.value = request.bookmarkId;
-  moveError.value = '';
-  try {
-    workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.desiredIndex });
-    const moved = await moveBookmarkOrder({ bookmarkId: request.bookmarkId, parentId: request.toFolderId, index: request.apiIndex });
-    workspace.moveBookmark({ bookmarkId: request.bookmarkId, parentId: moved.parentId ?? request.toFolderId, index: moved.index ?? request.desiredIndex });
-  } catch (error) {
-    moveError.value = error instanceof Error ? error.message : '书签移动失败';
-    await workspace.reload({ silent: true });
-  } finally {
-    pendingMoveId.value = '';
-  }
-}
+const organizeMove = useOrganizeMove({ workspace, collapsedFolderIds: organizeCollapsedFolderIds });
+const moveError = organizeMove.error;
 
 const organizeDrag = useOrganizeDrag({
   enabled: reorderEnabled,
@@ -303,8 +273,8 @@ const organizeDrag = useOrganizeDrag({
   rootChildIds: workspace.rootChildIds,
   collapsedFolderIds: organizeCollapsedFolderIds,
   getScrollContainer: getPageViewport,
-  onFolderMove: applyFolderMove,
-  onBookmarkMove: applyBookmarkMove
+  onFolderMove: organizeMove.applyFolderMove,
+  onBookmarkMove: organizeMove.applyBookmarkMove
 });
 const organizeForceExpanded = computed(() => Boolean(query.value.trim()) && !quickSearch.value);
 
@@ -557,10 +527,10 @@ watch(
       @activate="activeTagIndex = $event"
     />
 
-    <BookmarkModal :open="bookmarkModalOpen" :folders="workspace.folders.value" :tags="tagSummaries" :bookmark="editingBookmark" :error="bookmarkError" @close="closeBookmark" @save="saveBookmark" />
-    <FolderModal :open="folderModalOpen" :folder="editingFolder" :error="folderError" @close="closeFolder" @save="saveFolder" />
-    <ConfirmModal :open="Boolean(bookmarkPendingDelete)" title="删除书签" :description="bookmarkPendingDelete ? `确认删除“${bookmarkPendingDelete.title}”？` : ''" :error="bookmarkDeleteError" confirm-text="删除" danger @close="closeBookmarkDelete" @confirm="confirmDeleteBookmark" />
-    <ConfirmModal :open="Boolean(folderPendingDelete)" title="删除目录" :description="folderPendingDelete ? `目录“${folderPendingDelete.title}”及其中书签都会删除。` : ''" :error="folderDeleteError" confirm-text="删除" danger @close="closeFolderDelete" @confirm="confirmDeleteFolder" />
+    <BookmarkModal :open="bookmarkModalOpen" :folders="workspace.folders.value" :tags="tagSummaries" :bookmark="editingBookmark" :error="bookmarkError" :pending="bookmarkSaving" @close="closeBookmark" @save="saveBookmark" />
+    <FolderModal :open="folderModalOpen" :folder="editingFolder" :error="folderError" :pending="folderSaving" @close="closeFolder" @save="saveFolder" />
+    <ConfirmModal :open="Boolean(bookmarkPendingDelete)" title="删除书签" :description="bookmarkPendingDelete ? `确认删除“${bookmarkPendingDelete.title}”？` : ''" :error="bookmarkDeleteError" :pending="bookmarkDeleting" confirm-text="删除" danger @close="closeBookmarkDelete" @confirm="confirmDeleteBookmark" />
+    <ConfirmModal :open="Boolean(folderPendingDelete)" title="删除目录" :description="folderPendingDelete ? `目录“${folderPendingDelete.title}”及其中书签都会删除。` : ''" :error="folderDeleteError" :pending="folderDeleting" confirm-text="删除" danger @close="closeFolderDelete" @confirm="confirmDeleteFolder" />
     <ImportExportModal :open="importExport.open.value" :busy="importExport.busy.value" :error="importExport.error.value" @close="importExport.close" @export-full="importExport.exportAll" @import-full="importExport.importAll" />
   </div>
 </template>

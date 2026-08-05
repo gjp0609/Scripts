@@ -2,7 +2,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
 import { getNode, onBookmarkEvent, type BookmarkEvent } from '../services/bookmarkApi';
 import { buildBookmarkView, loadBookmarkWorkspace } from '../services/bookmarkRepository';
-import { getPreferences, savePreferences } from '../services/extraStore';
+import { getPreferences, removeExtra, saveCollapsedFolderIds, saveSearchEngine } from '../services/extraStore';
 import {
   findWorkspaceBookmark,
   moveWorkspaceBookmark,
@@ -85,29 +85,44 @@ export function useBookmarkWorkspace() {
   }
 
   async function setSearchEngine(engine: string) {
+    const previous = searchEngine.value;
     searchEngine.value = engine;
-    const preferences = await getPreferences();
-    await savePreferences({ ...preferences, searchEngine: engine });
+    try {
+      await saveSearchEngine(engine);
+    } catch (cause) {
+      searchEngine.value = previous;
+      error.value = cause instanceof Error ? cause.message : '保存搜索引擎失败';
+    }
   }
 
   async function toggleFolder(folderId: string) {
     const folder = findFolder(folderId);
     if (!folder) return;
+    const previous = folder.collapsed;
     folder.collapsed = !folder.collapsed;
-    const preferences = await getPreferences();
     const collapsedFolderIds = folders.value.filter((item) => item.collapsed).map((item) => item.id);
-    await savePreferences({ ...preferences, collapsedFolderIds });
+    try {
+      await saveCollapsedFolderIds(collapsedFolderIds);
+    } catch (cause) {
+      folder.collapsed = previous;
+      error.value = cause instanceof Error ? cause.message : '保存目录状态失败';
+    }
   }
 
   async function setAllFoldersCollapsed(collapsed: boolean) {
+    const previous = folders.value.map((folder) => [folder.id, Boolean(folder.collapsed)] as const);
     folders.value.forEach((folder) => {
       folder.collapsed = collapsed;
     });
-    const preferences = await getPreferences();
-    await savePreferences({
-      ...preferences,
-      collapsedFolderIds: collapsed ? folders.value.map((folder) => folder.id) : []
-    });
+    try {
+      await saveCollapsedFolderIds(collapsed ? folders.value.map((folder) => folder.id) : []);
+    } catch (cause) {
+      previous.forEach(([id, value]) => {
+        const folder = findFolder(id);
+        if (folder) folder.collapsed = value;
+      });
+      error.value = cause instanceof Error ? cause.message : '保存目录状态失败';
+    }
   }
 
   function upsertFolder(node: BrowserBookmarkNode) {
@@ -183,6 +198,7 @@ export function useBookmarkWorkspace() {
           }
           if (findBookmark(event.id)) {
             removeBookmark(event.id);
+            await removeExtra(event.id).catch(() => undefined);
           } else {
             removeFolder(event.id);
           }

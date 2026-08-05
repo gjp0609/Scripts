@@ -1,5 +1,15 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
+import type { BrowserBookmarkNode } from '../types/bookmark';
+import { removeExtras } from '../services/extraStore';
+
+function collectBookmarkIds(node?: BrowserBookmarkNode): string[] {
+  if (!node) return [];
+  return [
+    ...(node.url ? [node.id] : []),
+    ...(node.children ?? []).flatMap(collectBookmarkIds)
+  ];
+}
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(() => {
@@ -10,14 +20,8 @@ export default defineBackground(() => {
     });
   });
 
-  browser.bookmarks.onRemoved.addListener((id) => {
-    void browser.storage.local.get('markhubExtras').then((result) => {
-      const extras = result.markhubExtras as Record<string, unknown> | undefined;
-      if (!extras || !(id in extras)) return;
-
-      const next = { ...extras };
-      delete next[id];
-      void browser.storage.local.set({ markhubExtras: next });
-    });
+  browser.bookmarks.onRemoved.addListener((id, removeInfo) => {
+    const bookmarkIds = collectBookmarkIds(removeInfo.node as BrowserBookmarkNode | undefined);
+    void removeExtras(bookmarkIds.length ? bookmarkIds : [id]);
   });
 });

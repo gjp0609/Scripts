@@ -129,7 +129,7 @@ app/
 
 ## 5. 布局生命周期
 
-每个布局适配器必须实现统一接口：
+布局适配器应逐步收敛为统一接口；当前 Macy/Grid 组件仍保留 Vue 生命周期适配，迁移完成前不得把该目标接口当作已落地能力：
 
 ```ts
 type CanvasLayout = {
@@ -147,9 +147,9 @@ type CanvasLayout = {
 - Sortable 只产生拖动副本和会话事件，不拥有预测顺序；指针命中、预测画布和最终写回共用一个 `MovePlan`。
 - 根目录完整 children 顺序属于工作区数据，目录 API index 不得仅从可见目录或目录自身 index 猜测。
 
-外部书签事件与本地乐观移动必须通过 repository 协调：写回请求带操作令牌或快照版本，重复事件只确认结果，不得覆盖更新中的本地预测。
+外部书签事件与本地乐观移动必须通过整理移动协调器串行处理：写回期间禁用新的拖拽，完成后再重建拖拽实例；失败重新读取真实树并恢复临时折叠集合。
 
-完整备份不得依赖单层 UI 投影。导出从书签栏完整子树递归生成；导入先校验完整 JSON，再在匹配或创建节点时建立 `sourceId -> targetId`，最后统一写入 extra 和引用节点 ID 的偏好。Chrome 节点 ID 是基础设施标识，不是可原样恢复的领域标识。
+完整备份不得依赖单层 UI 投影。v3 导出从书签栏完整子树递归生成，并保存导出实例 `originId`；同实例导入优先按 `sourceId` 找回被移动节点，跨实例导入只按父目录内结构和顺序匹配，不能把碰巧相同的 Chrome ID 当成身份。匹配或创建节点时建立 `sourceId -> targetId`，最后统一写入 extra 和引用节点 ID 的偏好。Chrome 节点 ID 是基础设施标识，不是可原样恢复的领域标识。
 
 ## 6. 拖拽落点算法
 
@@ -159,8 +159,8 @@ type CanvasLayout = {
 2. `resolveDropAnchor`：根据前后可见项确定语义锚点。
 3. `mapAnchorToFullOrder`：映射完整父级数组，保留不可见项相对顺序。
 4. `toBrowserIndex`：转换为 Chrome API 的绝对索引。
-5. `applyOptimisticMove`：只更新视图投影。
-6. `rollbackMove`：失败时恢复快照。
+5. `applyOptimisticMove`：只更新视图投影；写回由 `useOrganizeMove` 串行执行。
+6. 失败时重新读取浏览器树，并由整理协调器恢复临时折叠状态；产品不保留撤销快照或撤销命令。
 
 每一步都必须可单元测试；组件事件只提供源 ID、目标容器和指针位置，不直接拼接 API index。
 

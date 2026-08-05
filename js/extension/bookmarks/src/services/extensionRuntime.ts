@@ -25,16 +25,30 @@ export function closePopup(): void {
   window.close();
 }
 
+function decodeBookmarkletSource(source: string): string {
+  try {
+    return decodeURIComponent(source);
+  } catch {
+    return source.replace(/(?:%[0-9a-f]{2})+/gi, (encoded) => {
+      try {
+        return decodeURIComponent(encoded);
+      } catch {
+        return encoded;
+      }
+    });
+  }
+}
+
 export async function executeBookmarklet(tabId: number, bookmarkletUrl: string): Promise<void> {
-  const code = bookmarkletUrl.replace(/^javascript:/i, '');
-  await browser.scripting.executeScript({
+  const code = decodeBookmarkletSource(bookmarkletUrl.replace(/^javascript:/i, ''));
+  const results = await browser.scripting.executeScript({
     target: { tabId },
+    world: 'MAIN',
     func: (source: string) => {
-      const script = document.createElement('script');
-      script.textContent = decodeURIComponent(source);
-      document.documentElement.appendChild(script);
-      script.remove();
+      (0, eval)(source);
     },
     args: [code]
   });
+  const executionError = (results[0] as { error?: { message?: string } } | undefined)?.error;
+  if (executionError) throw new Error(executionError.message || 'Bookmarklet 执行失败');
 }

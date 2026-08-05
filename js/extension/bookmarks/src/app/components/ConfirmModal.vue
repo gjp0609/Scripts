@@ -17,6 +17,7 @@ const props = defineProps<{
   confirmText?: string;
   danger?: boolean;
   error?: string;
+  pending?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -25,7 +26,7 @@ const emit = defineEmits<{
 }>();
 
 function updateOpen(value: boolean) {
-  if (!value) emit('close');
+  if (!value && !props.pending) emit('close');
 }
 </script>
 
@@ -33,7 +34,7 @@ function updateOpen(value: boolean) {
   <AlertDialogRoot :open="open" @update:open="updateOpen">
     <AlertDialogPortal>
       <AlertDialogOverlay class="dialog-overlay" />
-      <AlertDialogContent class="dialog-content confirm-dialog">
+      <AlertDialogContent class="dialog-content confirm-dialog" @escape-key-down="pending && $event.preventDefault()">
       <header class="dialog-head">
         <div class="confirm-title">
           <span class="confirm-icon">
@@ -43,7 +44,7 @@ function updateOpen(value: boolean) {
             <AlertDialogTitle>{{ title }}</AlertDialogTitle>
           </div>
         </div>
-        <button type="button" aria-label="关闭" @click="emit('close')">
+        <button type="button" aria-label="关闭" :disabled="pending" @click="emit('close')">
           <X :size="18" />
         </button>
       </header>
@@ -52,8 +53,8 @@ function updateOpen(value: boolean) {
         <p v-if="error" class="form-error" role="alert">{{ error }}</p>
       </div>
       <footer class="dialog-foot confirm-actions">
-        <AlertDialogCancel class="button-secondary" @click="emit('close')">取消</AlertDialogCancel>
-        <button type="button" class="button-primary" :class="{ 'button-danger': danger }" @click="emit('confirm')">
+        <AlertDialogCancel class="button-secondary" :disabled="pending" @click="emit('close')">取消</AlertDialogCancel>
+        <button type="button" class="button-primary" :class="{ 'button-danger': danger }" :disabled="pending" @click="emit('confirm')">
           {{ confirmText || '确认' }}
         </button>
       </footer>

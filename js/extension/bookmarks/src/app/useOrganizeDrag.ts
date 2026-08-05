@@ -60,6 +60,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
   const draggingItemId = ref('');
   const bookmarkProjection = ref<BookmarkDropProjection>();
   const folderProjectedOrder = ref<string[]>([]);
+  const writePending = ref(false);
   const folderLists = new Map<string, HTMLElement>();
   const instances = new Map<string, Sortable>();
   let board: HTMLElement | undefined;
@@ -261,8 +262,16 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
         const plan = folderPlan;
         const shouldApply = !cancelled && plan && options.folders.value.findIndex((folder) => folder.id === plan.folderId) !== plan.desiredPosition;
         finishDrag();
-        void nextTick(setup);
-        if (shouldApply && plan) void options.onFolderMove(plan);
+        if (!shouldApply || !plan) {
+          void nextTick(setup);
+          return;
+        }
+        destroyInstances();
+        writePending.value = true;
+        void options.onFolderMove(plan).finally(() => {
+          writePending.value = false;
+          void nextTick(setup);
+        });
       }
     });
     instances.set('folders', instance);
@@ -297,8 +306,16 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
           const plan = bookmarkPlan;
           const shouldApply = !cancelled && plan && (plan.fromFolderId !== plan.toFolderId || plan.desiredIndex !== plan.sourceIndex);
           finishDrag();
-          void nextTick(setup);
-          if (shouldApply && plan) void options.onBookmarkMove(plan);
+          if (!shouldApply || !plan) {
+            void nextTick(setup);
+            return;
+          }
+          destroyInstances();
+          writePending.value = true;
+          void options.onBookmarkMove(plan).finally(() => {
+            writePending.value = false;
+            void nextTick(setup);
+          });
         }
       });
       instances.set(folder.id, instance);
@@ -307,7 +324,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
 
   function setup() {
     destroyInstances();
-    if (!options.enabled.value) return;
+    if (!options.enabled.value || writePending.value) return;
     if (options.kind.value === 'folder') setupFolderDrag();
     else setupBookmarkDrag();
   }
@@ -330,6 +347,7 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     draggingItemId,
     bookmarkProjection,
     folderProjectedOrder,
+    writePending,
     registerBoard,
     registerFolderList,
     cancelDrag,

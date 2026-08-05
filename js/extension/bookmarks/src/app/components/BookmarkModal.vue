@@ -40,6 +40,7 @@ const props = defineProps<{
   tags: TagSummary[];
   bookmark?: BookmarkView;
   error?: string;
+  pending?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -111,7 +112,7 @@ watch(
 );
 
 function updateOpen(value: boolean) {
-  if (!value) emit('close');
+  if (!value && !props.pending) emit('close');
 }
 
 function addTag(rawValue: string) {
@@ -197,19 +198,19 @@ function save() {
 <template>
   <DialogRoot :open="open" @update:open="updateOpen">
     <DialogPortal>
-      <DialogOverlay class="dialog-overlay" @pointerdown.self="emit('close')" />
-      <DialogContent class="dialog-content bookmark-dialog" @escape-key-down.stop>
+      <DialogOverlay class="dialog-overlay" @pointerdown.self="!pending && emit('close')" />
+      <DialogContent class="dialog-content bookmark-dialog" @escape-key-down="pending && $event.preventDefault()">
         <header class="dialog-head">
           <div><DialogTitle>{{ bookmark ? '编辑书签' : '添加书签' }}</DialogTitle><DialogDescription class="sr-only">编辑书签信息</DialogDescription></div>
-          <button type="button" aria-label="关闭" @click="emit('close')"><X :size="18" /></button>
+          <button type="button" aria-label="关闭" :disabled="pending" @click="emit('close')"><X :size="18" /></button>
         </header>
 
         <form class="editor-form" @submit.prevent="save">
-          <label><span>标题</span><input v-model="form.title" required type="text" autofocus /></label>
-          <label><span>URL</span><input v-model="form.url" required type="text" /></label>
+          <label><span>标题</span><input v-model="form.title" :disabled="pending" required type="text" autofocus /></label>
+          <label><span>URL</span><input v-model="form.url" :disabled="pending" required type="text" /></label>
           <label>
             <span>目录</span>
-            <SelectRoot v-model="form.parentId">
+            <SelectRoot v-model="form.parentId" :disabled="pending">
               <SelectTrigger class="field-select"><SelectValue placeholder="选择目录" /><ChevronDown :size="14" /></SelectTrigger>
               <SelectPortal><SelectContent class="field-select-menu" position="popper" :side-offset="5"><SelectViewport>
                 <SelectItem v-for="folder in folders" :key="folder.id" class="field-select-option" :value="folder.id">
@@ -221,7 +222,7 @@ function save() {
 
           <div class="tag-field">
             <span class="field-label">标签</span>
-            <ComboboxRoot :model-value="null" v-model:open="tagMenuOpen" open-on-focus open-on-click ignore-filter @update:model-value="selectTag">
+            <ComboboxRoot :model-value="null" v-model:open="tagMenuOpen" :disabled="pending" open-on-focus open-on-click ignore-filter @update:model-value="selectTag">
               <ComboboxAnchor as-child>
                 <div class="tag-editor">
                   <TagsInputRoot v-model="form.tags" class="tag-token-list" :duplicate="false">
@@ -251,11 +252,11 @@ function save() {
             </ComboboxRoot>
           </div>
 
-          <label><span>备注</span><textarea v-model="form.description" rows="3" /></label>
-          <label v-if="hasSearch"><span>搜索 URL 模板</span><input v-model="form.searchUrl" type="text" /></label>
+          <label><span>备注</span><textarea v-model="form.description" :disabled="pending" rows="3" /></label>
+          <label v-if="hasSearch"><span>搜索 URL 模板</span><input v-model="form.searchUrl" :disabled="pending" type="text" /></label>
           <div v-if="hasSearchSite" class="site-preview"><span>站点搜索</span><strong>{{ siteDomain ? `site:${siteDomain}` : '请填写有效 URL' }}</strong></div>
           <p v-if="validationError || error" class="form-error" role="alert">{{ validationError || error }}</p>
-          <footer class="dialog-foot"><button class="button-secondary" type="button" @click="emit('close')">取消</button><button class="button-primary" type="submit">保存</button></footer>
+          <footer class="dialog-foot"><button class="button-secondary" type="button" :disabled="pending" @click="emit('close')">取消</button><button class="button-primary" type="submit" :disabled="pending">保存</button></footer>
         </form>
       </DialogContent>
     </DialogPortal>

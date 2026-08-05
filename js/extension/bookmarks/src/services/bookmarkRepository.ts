@@ -1,6 +1,6 @@
 import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
-import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
-import { cleanupExtras, getExtras, removeExtra, removeExtras, saveExtra } from './extraStore';
+import { createBookmark, getDefaultBookmarkRoot, getNode, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
+import { getExtra, getExtras, removeExtra, removeExtras, restoreExtra, saveExtra } from './extraStore';
 import { getFaviconSources } from './favicon';
 import { normalizeTag, SEARCH_SITE_TAG, SEARCH_TAG } from './searchService';
 
@@ -66,9 +66,6 @@ export async function loadBookmarkWorkspace(): Promise<{ rootId: string; rootChi
     }))
     .sort((a, b) => a.index - b.index);
 
-  const validIds = new Set(collectBookmarkIds(tree[0]));
-  await cleanupExtras(validIds);
-
   return { rootId: root.id, rootChildIds: (root.children ?? []).map((node) => node.id), folders };
 }
 
@@ -117,31 +114,58 @@ export async function saveBookmarkDetails(input: {
     }
   }
 
-  let node = input.id
-    ? await updateBookmark(input.id, { title: input.title, url: input.url })
-    : await createBookmark({ parentId: input.parentId, title: input.title, url: input.url });
-
-  if (node.parentId !== input.parentId) {
-    const targetFolder = await getSubTree(input.parentId);
-    node = await moveNode(node.id, {
-      parentId: input.parentId,
-      index: targetFolder?.children?.length ?? 0
-    });
-  }
+  const originalNode = input.id ? await getNode(input.id) : undefined;
+  if (input.id && !originalNode) throw new Error('要编辑的书签已不存在');
+  const originalExtra = input.id ? await getExtra(input.id) : undefined;
+  let node: BrowserBookmarkNode | undefined;
 
   const extra: BookmarkExtra = {
-    bookmarkId: node.id,
+    bookmarkId: input.id ?? '',
     tags,
     description: input.description,
     searchUrl: hasSearch ? input.searchUrl?.trim() : undefined,
+    faviconOverride: originalExtra?.faviconOverride,
     updatedAt: Date.now()
   };
 
-  await saveExtra(extra);
+  try {
+    node = input.id
+      ? await updateBookmark(input.id, { title: input.title, url: input.url })
+      : await createBookmark({ parentId: input.parentId, title: input.title, url: input.url });
+
+    if (node.parentId !== input.parentId) {
+      const targetFolder = await getSubTree(input.parentId);
+      node = await moveNode(node.id, {
+        parentId: input.parentId,
+        index: targetFolder?.children?.length ?? 0
+      });
+    }
+
+    extra.bookmarkId = node.id;
+    await saveExtra(extra);
+  } catch (error) {
+    let rollbackFailed = false;
+    if (!input.id && node) {
+      await removeBookmark(node.id).catch(() => { rollbackFailed = true; });
+      await removeExtra(node.id).catch(() => undefined);
+    } else if (input.id && originalNode) {
+      await updateBookmark(input.id, { title: originalNode.title, url: originalNode.url }).catch(() => { rollbackFailed = true; });
+      if (originalNode.parentId != null || originalNode.index != null) {
+        await moveNode(input.id, { parentId: originalNode.parentId, index: originalNode.index }).catch(() => { rollbackFailed = true; });
+      }
+      if (originalExtra) {
+        await restoreExtra(originalExtra).catch(() => { rollbackFailed = true; });
+      } else {
+        await removeExtra(input.id).catch(() => { rollbackFailed = true; });
+      }
+    }
+    if (rollbackFailed) throw new Error('保存失败，且未能完整恢复原书签，请刷新后检查');
+    throw error;
+  }
 
   return buildBookmarkView(
     {
-      ...node,
+      ...node!,
       parentId: input.parentId
     },
     extra

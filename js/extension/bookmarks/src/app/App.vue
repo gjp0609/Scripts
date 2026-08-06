@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue';
-import type { CSSProperties } from 'vue';
+import { computed, ref } from 'vue';
 import { FolderPlus, Maximize2, Menu, Minimize2, Plus, RefreshCw, Settings, SlidersHorizontal } from 'lucide-vue-next';
 import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui';
-import type { BookmarkView, QuickSearchTarget, TagSummary } from '../types/bookmark';
-import {
-  buildQuickSearchUrl,
-  buildSearchEngineUrl,
-  filterFolders,
-  filterFoldersByTitle
-} from '../services/searchService';
-import { openUrl } from '../services/extensionRuntime';
+import { filterFolders, filterFoldersByTitle } from '../services/searchService';
 import { useBookmarkWorkspace } from './useBookmarkWorkspace';
 import { useBookmarkCrud } from './useBookmarkCrud';
 import { useImportExport } from './useImportExport';
 import { useOrganizeMode } from './useOrganizeMode';
 import { useOrganizeMove } from './useOrganizeMove';
-import { normalizeSearchIndex } from './searchStateModel';
 import { useSearchState } from './useSearchState';
 import { useOrganizeDrag } from './useOrganizeDrag';
-import { faviconRefreshTokenKey } from './faviconRefresh';
+import { useBookmarkKeyboard } from './useBookmarkKeyboard';
+import { useFaviconRefresh } from './useFaviconRefresh';
+import { useSearchCommands } from './useSearchCommands';
+import { useSearchOverlayPosition } from './useSearchOverlayPosition';
 import BookmarkOrganizeCanvas from './components/BookmarkOrganizeCanvas.vue';
 import BookmarkModal from './components/BookmarkModal.vue';
 import BrowseCanvas from './components/BrowseCanvas.vue';
@@ -77,23 +71,19 @@ const {
 } = crud;
 const importExport = useImportExport(workspace);
 const query = search.query;
-const searchBoxEl = ref<HTMLDivElement>();
-const searchInputEl = ref<HTMLInputElement>();
+const searchCommands = useSearchCommands({ search, mode });
+const searchInputEl = searchCommands.searchInputElement;
 const pageContentEl = ref<HTMLElement>();
-const overlayStyle = ref<CSSProperties>({ visibility: 'hidden' });
 const overlaySuppressed = search.overlaySuppressed;
 const activeQuickIndex = search.activeQuickIndex;
 const activeTagIndex = search.activeTagIndex;
 const activeEngineIndex = search.activeEngineIndex;
-const faviconRefreshToken = ref(Date.now());
-const faviconRefreshing = ref(false);
+const faviconRefresh = useFaviconRefresh();
+const faviconRefreshing = faviconRefresh.refreshing;
 const utilityDockOpen = ref(false);
 const engineMenuActive = search.engineMenuActive;
 const tagPanelActive = ref(false);
 const resetToken = ref(0);
-let faviconRefreshTimer: number | undefined;
-
-provide(faviconRefreshTokenKey, faviconRefreshToken);
 
 function getPageViewport() {
   return pageContentEl.value?.closest<HTMLElement>('[data-reka-scroll-area-viewport]') ?? undefined;
@@ -122,120 +112,28 @@ const visibleFolders = computed(() => {
 });
 const showOverlay = search.showOverlay;
 const reorderEnabled = computed(() => mode.value === 'organize');
+const overlayPosition = useSearchOverlayPosition({
+  currentEngineId: computed(() => currentEngine.value.id),
+  visible: showOverlay
+});
+const overlayStyle = overlayPosition.style;
 
 function updateQuery(value: string) {
   search.updateQuery(value);
-  scheduleOverlayPosition();
+  overlayPosition.schedule();
 }
 
 function syncEngineActive(index: number) {
   search.syncEngineActive(index);
 }
 
-function handleEngineKeydown(event: KeyboardEvent) {
-  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Enter') return;
-  event.preventDefault();
-  if (!engineOptions.value.length) return;
-  if (event.key === 'Enter') {
-    void search.selectEngineAt(activeEngineIndex.value);
-    return;
-  }
-  const offset = event.key === 'ArrowDown' ? 1 : -1;
-  search.moveActiveEngine(offset);
-}
-
-function setSearchBoxElement(element: HTMLDivElement) {
-  searchBoxEl.value = element;
-  scheduleOverlayPosition();
-}
-
-function setSearchInputElement(element: HTMLInputElement) {
-  searchInputEl.value = element;
-}
-
-function updateOverlayPosition() {
-  const element = searchBoxEl.value;
-  if (!element) return;
-  const rect = element.getBoundingClientRect();
-  const width = Math.min(rect.width, window.innerWidth - 24);
-  overlayStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.min(Math.max(12, rect.left), window.innerWidth - width - 12)}px`,
-    width: `${width}px`,
-    visibility: 'visible'
-  };
-}
-
-function scheduleOverlayPosition() {
-  void nextTick().then(updateOverlayPosition);
-}
-
-function normalizeIndex(current: number, total: number): number {
-  return normalizeSearchIndex(current, total);
-}
-
-function openBookmark(bookmark: BookmarkView) {
-  if (mode.value === 'browse' && bookmark.url) void openUrl(bookmark.url);
-}
-
-function openQuickSearch(target: QuickSearchTarget) {
-  const keyword = quickSearch.value?.keyword ?? '';
-  if (!keyword) return;
-  const url = buildQuickSearchUrl(target, keyword, currentEngine.value);
-  if (url) void openUrl(url);
-}
-
-function selectTag(tag: TagSummary) {
-  search.selectTag(tag.name);
-  void nextTick(() => {
-    searchInputEl.value?.focus();
-    overlaySuppressed.value = true;
-  });
-}
-
 function handleSearchKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault();
-    handleEscape(event);
+    keyboard.handleEscape(event);
     return;
   }
-
-  if (!quickSearch.value && !tagSearch.value && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-    event.preventDefault();
-    if (!engineOptions.value.length) return;
-    void search.moveSelectedEngine(event.key === 'ArrowDown' ? 1 : -1);
-    return;
-  }
-
-  if (quickSearch.value) {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      activeQuickIndex.value = normalizeIndex(activeQuickIndex.value + (event.key === 'ArrowDown' ? 1 : -1), quickTargets.value.length);
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      const target = quickTargets.value[activeQuickIndex.value];
-      if (target && quickSearch.value.hasKeyword) openQuickSearch(target);
-    }
-    return;
-  }
-
-  if (tagSearch.value) {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      activeTagIndex.value = normalizeIndex(activeTagIndex.value + (event.key === 'ArrowDown' ? 1 : -1), tagSearch.value.matches.length);
-    } else if (event.key === 'Enter') {
-      event.preventDefault();
-      const tag = tagSearch.value.matches[activeTagIndex.value];
-      if (tag) selectTag(tag);
-    }
-    return;
-  }
-
-  if (!query.value.trim()) return;
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    void openUrl(buildSearchEngineUrl(currentEngine.value, query.value.trim()));
-  }
+  searchCommands.handleSearchKeydown(event);
 }
 
 function enterOrganize() {
@@ -276,19 +174,28 @@ const organizeDrag = useOrganizeDrag({
   onFolderMove: organizeMove.applyFolderMove,
   onBookmarkMove: organizeMove.applyBookmarkMove
 });
+const keyboard = useBookmarkKeyboard({
+  query,
+  showOverlay,
+  overlaySuppressed,
+  activeQuickIndex,
+  activeTagIndex,
+  engineMenuActive,
+  tagPanelActive,
+  utilityDockOpen,
+  resetToken,
+  searchInputElement: searchInputEl,
+  mode,
+  importBusy: importExport.busy,
+  hasOpenModal,
+  cancelDrag: organizeDrag.cancelDrag,
+  exitOrganize,
+  updateQuery
+});
 const organizeForceExpanded = computed(() => Boolean(query.value.trim()) && !quickSearch.value);
 
 function openImportExport() {
   importExport.show();
-}
-
-function refreshAllFavicons() {
-  faviconRefreshToken.value = Date.now();
-  faviconRefreshing.value = true;
-  window.clearTimeout(faviconRefreshTimer);
-  faviconRefreshTimer = window.setTimeout(() => {
-    faviconRefreshing.value = false;
-  }, 650);
 }
 
 function runUtilityAction(action: () => unknown) {
@@ -301,109 +208,9 @@ function handleUtilityFocusOut(event: FocusEvent) {
   if (!(event.relatedTarget instanceof Node) || !dock.contains(event.relatedTarget)) utilityDockOpen.value = false;
 }
 
-function isEditableTarget(target: EventTarget | null) {
-  return target instanceof HTMLElement && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
-}
-
 function hasOpenModal() {
   return Boolean(bookmarkModalOpen.value || folderModalOpen.value || bookmarkPendingDelete.value || folderPendingDelete.value || importExport.open.value);
 }
-
-function resetTransientSurfaces() {
-  resetToken.value += 1;
-  engineMenuActive.value = false;
-  tagPanelActive.value = false;
-  utilityDockOpen.value = false;
-}
-
-function handleEscape(event: KeyboardEvent) {
-  if (organizeDrag.cancelDrag()) {
-    event.preventDefault();
-    event.stopPropagation();
-    return;
-  }
-  if (hasOpenModal()) {
-    if (importExport.busy.value) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    return;
-  }
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  if (engineMenuActive.value || tagPanelActive.value || utilityDockOpen.value) {
-    resetTransientSurfaces();
-    return;
-  }
-  if (showOverlay.value) {
-    overlaySuppressed.value = true;
-    return;
-  }
-  if (query.value) {
-    query.value = '';
-    overlaySuppressed.value = false;
-    activeQuickIndex.value = 0;
-    activeTagIndex.value = 0;
-    return;
-  }
-  if (mode.value === 'organize') {
-    exitOrganize();
-    return;
-  }
-  void nextTick(() => searchInputEl.value?.focus());
-}
-
-function handleGlobalKeydown(event: KeyboardEvent) {
-  if (event.defaultPrevented) return;
-  if (event.key === 'Escape') {
-    handleEscape(event);
-    return;
-  }
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
-    event.preventDefault();
-    searchInputEl.value?.focus();
-    return;
-  }
-  if (!hasOpenModal() && !isEditableTarget(event.target) && !event.ctrlKey && !event.metaKey && !event.altKey) {
-    if (event.isComposing || event.key === 'Process' || event.key === 'Unidentified' || event.keyCode === 229) {
-      searchInputEl.value?.focus();
-      return;
-    }
-    if (event.key.length === 1) {
-      event.preventDefault();
-      resetTransientSurfaces();
-      updateQuery(`${query.value}${event.key}`);
-      void nextTick(() => {
-        const input = searchInputEl.value;
-        if (!input) return;
-        input.focus();
-        input.setSelectionRange(input.value.length, input.value.length);
-      });
-      return;
-    }
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('resize', updateOverlayPosition);
-  window.addEventListener('scroll', updateOverlayPosition, { passive: true });
-  window.addEventListener('keydown', handleGlobalKeydown);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateOverlayPosition);
-  window.removeEventListener('scroll', updateOverlayPosition);
-  window.removeEventListener('keydown', handleGlobalKeydown);
-  window.clearTimeout(faviconRefreshTimer);
-});
-
-watch(
-  () => [currentEngine.value.id, showOverlay.value],
-  scheduleOverlayPosition,
-  { flush: 'post' }
-);
 
 </script>
 
@@ -421,12 +228,12 @@ watch(
       @search-focus="overlaySuppressed = false"
       @engine-menu-open="engineMenuActive = $event"
       @engine-active-change="syncEngineActive"
-      @engine-keydown="handleEngineKeydown"
-      @search-box-ready="setSearchBoxElement"
-      @search-input-ready="setSearchInputElement"
+      @engine-keydown="searchCommands.handleEngineKeydown"
+      @search-box-ready="overlayPosition.setSearchBoxElement"
+      @search-input-ready="searchCommands.setSearchInputElement"
     />
 
-    <TagPanel :tags="tagSummaries" :query="query" :reset-token="resetToken" @select="selectTag" @open-change="tagPanelActive = $event" />
+    <TagPanel :tags="tagSummaries" :query="query" :reset-token="resetToken" @select="searchCommands.selectTag" @open-change="tagPanelActive = $event" />
 
     <OrganizeToolbar
       v-if="mode === 'organize'"
@@ -456,7 +263,7 @@ watch(
         <button type="button" aria-label="整理书签" @click="runUtilityAction(enterOrganize)"><SlidersHorizontal :size="15" /></button>
         <button type="button" aria-label="全部展开" @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(false))"><Maximize2 :size="15" /></button>
         <button type="button" aria-label="全部收缩" @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(true))"><Minimize2 :size="15" /></button>
-        <button type="button" aria-label="刷新全部图标" :class="{ refreshing: faviconRefreshing }" @click="runUtilityAction(refreshAllFavicons)"><RefreshCw :size="15" /></button>
+        <button type="button" aria-label="刷新全部图标" :class="{ refreshing: faviconRefreshing }" @click="runUtilityAction(faviconRefresh.refreshAll)"><RefreshCw :size="15" /></button>
         <button type="button" aria-label="备份与设置" @click="runUtilityAction(openImportExport)"><Settings :size="15" /></button>
       </div>
     </nav>
@@ -474,7 +281,7 @@ watch(
         :folders="visibleFolders"
         :force-expanded="Boolean(query)"
         @toggle-folder="toggleFolderFromTitle"
-        @open-bookmark="openBookmark"
+        @open-bookmark="searchCommands.openBookmark"
       />
 
       <BookmarkOrganizeCanvas
@@ -515,7 +322,7 @@ watch(
       :keyword="quickSearch.keyword"
       :active-index="activeQuickIndex"
       :overlay-style="overlayStyle"
-      @open="openQuickSearch"
+      @open="searchCommands.openQuickSearch"
       @activate="activeQuickIndex = $event"
     />
     <SearchOverlay
@@ -523,7 +330,7 @@ watch(
       :tag-search="tagSearch"
       :active-index="activeTagIndex"
       :overlay-style="overlayStyle"
-      @select-tag="selectTag"
+      @select-tag="searchCommands.selectTag"
       @activate="activeTagIndex = $event"
     />
 

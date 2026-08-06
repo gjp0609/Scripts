@@ -8,7 +8,15 @@ import type {
 } from '../types/bookmark';
 import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
 import { isExportUrlNode, remapImportedPreferences, selectRestoreCandidate } from './backupModel';
-import { getBackupOriginId, getExtras, getPreferences, replaceExtras, savePreferences } from './extraStore';
+import {
+  applyBackupNodeMappingPatch,
+  applyExtraPatch,
+  getBackupNodeMappings,
+  getBackupOriginId,
+  getExtras,
+  getPreferences,
+  savePreferences
+} from './extraStore';
 
 type ImportData = {
   children: ExportBookmarkNode[];
@@ -183,11 +191,12 @@ export async function exportFullData(rootId: string, preferences: UiPreferences)
 
 export async function importFullData(parentId: string, data: unknown): Promise<void> {
   const parsed = validateFullImportData(data);
-  const [tree, originalExtras, originalPreferences, currentOriginId] = await Promise.all([
+  const [tree, originalExtras, originalPreferences, currentOriginId, originalNodeMappings] = await Promise.all([
     getTree(),
     getExtras(),
     getPreferences(),
-    getBackupOriginId()
+    getBackupOriginId(),
+    getBackupNodeMappings(parsed.originId)
   ]);
   const root = findNodeById(tree, parentId) ?? getDefaultBookmarkRoot(tree);
   if (!root) throw new Error('未找到可导入的书签根目录');
@@ -198,7 +207,8 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
   const claimedTargetIds = new Set<string>();
   const createdNodes: CreatedNode[] = [];
   const changedNodes = new Map<string, ChangedNode>();
-  const nextExtras: Record<string, BookmarkExtra> = { ...originalExtras };
+  const extraChanges = new Map<string, BookmarkExtra | undefined>();
+  const mappingChanges = new Map<string, string>();
 
   async function restoreChildren(
     targetParentId: string,
@@ -206,7 +216,14 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
     targetChildren: BrowserBookmarkNode[]
   ): Promise<void> {
     for (const [targetIndex, source] of sources.entries()) {
-      let target = selectRestoreCandidate(source, targetChildren, nodesById, claimedTargetIds, sameOrigin);
+      let target = selectRestoreCandidate(
+        source,
+        targetChildren,
+        nodesById,
+        claimedTargetIds,
+        sameOrigin,
+        originalNodeMappings.get(source.sourceId)
+      );
 
       if (!target) {
         target = await createBookmark({
@@ -249,16 +266,17 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
 
       claimedTargetIds.add(target.id);
       idMap.set(source.sourceId, target.id);
+      mappingChanges.set(source.sourceId, target.id);
 
       if (isExportUrlNode(source)) {
-        if (sameOrigin && source.sourceId !== target.id) delete nextExtras[source.sourceId];
+        if (sameOrigin && source.sourceId !== target.id) extraChanges.set(source.sourceId, undefined);
         if (source.extra) {
-          nextExtras[target.id] = {
+          extraChanges.set(target.id, {
             ...source.extra,
             bookmarkId: target.id
-          };
+          });
         } else {
-          delete nextExtras[target.id];
+          extraChanges.set(target.id, undefined);
         }
         continue;
       }
@@ -267,16 +285,32 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
     }
   }
 
-  let storageChanged = false;
+  let extraStorageChanged = false;
+  let mappingStorageChanged = false;
+  let preferencesChanged = false;
   try {
     await restoreChildren(root.id, parsed.children, root.children ?? (root.children = []));
-    storageChanged = true;
-    await replaceExtras(nextExtras);
+    extraStorageChanged = true;
+    await applyExtraPatch(extraChanges);
+    mappingStorageChanged = true;
+    await applyBackupNodeMappingPatch(parsed.originId, mappingChanges);
+    preferencesChanged = true;
     await savePreferences(remapImportedPreferences(parsed.preferences, idMap, originalPreferences));
   } catch (error) {
-    if (storageChanged) {
-      await replaceExtras(originalExtras).catch(() => undefined);
+    if (preferencesChanged) {
       await savePreferences(originalPreferences).catch(() => undefined);
+    }
+    if (mappingStorageChanged) {
+      const mappingRollback = new Map(
+        [...mappingChanges.keys()].map((sourceId) => [sourceId, originalNodeMappings.get(sourceId)] as const)
+      );
+      await applyBackupNodeMappingPatch(parsed.originId, mappingRollback).catch(() => undefined);
+    }
+    if (extraStorageChanged) {
+      const extraRollback = new Map(
+        [...extraChanges.keys()].map((bookmarkId) => [bookmarkId, originalExtras[bookmarkId]] as const)
+      );
+      await applyExtraPatch(extraRollback).catch(() => undefined);
     }
     await rollbackChangedNodes([...changedNodes.values()]);
     await rollbackCreatedNodes(createdNodes);

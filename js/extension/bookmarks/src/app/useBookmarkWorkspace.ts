@@ -25,14 +25,6 @@ export function useBookmarkWorkspace() {
   let eventQueue = Promise.resolve();
 
   const allBookmarks = computed(() => folders.value.flatMap((folder) => folder.bookmarks));
-  const totalBookmarks = computed(() => allBookmarks.value.length);
-  const tags = computed(() => {
-    const counts = new Map<string, number>();
-    allBookmarks.value.forEach((bookmark) => {
-      bookmark.extra.tags.forEach((tag) => counts.set(tag, (counts.get(tag) ?? 0) + 1));
-    });
-    return [...counts.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
-  });
 
   function findFolder(folderId: string) {
     return folders.value.find((folder) => folder.id === folderId);
@@ -266,8 +258,6 @@ export function useBookmarkWorkspace() {
     loading,
     error,
     searchEngine,
-    totalBookmarks,
-    tags,
     reload,
     setSearchEngine,
     toggleFolder,

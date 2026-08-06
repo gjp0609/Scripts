@@ -5,6 +5,7 @@ const EXTRA_KEY_PREFIX = 'markhubExtra:';
 const SEARCH_ENGINE_KEY = 'markhubPreference:searchEngine';
 const COLLAPSED_FOLDERS_KEY = 'markhubPreference:collapsedFolderIds';
 const BACKUP_ORIGIN_KEY = 'markhubBackupOriginId';
+const BACKUP_NODE_MAP_PREFIX = 'markhubBackupNode:';
 const STORAGE_VERSION_KEY = 'markhubStorageVersion';
 const STORAGE_VERSION = 2;
 const LEGACY_EXTRAS_KEY = 'markhubExtras';
@@ -96,20 +97,18 @@ export async function removeExtras(bookmarkIds: string[]): Promise<void> {
   await browser.storage.local.remove(bookmarkIds.map((bookmarkId) => `${EXTRA_KEY_PREFIX}${bookmarkId}`));
 }
 
-export async function replaceExtras(extras: Record<string, BookmarkExtra>): Promise<void> {
+export async function applyExtraPatch(changes: ReadonlyMap<string, BookmarkExtra | undefined>): Promise<void> {
   await ensureStorageMigrated();
-  const current = await browser.storage.local.get(null) as Record<string, unknown>;
-  const currentKeys = Object.keys(current).filter((key) => key.startsWith(EXTRA_KEY_PREFIX));
-  if (currentKeys.length) await browser.storage.local.remove(currentKeys);
-  const next = Object.fromEntries(
-    Object.entries(extras).map(([bookmarkId, extra]) => [`${EXTRA_KEY_PREFIX}${bookmarkId}`, extra])
+  const values = Object.fromEntries(
+    [...changes.entries()]
+      .filter((entry): entry is [string, BookmarkExtra] => Boolean(entry[1]))
+      .map(([bookmarkId, extra]) => [`${EXTRA_KEY_PREFIX}${bookmarkId}`, extra])
   );
-  if (Object.keys(next).length) await browser.storage.local.set(next);
-}
-
-export async function cleanupExtras(validBookmarkIds: Set<string>): Promise<void> {
-  const extras = await getExtras();
-  await removeExtras(Object.keys(extras).filter((id) => !validBookmarkIds.has(id)));
+  const removedKeys = [...changes.entries()]
+    .filter(([, extra]) => !extra)
+    .map(([bookmarkId]) => `${EXTRA_KEY_PREFIX}${bookmarkId}`);
+  if (Object.keys(values).length) await browser.storage.local.set(values);
+  if (removedKeys.length) await browser.storage.local.remove(removedKeys);
 }
 
 export async function getPreferences(): Promise<UiPreferences> {
@@ -147,4 +146,35 @@ export async function getBackupOriginId(): Promise<string> {
   const originId = crypto.randomUUID();
   await setLocal(BACKUP_ORIGIN_KEY, originId);
   return originId;
+}
+
+function backupNodeMapPrefix(originId: string): string {
+  return `${BACKUP_NODE_MAP_PREFIX}${encodeURIComponent(originId)}:`;
+}
+
+export async function getBackupNodeMappings(originId: string): Promise<Map<string, string>> {
+  const prefix = backupNodeMapPrefix(originId);
+  const data = await browser.storage.local.get(null) as Record<string, unknown>;
+  return new Map(
+    Object.entries(data)
+      .filter((entry): entry is [string, string] => entry[0].startsWith(prefix) && typeof entry[1] === 'string')
+      .map(([key, targetId]) => [decodeURIComponent(key.slice(prefix.length)), targetId])
+  );
+}
+
+export async function applyBackupNodeMappingPatch(
+  originId: string,
+  changes: ReadonlyMap<string, string | undefined>
+): Promise<void> {
+  const prefix = backupNodeMapPrefix(originId);
+  const values = Object.fromEntries(
+    [...changes.entries()]
+      .filter((entry): entry is [string, string] => Boolean(entry[1]))
+      .map(([sourceId, targetId]) => [`${prefix}${encodeURIComponent(sourceId)}`, targetId])
+  );
+  const removedKeys = [...changes.entries()]
+    .filter(([, targetId]) => !targetId)
+    .map(([sourceId]) => `${prefix}${encodeURIComponent(sourceId)}`);
+  if (Object.keys(values).length) await browser.storage.local.set(values);
+  if (removedKeys.length) await browser.storage.local.remove(removedKeys);
 }

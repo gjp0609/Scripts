@@ -253,7 +253,7 @@ type BookmarkExtra = {
 - 目录选择和 tag 菜单必须正确定位在模态之上。
 - 删除书签和目录必须确认，失败不得假装成功。
 - 完整 JSON 备份从浏览器书签栏完整子树生成，递归包含根直属书签、嵌套目录、嵌套书签、extra 和必要偏好；不能只导出当前单层展示投影。
-- JSON 使用 v3 递归节点并保存导出实例 `originId` 和导出时的 `sourceId`。同一实例导入优先按 `sourceId` 找回被移动的原节点；跨实例导入只按目标父目录内的节点类型、标题、URL 和原顺序匹配，重复内容按出现顺序配对，避免 ID 碰撞导致 extra 错配。每个源节点都必须映射到匹配或新建后的真实 Chrome 节点 ID，再用该映射恢复 extra、折叠目录和自定义搜索引擎引用。
+- JSON 使用 v3 递归节点并保存导出实例 `originId` 和导出时的 `sourceId`。同一实例导入优先按 `sourceId` 找回被移动的原节点；跨实例首次导入按目标父目录内的节点类型、标题、URL 和原顺序匹配，重复内容按出现顺序配对，避免 ID 碰撞导致 extra 错配。每个 `originId + sourceId -> targetId` 映射必须持久化，原节点被 Chrome 重新创建后重复导入仍复用同一目标节点；extra 只更新本次备份涉及的书签，不能覆盖其他页面刚写入的无关 extra。
 - Chrome 不保证恢复时沿用源 ID；`auto` 与 `builtin:*` 内置引擎 ID 保持原值，`bookmark:<sourceId>` 自定义引擎必须恢复为 `bookmark:<targetId>`。无效文件在任何浏览器写入前完整失败。
 
 ## 9. favicon

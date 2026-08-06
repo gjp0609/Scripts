@@ -21,12 +21,17 @@ export function selectRestoreCandidate(
   siblingCandidates: BrowserBookmarkNode[],
   nodesById: ReadonlyMap<string, BrowserBookmarkNode>,
   claimedIds: ReadonlySet<string>,
-  sameOrigin: boolean
+  sameOrigin: boolean,
+  mappedTargetId?: string
 ): BrowserBookmarkNode | undefined {
   if (sameOrigin) {
     const original = nodesById.get(source.sourceId);
-    return original && !claimedIds.has(original.id) && hasSameKind(source, original) ? original : undefined;
+    if (original && !claimedIds.has(original.id) && hasSameKind(source, original)) return original;
   }
+
+  const mapped = mappedTargetId ? nodesById.get(mappedTargetId) : undefined;
+  if (mapped && !claimedIds.has(mapped.id) && hasSameKind(source, mapped)) return mapped;
+  if (sameOrigin) return undefined;
 
   return siblingCandidates.find((candidate) => !claimedIds.has(candidate.id) && hasSameContent(source, candidate));
 }

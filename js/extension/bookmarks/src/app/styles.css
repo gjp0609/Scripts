@@ -312,8 +312,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .organize-toolbar button:disabled { opacity: 0.35; cursor: default; }
 .organize-toolbar .organize-exit { margin-left: 2px; }
 .organize-segments { display: flex; flex: 0 0 auto; gap: 2px; }
-.page-error { width: fit-content; margin: 0 auto 18px; padding: 6px 10px; border-radius: 5px; background: #f3f5f4; color: #6d736f; font-size: 10px; }
-.page-error { background: #fbf1f0; color: var(--danger); }
+.page-error { width: fit-content; margin: 0 auto 18px; padding: 6px 10px; border-radius: 5px; background: #fbf1f0; color: var(--danger); font-size: 10px; }
 .organize-folder .folder-drag-handle { margin-left: 8px; }
 .bookmark-ghost { opacity: 0.25; }
 .folder-ghost { opacity: 0; }

@@ -264,3 +264,27 @@ test('同一实例 sourceId 已不存在时不拿相同内容书签冒充原节�
 
   assert.equal(selectRestoreCandidate(source, [duplicate], new Map([[duplicate.id, duplicate]]), new Set(), true), undefined);
 });
+
+test('同一实例 sourceId 被 Chrome 重建后复用持久化的恢复映射', () => {
+  const source: ExportBookmarkNode = { sourceId: 'deleted-source', title: '恢复书签', url: 'https://restore.example' };
+  const restored: BrowserBookmarkNode = {
+    id: 'new-chrome-id',
+    parentId: 'target',
+    title: '恢复书签',
+    url: 'https://restore.example'
+  };
+
+  assert.equal(
+    selectRestoreCandidate(source, [restored], new Map([[restored.id, restored]]), new Set(), true, restored.id)?.id,
+    restored.id
+  );
+});
+
+test('跨实例重复导入优先复用持久化映射而不是相同内容的其他书签', () => {
+  const source: ExportBookmarkNode = { sourceId: 'foreign-source', title: '重复书签', url: 'https://same.example' };
+  const duplicate: BrowserBookmarkNode = { id: 'duplicate', parentId: 'target', title: '重复书签', url: 'https://same.example' };
+  const restored: BrowserBookmarkNode = { id: 'restored', parentId: 'target', title: '已被修改', url: 'https://changed.example' };
+  const nodesById = new Map([[duplicate.id, duplicate], [restored.id, restored]]);
+
+  assert.equal(selectRestoreCandidate(source, [duplicate, restored], nodesById, new Set(), false, restored.id)?.id, restored.id);
+});

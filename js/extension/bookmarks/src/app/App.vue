@@ -338,6 +338,6 @@ function hasOpenModal() {
     <FolderModal :open="folderModalOpen" :folder="editingFolder" :error="folderError" :pending="folderSaving" @close="closeFolder" @save="saveFolder" />
     <ConfirmModal :open="Boolean(bookmarkPendingDelete)" title="删除书签" :description="bookmarkPendingDelete ? `确认删除“${bookmarkPendingDelete.title}”？` : ''" :error="bookmarkDeleteError" :pending="bookmarkDeleting" confirm-text="删除" danger @close="closeBookmarkDelete" @confirm="confirmDeleteBookmark" />
     <ConfirmModal :open="Boolean(folderPendingDelete)" title="删除目录" :description="folderPendingDelete ? `目录“${folderPendingDelete.title}”及其中书签都会删除。` : ''" :error="folderDeleteError" :pending="folderDeleting" confirm-text="删除" danger @close="closeFolderDelete" @confirm="confirmDeleteFolder" />
-    <ImportExportModal :open="importExport.open.value" :busy="importExport.busy.value" :error="importExport.error.value" @close="importExport.close" @export-full="importExport.exportAll" @import-full="importExport.importAll" />
+    <ImportExportModal :open="importExport.open.value" :busy="importExport.busy.value" :error="importExport.error.value" :maintenance-result="importExport.maintenanceResult.value" @close="importExport.close" @export-full="importExport.exportAll" @import-full="importExport.importAll" @repair-data="importExport.repairData" />
   </div>
 </template>

@@ -236,6 +236,12 @@ export function useBookmarkWorkspace() {
           }
           break;
         }
+        case 'reordered': {
+          if (event.id === rootId.value || findFolder(event.id)) {
+            await reload({ silent: true });
+          }
+          break;
+        }
       }
     } catch {
       await reload({ silent: true });

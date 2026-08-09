@@ -16,6 +16,12 @@ const defaultPreferences: UiPreferences = {
   searchEngine: 'auto'
 };
 
+export type BackupNodeMappingEntry = {
+  originId: string;
+  sourceId: string;
+  targetId: string;
+};
+
 async function getLocal<T>(key: string): Promise<T | undefined> {
   const data = await browser.storage.local.get(key) as Record<string, T>;
   return data[key];
@@ -97,6 +103,22 @@ export async function removeExtras(bookmarkIds: string[]): Promise<void> {
   await browser.storage.local.remove(bookmarkIds.map((bookmarkId) => `${EXTRA_KEY_PREFIX}${bookmarkId}`));
 }
 
+export async function removeExtrasWithRetry(bookmarkIds: string[], attempts = 3): Promise<void> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      await removeExtras(bookmarkIds);
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt + 1 < attempts) {
+        await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('清理书签附加数据失败');
+}
+
 export async function applyExtraPatch(changes: ReadonlyMap<string, BookmarkExtra | undefined>): Promise<void> {
   await ensureStorageMigrated();
   const values = Object.fromEntries(
@@ -160,6 +182,34 @@ export async function getBackupNodeMappings(originId: string): Promise<Map<strin
       .filter((entry): entry is [string, string] => entry[0].startsWith(prefix) && typeof entry[1] === 'string')
       .map(([key, targetId]) => [decodeURIComponent(key.slice(prefix.length)), targetId])
   );
+}
+
+export async function getAllBackupNodeMappings(): Promise<BackupNodeMappingEntry[]> {
+  const data = await browser.storage.local.get(null) as Record<string, unknown>;
+  const entries: BackupNodeMappingEntry[] = [];
+  const prefix = BACKUP_NODE_MAP_PREFIX;
+  for (const [key, targetId] of Object.entries(data)) {
+    if (!key.startsWith(prefix) || typeof targetId !== 'string' || !targetId) continue;
+    const separator = key.indexOf(':', prefix.length);
+    if (separator < 0) continue;
+    const originEncoded = key.slice(prefix.length, separator);
+    const sourceEncoded = key.slice(separator + 1);
+    try {
+      const originId = decodeURIComponent(originEncoded);
+      const sourceId = decodeURIComponent(sourceEncoded);
+      if (originId && sourceId) entries.push({ originId, sourceId, targetId });
+    } catch {
+      // Invalid maintenance keys are intentionally ignored by the reader.
+    }
+  }
+  return entries;
+}
+
+export async function removeBackupNodeMappings(entries: readonly BackupNodeMappingEntry[]): Promise<void> {
+  if (!entries.length) return;
+  await ensureStorageMigrated();
+  const keys = entries.map(({ originId, sourceId }) => `${backupNodeMapPrefix(originId)}${encodeURIComponent(sourceId)}`);
+  await browser.storage.local.remove(keys);
 }
 
 export async function applyBackupNodeMappingPatch(

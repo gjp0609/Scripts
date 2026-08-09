@@ -5,6 +5,10 @@ export type BrowserBookmarkNode = {
   title: string;
   url?: string;
   children?: BrowserBookmarkNode[];
+  /** Chrome 134+ exposes the semantic type of browser-managed roots. */
+  folderType?: 'bookmarks-bar' | 'other' | 'mobile' | 'managed' | string;
+  syncing?: boolean;
+  unmodifiable?: 'managed' | string;
 };
 
 export type BookmarkExtra = {

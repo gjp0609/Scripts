@@ -13,6 +13,8 @@ import {
 import { moveWorkspaceBookmark, moveWorkspaceFolder } from '../src/app/bookmarkWorkspaceModel.ts';
 import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
 import { remapImportedPreferences, selectRestoreCandidate } from '../src/services/backupModel.ts';
+import { selectDefaultBookmarkRoot } from '../src/services/bookmarkRootModel.ts';
+import { buildMetadataRepairPlan } from '../src/services/metadataMaintenanceModel.ts';
 import {
   buildQuickSearchUrl,
   filterFolders,
@@ -287,4 +289,53 @@ test('跨实例重复导入优先复用持久化映射而不是相同内容的�
   const nodesById = new Map([[duplicate.id, duplicate], [restored.id, restored]]);
 
   assert.equal(selectRestoreCandidate(source, [duplicate, restored], nodesById, new Set(), false, restored.id)?.id, restored.id);
+});
+
+test('新版 Chrome 根目录按 folderType 识别并优先账号同步书签栏', () => {
+  const localBar: BrowserBookmarkNode = { id: '1', title: '本地书签栏', folderType: 'bookmarks-bar', syncing: false, children: [] };
+  const accountBar: BrowserBookmarkNode = { id: '101', title: '账号书签栏', folderType: 'bookmarks-bar', syncing: true, children: [] };
+  const other: BrowserBookmarkNode = { id: '2', title: '其他书签', folderType: 'other', syncing: true, children: [] };
+  const root: BrowserBookmarkNode = { id: '0', title: '', children: [other, localBar, accountBar] };
+
+  assert.equal(selectDefaultBookmarkRoot([root])?.id, '101');
+});
+
+test('旧版 Chrome 根目录缺少 folderType 时保留兼容识别', () => {
+  const bar: BrowserBookmarkNode = { id: '1', title: '书签栏', children: [] };
+  const root: BrowserBookmarkNode = { id: '0', title: '', children: [{ id: '2', title: '其他书签', children: [] }, bar] };
+
+  assert.equal(selectDefaultBookmarkRoot([root])?.id, '1');
+});
+
+test('维护计划只清理孤立扩展数据并规范有效引用', () => {
+  const bookmarkNode: BrowserBookmarkNode = { id: 'bookmark-1', parentId: 'folder-1', title: '有效书签', url: 'https://valid.example' };
+  const folderNode: BrowserBookmarkNode = { id: 'folder-1', parentId: '1', title: '目录', children: [bookmarkNode] };
+  const tree: BrowserBookmarkNode[] = [{ id: '0', title: '', children: [{ id: '1', title: '书签栏', children: [folderNode] }] }];
+  const plan = buildMetadataRepairPlan({
+    tree,
+    extras: {
+      'bookmark-1': { bookmarkId: 'wrong-id', tags: [' work ', 'WORK', ''], updatedAt: 1 },
+      orphan: { bookmarkId: 'orphan', tags: ['old'], updatedAt: 1 }
+    },
+    preferences: { collapsedFolderIds: ['folder-1', 'missing-folder'], searchEngine: 'bookmark:missing-engine' },
+    mappings: [
+      { originId: 'origin', sourceId: 'valid', targetId: 'bookmark-1' },
+      { originId: 'origin', sourceId: 'missing', targetId: 'missing-target' }
+    ]
+  });
+
+  assert.equal(plan.extraPatch.has('orphan'), true);
+  assert.equal(plan.extraPatch.get('orphan'), undefined);
+  assert.deepEqual(plan.extraPatch.get('bookmark-1')?.tags, ['work']);
+  assert.equal(plan.extraPatch.get('bookmark-1')?.bookmarkId, 'bookmark-1');
+  assert.deepEqual(plan.repairedPreferences, { collapsedFolderIds: ['folder-1'], searchEngine: 'auto' });
+  assert.deepEqual(plan.staleMappings.map((item) => item.sourceId), ['missing']);
+  assert.deepEqual(plan.report, {
+    extrasScanned: 2,
+    extrasRepaired: 1,
+    extrasRemoved: 1,
+    mappingsScanned: 2,
+    mappingsRemoved: 1,
+    preferencesRepaired: true
+  });
 });

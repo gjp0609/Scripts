@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { BrowserBookmarkNode } from '../types/bookmark';
+import { selectDefaultBookmarkRoot } from './bookmarkRootModel';
 
 export type BookmarkCreateDetails = {
   parentId?: string;
@@ -36,11 +37,16 @@ export type BookmarkMovedInfo = {
   oldIndex?: number;
 };
 
+export type BookmarkReorderedInfo = {
+  childIds: string[];
+};
+
 export type BookmarkEvent =
   | { type: 'created'; id: string; node: BrowserBookmarkNode }
   | { type: 'changed'; id: string; changes: BookmarkChangedInfo }
   | { type: 'removed'; id: string; removeInfo: BookmarkRemovedInfo }
-  | { type: 'moved'; id: string; moveInfo: BookmarkMovedInfo };
+  | { type: 'moved'; id: string; moveInfo: BookmarkMovedInfo }
+  | { type: 'reordered'; id: string; reorderInfo: BookmarkReorderedInfo };
 
 export async function getTree(): Promise<BrowserBookmarkNode[]> {
   return browser.bookmarks.getTree() as Promise<BrowserBookmarkNode[]>;
@@ -77,12 +83,7 @@ export async function getSubTree(id: string): Promise<BrowserBookmarkNode | unde
 }
 
 export function getDefaultBookmarkRoot(tree: BrowserBookmarkNode[]): BrowserBookmarkNode | undefined {
-  const rootChildren = tree[0]?.children ?? [];
-  return (
-    rootChildren.find((node) => node.id === '1') ??
-    rootChildren.find((node) => /书签栏|收藏夹栏|bookmarks bar|favorites bar/i.test(node.title)) ??
-    rootChildren.find((node) => Array.isArray(node.children))
-  );
+  return selectDefaultBookmarkRoot(tree);
 }
 
 export function onBookmarkEvent(handler: (event: BookmarkEvent) => void): () => void {
@@ -90,16 +91,19 @@ export function onBookmarkEvent(handler: (event: BookmarkEvent) => void): () => 
   const changedListener = (id: string, changes: BookmarkChangedInfo) => handler({ type: 'changed', id, changes });
   const removedListener = (id: string, removeInfo: BookmarkRemovedInfo) => handler({ type: 'removed', id, removeInfo });
   const movedListener = (id: string, moveInfo: BookmarkMovedInfo) => handler({ type: 'moved', id, moveInfo });
+  const reorderedListener = (id: string, reorderInfo: BookmarkReorderedInfo) => handler({ type: 'reordered', id, reorderInfo });
 
   browser.bookmarks.onCreated.addListener(createdListener);
   browser.bookmarks.onChanged.addListener(changedListener);
   browser.bookmarks.onRemoved.addListener(removedListener);
   browser.bookmarks.onMoved.addListener(movedListener);
+  browser.bookmarks.onChildrenReordered.addListener(reorderedListener);
 
   return () => {
     browser.bookmarks.onCreated.removeListener(createdListener);
     browser.bookmarks.onChanged.removeListener(changedListener);
     browser.bookmarks.onRemoved.removeListener(removedListener);
     browser.bookmarks.onMoved.removeListener(movedListener);
+    browser.bookmarks.onChildrenReordered.removeListener(reorderedListener);
   };
 }

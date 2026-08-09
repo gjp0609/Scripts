@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, FileUp, X } from 'lucide-vue-next';
+import { Download, FileCheck, FileUp, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui';
 
@@ -7,12 +7,14 @@ const props = defineProps<{
   open: boolean;
   busy?: boolean;
   error?: string;
+  maintenanceResult?: string;
 }>();
 
 const emit = defineEmits<{
   close: [];
   'export-full': [];
   'import-full': [file: File];
+  'repair-data': [];
 }>();
 
 const fullInputRef = ref<HTMLInputElement | null>(null);
@@ -72,9 +74,20 @@ function emitSelectedFile(event: Event) {
               <span>导入全量</span>
             </button>
           </div>
+          <div class="import-export-row">
+            <div class="import-export-copy">
+              <strong>校验扩展数据</strong>
+              <span>清理孤立标签、恢复映射和无效偏好，不删除浏览器书签。</span>
+            </div>
+            <button class="button-secondary import-export-action" type="button" :disabled="busy" @click="emit('repair-data')">
+              <FileCheck :size="14" />
+              <span>校验并清理</span>
+            </button>
+          </div>
         </section>
 
         <p v-if="error" class="import-export-error">{{ error }}</p>
+        <p v-else-if="maintenanceResult" class="import-export-success">{{ maintenanceResult }}</p>
       </div>
 
       <input ref="fullInputRef" hidden type="file" accept=".json,application/json" @change="emitSelectedFile($event)" />

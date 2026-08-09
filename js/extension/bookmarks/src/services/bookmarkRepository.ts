@@ -174,7 +174,9 @@ export async function saveBookmarkDetails(input: {
 
 export async function deleteBookmarkDetails(bookmarkId: string): Promise<void> {
   await removeBookmark(bookmarkId);
-  await removeExtra(bookmarkId).catch(() => undefined);
+  await removeExtra(bookmarkId).catch((error) => {
+    console.error('[MarkHub] 书签已删除，但附加数据清理失败', error);
+  });
 }
 
 function collectBookmarkIds(node?: BrowserBookmarkNode): string[] {
@@ -196,7 +198,9 @@ export async function deleteFolderDetails(folderId: string): Promise<void> {
   const subtree = await getSubTree(folderId);
   const bookmarkIds = collectBookmarkIds(subtree);
   await removeFolder(folderId);
-  await removeExtras(bookmarkIds).catch(() => undefined);
+  await removeExtras(bookmarkIds).catch((error) => {
+    console.error('[MarkHub] 目录已删除，但附加数据清理失败', error);
+  });
 }
 
 export async function moveBookmarkOrder(input: {

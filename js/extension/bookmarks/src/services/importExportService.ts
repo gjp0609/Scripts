@@ -136,24 +136,50 @@ function toExportNode(node: BrowserBookmarkNode, extras: Record<string, Bookmark
   };
 }
 
-async function rollbackCreatedNodes(createdNodes: CreatedNode[]): Promise<void> {
+async function rollbackCreatedNodes(createdNodes: CreatedNode[], failures: string[]): Promise<void> {
   for (const node of [...createdNodes].reverse()) {
     try {
       if (node.folder) await removeFolder(node.id);
       else await removeBookmark(node.id);
-    } catch {
-      // A created child may already have been removed with its parent.
+    } catch (error) {
+      failures.push(`回滚新建节点 ${node.id} 失败：${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
 }
 
-async function rollbackChangedNodes(changedNodes: ChangedNode[]): Promise<void> {
+async function rollbackChangedNodes(changedNodes: ChangedNode[], failures: string[]): Promise<void> {
   for (const node of [...changedNodes].reverse()) {
-    await updateBookmark(node.id, { title: node.title, ...(node.url ? { url: node.url } : {}) }).catch(() => undefined);
+    try {
+      await updateBookmark(node.id, { title: node.title, ...(node.url ? { url: node.url } : {}) });
+    } catch (error) {
+      failures.push(`回滚节点 ${node.id} 的内容失败：${error instanceof Error ? error.message : '未知错误'}`);
+    }
     if (node.parentId != null || node.index != null) {
-      await moveNode(node.id, { parentId: node.parentId, index: node.index }).catch(() => undefined);
+      try {
+        await moveNode(node.id, { parentId: node.parentId, index: node.index });
+      } catch (error) {
+        failures.push(`回滚节点 ${node.id} 的位置失败：${error instanceof Error ? error.message : '未知错误'}`);
+      }
     }
   }
+}
+
+function cloneBookmarkNode(node: BrowserBookmarkNode): BrowserBookmarkNode {
+  return {
+    ...node,
+    children: node.children?.map(cloneBookmarkNode)
+  };
+}
+
+function bookmarkTreeFingerprint(node: BrowserBookmarkNode): string {
+  return JSON.stringify({
+    id: node.id,
+    parentId: node.parentId,
+    index: node.index,
+    title: node.title,
+    url: node.url,
+    children: node.children?.map(bookmarkTreeFingerprint) ?? undefined
+  });
 }
 
 function indexNodes(nodes: BrowserBookmarkNode[], result = new Map<string, BrowserBookmarkNode>()): Map<string, BrowserBookmarkNode> {
@@ -200,6 +226,7 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
   ]);
   const root = findNodeById(tree, parentId) ?? getDefaultBookmarkRoot(tree);
   if (!root) throw new Error('未找到可导入的书签根目录');
+  const originalRoot = cloneBookmarkNode(root);
 
   const sameOrigin = parsed.originId === currentOriginId;
   const nodesById = indexNodes(tree);
@@ -297,23 +324,41 @@ export async function importFullData(parentId: string, data: unknown): Promise<v
     preferencesChanged = true;
     await savePreferences(remapImportedPreferences(parsed.preferences, idMap, originalPreferences));
   } catch (error) {
+    const rollbackFailures: string[] = [];
     if (preferencesChanged) {
-      await savePreferences(originalPreferences).catch(() => undefined);
+      await savePreferences(originalPreferences).catch((cause) => {
+        rollbackFailures.push(`回滚界面偏好失败：${cause instanceof Error ? cause.message : '未知错误'}`);
+      });
     }
     if (mappingStorageChanged) {
       const mappingRollback = new Map(
         [...mappingChanges.keys()].map((sourceId) => [sourceId, originalNodeMappings.get(sourceId)] as const)
       );
-      await applyBackupNodeMappingPatch(parsed.originId, mappingRollback).catch(() => undefined);
+      await applyBackupNodeMappingPatch(parsed.originId, mappingRollback).catch((cause) => {
+        rollbackFailures.push(`回滚恢复映射失败：${cause instanceof Error ? cause.message : '未知错误'}`);
+      });
     }
     if (extraStorageChanged) {
       const extraRollback = new Map(
         [...extraChanges.keys()].map((bookmarkId) => [bookmarkId, originalExtras[bookmarkId]] as const)
       );
-      await applyExtraPatch(extraRollback).catch(() => undefined);
+      await applyExtraPatch(extraRollback).catch((cause) => {
+        rollbackFailures.push(`回滚扩展数据失败：${cause instanceof Error ? cause.message : '未知错误'}`);
+      });
     }
-    await rollbackChangedNodes([...changedNodes.values()]);
-    await rollbackCreatedNodes(createdNodes);
+    await rollbackChangedNodes([...changedNodes.values()], rollbackFailures);
+    await rollbackCreatedNodes(createdNodes, rollbackFailures);
+    try {
+      const restoredRoot = await getSubTree(root.id);
+      if (!restoredRoot || bookmarkTreeFingerprint(restoredRoot) !== bookmarkTreeFingerprint(originalRoot)) {
+        rollbackFailures.push('回滚后书签树校验不一致');
+      }
+    } catch (cause) {
+      rollbackFailures.push(`回滚后书签树校验失败：${cause instanceof Error ? cause.message : '未知错误'}`);
+    }
+    if (rollbackFailures.length) {
+      throw new Error(`导入失败，自动恢复未完全成功，请刷新后检查书签栏。${rollbackFailures.slice(0, 2).join('；')}`);
+    }
     throw error;
   }
 }

@@ -71,6 +71,24 @@ function getHttpDomain(url?: string): string | undefined {
   }
 }
 
+export function getSearchCapabilityValidationError(input: {
+  tags: readonly string[];
+  url?: string;
+  searchUrl?: string;
+}): string | undefined {
+  const normalizedTags = new Set(input.tags.map(normalizeTag));
+  const hasSearch = normalizedTags.has(SEARCH_TAG);
+  const hasSearchSite = normalizedTags.has(SEARCH_SITE_TAG);
+  if (hasSearch && hasSearchSite) return 'search 与 search_site 不能同时使用';
+  if (hasSearch && !isHttpTemplate(input.searchUrl?.trim())) {
+    return 'search 标签需要有效的 HTTP(S) 搜索 URL 模板，并包含 {keyword}';
+  }
+  if (hasSearchSite && !getHttpDomain(input.url)) {
+    return 'search_site 标签需要有效的 HTTP(S) 书签 URL';
+  }
+  return undefined;
+}
+
 export function getTagSummaries(folders: FolderView[]): TagSummary[] {
   const values = new Map<string, TagSummary>();
 

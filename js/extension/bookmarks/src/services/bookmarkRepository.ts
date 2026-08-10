@@ -2,7 +2,7 @@ import type { BookmarkExtra, BookmarkView, BrowserBookmarkNode, FolderView } fro
 import { createBookmark, getDefaultBookmarkRoot, getNode, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
 import { getExtra, getExtras, removeExtra, removeExtras, restoreExtra, saveExtra } from './extraStore';
 import { getFaviconSources } from './favicon';
-import { normalizeTag, SEARCH_SITE_TAG, SEARCH_TAG } from './searchService';
+import { getSearchCapabilityValidationError, normalizeTag, SEARCH_TAG } from './searchService';
 
 const accents = ['#4F6EF7', '#06B6D4', '#22C55E', '#E8853D', '#EF4444', '#8B5CF6', '#F59E0B'];
 
@@ -97,22 +97,8 @@ export async function saveBookmarkDetails(input: {
     return result;
   }, []);
   const hasSearch = tags.some((tag) => normalizeTag(tag) === SEARCH_TAG);
-  const hasSearchSite = tags.some((tag) => normalizeTag(tag) === SEARCH_SITE_TAG);
-
-  if (hasSearch && hasSearchSite) {
-    throw new Error('search 与 search_site 不能同时使用');
-  }
-  if (hasSearch && !/\$\{keyword\}|\{keyword\}/.test(input.searchUrl?.trim() ?? '')) {
-    throw new Error('search 标签需要包含 {keyword} 的搜索 URL 模板');
-  }
-  if (hasSearchSite) {
-    try {
-      const parsed = new URL(input.url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error();
-    } catch {
-      throw new Error('search_site 标签需要有效的 HTTP(S) 书签 URL');
-    }
-  }
+  const capabilityError = getSearchCapabilityValidationError({ tags, url: input.url, searchUrl: input.searchUrl });
+  if (capabilityError) throw new Error(capabilityError);
 
   const originalNode = input.id ? await getNode(input.id) : undefined;
   if (input.id && !originalNode) throw new Error('要编辑的书签已不存在');

@@ -65,14 +65,11 @@ onMounted(() => {
 onBeforeUnmount(destroyLayout);
 
 watch(
-  () => [
-    props.forceExpanded,
-    props.dragging,
-    props.dropProjection?.folderId,
-    props.dropProjection?.anchorId,
-    props.dropProjection?.insertAfter,
-    [...props.collapsedFolderIds].sort().join(','),
-    props.folders.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')
+  [
+    () => props.forceExpanded,
+    () => props.dropProjection?.folderId,
+    () => [...props.collapsedFolderIds].sort().join(','),
+    () => props.folders.map((folder) => `${folder.id}:${folder.bookmarks.map((bookmark) => bookmark.id).join(',')}`).join('|')
   ],
   scheduleLayout,
   { flush: 'post' }

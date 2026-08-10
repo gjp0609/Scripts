@@ -10,7 +10,7 @@ export default defineConfig({
   manifest: {
     name: 'MarkHub Bookmarks',
     description: '以浏览器原生书签为主数据源的高频书签工作台。',
-    permissions: ['bookmarks', 'storage', 'unlimitedStorage', 'activeTab', 'tabs', 'scripting', 'favicon'],
+    permissions: ['bookmarks', 'storage', 'unlimitedStorage', 'activeTab', 'scripting', 'favicon'],
     action: {
       default_title: 'MarkHub'
     },

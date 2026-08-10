@@ -67,16 +67,39 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
   let bookmarkPlan: BookmarkMoveRequest | undefined;
   let folderPlan: FolderMoveRequest | undefined;
   let cancelled = false;
+  let pointerX: number | undefined;
   let pointerY: number | undefined;
   let draggedId = '';
   let sourceFolderId = '';
   let folderDragOrder: string[] = [];
   let scrollFrame = 0;
+  let projectionFrame = 0;
+  let scrollViewport: HTMLElement | undefined;
+  let bookmarkEdgeScrollPaused = false;
+
+  function scheduleProjectionRefresh() {
+    if (options.kind.value !== 'bookmark') return;
+    cancelAnimationFrame(projectionFrame);
+    projectionFrame = requestAnimationFrame(() => {
+      projectionFrame = 0;
+      updateProjection(pointerX, pointerY);
+    });
+  }
+
+  function handleViewportScroll() {
+    if (isDragging.value && options.kind.value === 'bookmark') scheduleProjectionRefresh();
+  }
 
   function stopAutoScroll() {
     cancelAnimationFrame(scrollFrame);
     scrollFrame = 0;
+    cancelAnimationFrame(projectionFrame);
+    projectionFrame = 0;
+    pointerX = undefined;
     pointerY = undefined;
+    bookmarkEdgeScrollPaused = false;
+    scrollViewport?.removeEventListener('scroll', handleViewportScroll);
+    scrollViewport = undefined;
     window.removeEventListener('mousemove', trackPointer, true);
     window.removeEventListener('touchmove', trackPointer, true);
     window.removeEventListener('wheel', forwardWheel, true);
@@ -89,28 +112,44 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
       const rect = viewport.getBoundingClientRect();
       const edge = Math.min(96, rect.height * 0.18);
       let delta = 0;
-      if (pointerY < rect.top + edge) delta = -Math.ceil((rect.top + edge - pointerY) / 5);
-      else if (pointerY > rect.bottom - edge) delta = Math.ceil((pointerY - (rect.bottom - edge)) / 5);
-      if (delta) viewport.scrollTop += Math.max(-18, Math.min(18, delta));
+      if (!(options.kind.value === 'bookmark' && bookmarkEdgeScrollPaused)) {
+        if (pointerY < rect.top + edge) delta = -Math.ceil((rect.top + edge - pointerY) / 5);
+        else if (pointerY > rect.bottom - edge) delta = Math.ceil((pointerY - (rect.bottom - edge)) / 5);
+      }
+      if (delta) {
+        viewport.scrollTop += Math.max(-18, Math.min(18, delta));
+        if (options.kind.value === 'bookmark') {
+          updateProjection(pointerX, pointerY);
+          scheduleProjectionRefresh();
+        }
+      }
     }
     scrollFrame = requestAnimationFrame(autoScroll);
   }
 
   function trackPointer(event: MouseEvent | TouchEvent) {
+    pointerX = event instanceof MouseEvent ? event.clientX : event.touches[0]?.clientX;
     pointerY = eventClientY(event);
-    updateProjection(event instanceof MouseEvent ? event.clientX : event.touches[0]?.clientX, pointerY);
+    if (options.kind.value === 'bookmark') bookmarkEdgeScrollPaused = false;
+    updateProjection(pointerX, pointerY);
   }
 
   function forwardWheel(event: WheelEvent) {
     const viewport = options.getScrollContainer();
     if (!viewport || !isDragging.value) return;
     event.preventDefault();
+    if (options.kind.value === 'bookmark') bookmarkEdgeScrollPaused = true;
     viewport.scrollTop += event.deltaY;
+    if (options.kind.value === 'bookmark') {
+      updateProjection(pointerX, pointerY);
+      scheduleProjectionRefresh();
+    }
   }
 
   function beginDrag(event: Sortable.SortableEvent) {
     cancelled = false;
     isDragging.value = true;
+    bookmarkEdgeScrollPaused = false;
     draggingItemId.value = event.item.getAttribute(options.kind.value === 'folder' ? 'data-folder-id' : 'data-bookmark-id') ?? '';
     draggedId = draggingItemId.value;
     sourceFolderId = event.from.getAttribute('data-folder-id') ?? '';
@@ -121,6 +160,10 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     window.addEventListener('mousemove', trackPointer, true);
     window.addEventListener('touchmove', trackPointer, { capture: true, passive: true });
     window.addEventListener('wheel', forwardWheel, { capture: true, passive: false });
+    if (options.kind.value === 'bookmark') {
+      scrollViewport = options.getScrollContainer() ?? undefined;
+      scrollViewport?.addEventListener('scroll', handleViewportScroll, { passive: true });
+    }
     scrollFrame = requestAnimationFrame(autoScroll);
   }
 
@@ -168,10 +211,19 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     if (!isDragging.value) void nextTick(setup);
   }
 
+  function bookmarkFolderAtPoint(clientX: number, clientY: number): HTMLElement | undefined {
+    const folder = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('.folder-section');
+    return folder && board?.contains(folder) ? folder : undefined;
+  }
+
+  function clearBookmarkProjection() {
+    bookmarkProjection.value = undefined;
+    bookmarkPlan = undefined;
+  }
+
   function updateFolderProjection(clientX: number, clientY: number) {
     if (!board || !draggedId) return;
-    const folders = [...board.querySelectorAll<HTMLElement>('.folder-section')];
-    const related = folders.find((element) => {
+    const related = [...board.querySelectorAll<HTMLElement>('.folder-section')].find((element) => {
       const rect = element.getBoundingClientRect();
       return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
     });
@@ -198,13 +250,12 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
 
   function updateBookmarkProjection(clientX: number, clientY: number) {
     if (!board || !draggedId || !sourceFolderId) return;
-    const folderElements = [...board.querySelectorAll<HTMLElement>('.folder-section')];
-    const folderElement = folderElements.find((element) => {
-      const rect = element.getBoundingClientRect();
-      return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
-    });
+    const folderElement = bookmarkFolderAtPoint(clientX, clientY);
     const toFolderId = folderElement?.getAttribute('data-folder-id') ?? '';
-    if (!folderElement || !toFolderId) return;
+    if (!folderElement || !toFolderId) {
+      clearBookmarkProjection();
+      return;
+    }
     const list = folderLists.get(toFolderId);
     const rows = list ? [...list.querySelectorAll<HTMLElement>('.bookmark-row')].filter((row) => row.getAttribute('data-bookmark-id') !== draggedId) : [];
     const anchor = rows.find((row) => {
@@ -216,7 +267,10 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
     const insertAfter = Boolean(anchorRect && clientY >= anchorRect.top + anchorRect.height / 2);
     const source = options.folders.value.find((item) => item.id === sourceFolderId)?.bookmarks.find((item) => item.id === draggedId);
     const targetFolder = options.folders.value.find((item) => item.id === toFolderId);
-    if (!source || !targetFolder) return;
+    if (!source || !targetFolder) {
+      clearBookmarkProjection();
+      return;
+    }
     const projectedOrder = projectVisibleOrder(rows.map((row) => row.getAttribute('data-bookmark-id') ?? '').filter(Boolean), draggedId, anchorId, insertAfter);
     const desiredIndex = resolveFilteredMoveIndex(targetFolder.bookmarks.map((item) => item.id), projectedOrder, draggedId);
     bookmarkProjection.value = { folderId: toFolderId, anchorId, insertAfter };
@@ -254,8 +308,8 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
       onStart: beginDrag,
       onMove: (event, originalEvent) => {
         pointerY = eventClientY(originalEvent);
-        const clientX = originalEvent instanceof MouseEvent ? originalEvent.clientX : originalEvent instanceof TouchEvent ? originalEvent.touches[0]?.clientX : undefined;
-        updateProjection(clientX, pointerY);
+        pointerX = originalEvent instanceof MouseEvent ? originalEvent.clientX : originalEvent instanceof TouchEvent ? originalEvent.touches[0]?.clientX : undefined;
+        updateProjection(pointerX, pointerY);
         return false;
       },
       onEnd: () => {
@@ -296,10 +350,8 @@ export function useOrganizeDrag(options: OrganizeDragOptions) {
         scroll: false,
         emptyInsertThreshold: 48,
         onStart: beginDrag,
-      onMove: (event, originalEvent) => {
-        pointerY = eventClientY(originalEvent);
-          const clientX = originalEvent instanceof MouseEvent ? originalEvent.clientX : originalEvent instanceof TouchEvent ? originalEvent.touches[0]?.clientX : undefined;
-          updateProjection(clientX, pointerY);
+        onMove: () => {
+          updateProjection(pointerX, pointerY);
           return false;
         },
         onEnd: () => {

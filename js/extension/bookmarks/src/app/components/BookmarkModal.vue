@@ -32,7 +32,7 @@ import {
   TagsInputRoot
 } from 'reka-ui';
 import type { BookmarkView, FolderView, TagSummary } from '../../types/bookmark';
-import { normalizeTag, SEARCH_SITE_TAG, SEARCH_TAG } from '../../services/searchService';
+import { getSearchCapabilityValidationError, normalizeTag, SEARCH_SITE_TAG, SEARCH_TAG } from '../../services/searchService';
 
 const props = defineProps<{
   open: boolean;
@@ -175,12 +175,13 @@ function save() {
     validationError.value = '请填写标题、URL 和目录';
     return;
   }
-  if (hasSearch.value && !/\$\{keyword\}|\{keyword\}/.test(form.searchUrl)) {
-    validationError.value = '搜索模板必须包含 {keyword}';
-    return;
-  }
-  if (hasSearchSite.value && !siteDomain.value) {
-    validationError.value = 'search_site 需要有效的 HTTP(S) URL';
+  const capabilityError = getSearchCapabilityValidationError({
+    tags: form.tags,
+    url: form.url,
+    searchUrl: form.searchUrl
+  });
+  if (capabilityError) {
+    validationError.value = capabilityError;
     return;
   }
   emit('save', {

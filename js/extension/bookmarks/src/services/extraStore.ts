@@ -22,6 +22,11 @@ export type BackupNodeMappingEntry = {
   targetId: string;
 };
 
+export type WorkspaceStorageChange = {
+  extraBookmarkIds: string[];
+  preferencesChanged: boolean;
+};
+
 async function getLocal<T>(key: string): Promise<T | undefined> {
   const data = await browser.storage.local.get(key) as Record<string, T>;
   return data[key];
@@ -160,6 +165,22 @@ export async function saveSearchEngine(searchEngine: string): Promise<void> {
 export async function saveCollapsedFolderIds(collapsedFolderIds: string[]): Promise<void> {
   await ensureStorageMigrated();
   await setLocal(COLLAPSED_FOLDERS_KEY, collapsedFolderIds);
+}
+
+export function onWorkspaceStorageChanged(handler: (change: WorkspaceStorageChange) => void): () => void {
+  const listener = (changes: Record<string, { oldValue?: unknown; newValue?: unknown }>, areaName: string) => {
+    if (areaName !== 'local') return;
+    const keys = Object.keys(changes);
+    const extraBookmarkIds = keys
+      .filter((key) => key.startsWith(EXTRA_KEY_PREFIX))
+      .map((key) => key.slice(EXTRA_KEY_PREFIX.length));
+    const preferencesChanged = keys.includes(SEARCH_ENGINE_KEY) || keys.includes(COLLAPSED_FOLDERS_KEY);
+    if (extraBookmarkIds.length || preferencesChanged) {
+      handler({ extraBookmarkIds, preferencesChanged });
+    }
+  };
+  browser.storage.onChanged.addListener(listener);
+  return () => browser.storage.onChanged.removeListener(listener);
 }
 
 export async function getBackupOriginId(): Promise<string> {

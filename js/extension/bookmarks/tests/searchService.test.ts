@@ -19,6 +19,7 @@ import {
   buildQuickSearchUrl,
   filterFolders,
   filterFoldersByTitle,
+  getSearchCapabilityValidationError,
   getQuickSearchTargets,
   getSearchEngineOptions,
   getTagSummaries,
@@ -338,4 +339,22 @@ test('维护计划只清理孤立扩展数据并规范有效引用', () => {
     mappingsRemoved: 1,
     preferencesRepaired: true
   });
+});
+
+test('搜索能力在编辑、导入和运行时共用 HTTP(S) 模板校验', () => {
+  assert.equal(getSearchCapabilityValidationError({
+    tags: ['search'],
+    url: 'https://example.com',
+    searchUrl: 'https://example.com/search?q={keyword}'
+  }), undefined);
+  assert.match(getSearchCapabilityValidationError({
+    tags: ['search'],
+    url: 'https://example.com',
+    searchUrl: 'javascript:alert({keyword})'
+  }) ?? '', /HTTP\(S\)/);
+  assert.match(getSearchCapabilityValidationError({
+    tags: ['search', 'search_site'],
+    url: 'https://example.com',
+    searchUrl: 'https://example.com/search?q={keyword}'
+  }) ?? '', /不能同时使用/);
 });

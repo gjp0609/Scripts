@@ -8,6 +8,7 @@ import type {
 } from '../types/bookmark';
 import { createBookmark, getDefaultBookmarkRoot, getSubTree, getTree, moveNode, removeBookmark, removeFolder, updateBookmark } from './bookmarkApi';
 import { isExportUrlNode, remapImportedPreferences, selectRestoreCandidate } from './backupModel';
+import { getSearchCapabilityValidationError } from './searchService';
 import {
   applyBackupNodeMappingPatch,
   applyExtraPatch,
@@ -70,11 +71,18 @@ function normalizeImportNode(value: unknown, path: string, sourceIds: Set<string
     const url = value.url;
     if (!url) throw new Error(`${path}“${title}”缺少有效 URL`);
     if (value.children !== undefined) throw new Error(`${path}“${title}”不能同时包含 URL 和子节点`);
+    const extra = normalizeBookmarkExtra(value.extra, sourceId);
+    const capabilityError = getSearchCapabilityValidationError({
+      tags: extra?.tags ?? [],
+      url,
+      searchUrl: extra?.searchUrl
+    });
+    if (capabilityError) throw new Error(`${path}“${title}”：${capabilityError}`);
     return {
       sourceId,
       title,
       url,
-      extra: normalizeBookmarkExtra(value.extra, sourceId)
+      extra
     };
   }
 

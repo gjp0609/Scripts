@@ -2,7 +2,15 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { BookmarkView, BrowserBookmarkNode, FolderView } from '../types/bookmark';
 import { getNode, onBookmarkEvent, type BookmarkEvent } from '../services/bookmarkApi';
 import { buildBookmarkView, loadBookmarkWorkspace } from '../services/bookmarkRepository';
-import { getPreferences, removeExtra, saveCollapsedFolderIds, saveSearchEngine } from '../services/extraStore';
+import {
+  getExtra,
+  getPreferences,
+  onWorkspaceStorageChanged,
+  removeExtra,
+  saveCollapsedFolderIds,
+  saveSearchEngine,
+  type WorkspaceStorageChange
+} from '../services/extraStore';
 import {
   findWorkspaceBookmark,
   moveWorkspaceBookmark,
@@ -20,7 +28,8 @@ export function useBookmarkWorkspace() {
   const loading = ref(true);
   const error = ref('');
   const searchEngine = ref('auto');
-  let cleanup: (() => void) | undefined;
+  let cleanupBookmarkEvents: (() => void) | undefined;
+  let cleanupStorageEvents: (() => void) | undefined;
   let reloadVersion = 0;
   let eventQueue = Promise.resolve();
 
@@ -229,7 +238,7 @@ export function useBookmarkWorkspace() {
 
           if (movedNode.url) {
             if (findFolder(movedNode.parentId ?? '')) {
-              upsertBookmark(buildBookmarkView(movedNode));
+              upsertBookmark(buildBookmarkView(movedNode, await getExtra(movedNode.id)));
             }
           } else if (movedNode.parentId === rootId.value) {
             await reload({ silent: true });
@@ -248,14 +257,39 @@ export function useBookmarkWorkspace() {
     }
   }
 
+  async function handleStorageChange(change: WorkspaceStorageChange) {
+    if (change.preferencesChanged) {
+      const preferences = await getPreferences();
+      searchEngine.value = preferences.searchEngine;
+      const collapsedIds = new Set(preferences.collapsedFolderIds);
+      folders.value.forEach((folder) => {
+        folder.collapsed = collapsedIds.has(folder.id);
+      });
+    }
+
+    for (const bookmarkId of change.extraBookmarkIds) {
+      const current = findBookmark(bookmarkId);
+      if (!current) continue;
+      upsertBookmark(
+        buildBookmarkView(toBrowserNode(current.bookmark), await getExtra(bookmarkId))
+      );
+    }
+  }
+
   onMounted(() => {
     void reload();
-    cleanup = onBookmarkEvent((event) => {
+    cleanupBookmarkEvents = onBookmarkEvent((event) => {
       eventQueue = eventQueue.then(() => handleBookmarkEvent(event)).catch(() => reload({ silent: true }));
+    });
+    cleanupStorageEvents = onWorkspaceStorageChanged((change) => {
+      eventQueue = eventQueue.then(() => handleStorageChange(change)).catch(() => reload({ silent: true }));
     });
   });
 
-  onUnmounted(() => cleanup?.());
+  onUnmounted(() => {
+    cleanupBookmarkEvents?.();
+    cleanupStorageEvents?.();
+  });
 
   return {
     rootId,

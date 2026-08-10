@@ -2,6 +2,20 @@
 
 目标不是把现有大文件继续拆成更多文件，而是让数据、状态、布局和副作用各自只有一个职责。重构必须按边界迁移，禁止先复制旧逻辑再用条件拼接。
 
+## 落地状态
+
+| 范围         | 当前实现                                                                                 | 状态                                   |
+| ------------ | ---------------------------------------------------------------------------------------- | -------------------------------------- |
+| 页面组合     | `App.vue` 组合工作区、搜索、CRUD、整理与导入用例                                         | 已落地，尚未单独建立 `useBookmarkPage` |
+| 三种画布     | `BrowseCanvas`、`BookmarkOrganizeCanvas`、`FolderOrganizeCanvas`                         | 已落地                                 |
+| 搜索状态     | `useSearchState` + `useSearchCommands`，浮层由 App 受控                                  | 已落地                                 |
+| 整理领域     | `organizeMoveModel` + `organizeSortableAdapters` + `useOrganizeDrag` + `useOrganizeMove` | 已落地                                 |
+| 导入事务     | `importDataModel` + `importRestoreExecutor` + `importRollback` + `importExportService`   | 已落地                                 |
+| 领域目录重组 | `layout/`、`organize/`、`interaction/` 物理目录                                          | 目标结构，暂不为移动文件而移动文件     |
+| 页面目录重组 | `page/`、`browse/`、`search/`、`tags/` 等物理目录                                        | 目标结构，仅在职责继续增长时迁移       |
+
+以下章节同时包含已落地约束和目标边界；目标结构不得被描述为当前已有文件。
+
 ## 1. 分层
 
 ```text
@@ -29,7 +43,7 @@ UI 组件
 - 数据层不得知道 Macy、Sortable、Vue ref、DOM class 或浮层状态。
 - 数据层所有移动函数接受明确的领域输入，返回真实浏览器节点或失败，不通过全局数组副作用传递结果。
 
-### 1.3 领域层
+### 1.3 领域层目标
 
 - `searchService`：纯函数解析普通、`#`、`!` 查询，引擎和 tag 候选，构造安全 URL。
 - `layout/`：维护三种画布的布局生命周期，不拥有书签数据写回。
@@ -39,7 +53,7 @@ UI 组件
 
 领域层应尽可能无 DOM、无计时器、可单元测试。
 
-### 1.4 页面协调层
+### 1.4 页面协调层目标
 
 页面协调器只负责组合用例和把状态传给组件：
 
@@ -54,11 +68,11 @@ UI 组件
 
 ## 2. 三种画布必须隔离
 
-| 画布 | 布局 | 拖拽 | 折叠状态 | 约束 |
-| --- | --- | --- | --- | --- |
-| 浏览模式 | Macy，`trueOrder: false` | 无 | 持久浏览偏好 | 只优化视觉扫描 |
-| 整理模式-书签 | 独立 Macy，`trueOrder: true` | 书签 Sortable | 临时整理状态 | 支持真实投放区和跨目录 |
-| 整理模式-目录 | 正常流 CSS Grid | 目录 Sortable | 无展开状态 | 仅标题、等高、唯一预测槽 |
+| 画布          | 布局                         | 拖拽          | 折叠状态     | 约束                     |
+| ------------- | ---------------------------- | ------------- | ------------ | ------------------------ |
+| 浏览模式      | Macy，`trueOrder: false`     | 无            | 持久浏览偏好 | 只优化视觉扫描           |
+| 整理模式-书签 | 独立 Macy，`trueOrder: true` | 书签 Sortable | 临时整理状态 | 支持真实投放区和跨目录   |
+| 整理模式-目录 | 正常流 CSS Grid              | 目录 Sortable | 无展开状态   | 仅标题、等高、唯一预测槽 |
 
 - 三者共享只读数据投影，不共享布局实例、拖拽实例或临时折叠集合。
 - 切换画布必须先销毁旧实例，再挂载新实例；不能在同一实例上不断切换 flags。
@@ -66,7 +80,7 @@ UI 组件
 
 ## 3. 组件边界
 
-建议目标树：
+目标树（尚未按物理目录完全迁移）：
 
 ```text
 app/
@@ -116,7 +130,8 @@ app/
 - 引擎 selected 和 active 属于搜索状态；组件不得内部复制业务索引。
 - 浏览折叠偏好属于浏览状态；整理临时折叠属于整理状态。
 - `pendingMove` 和写回忙碌属于整理用例；不能通过按钮 class 表达。
-- 搜索下拉与引擎菜单的互斥属于搜索协调器；独立鼠标浮层不强制进入同一个全局状态机。
+- 搜索下拉、引擎菜单、tag 面板和功能菜单由 App 持有受控 open 状态；同一时刻只允许一个瞬时交互表面处于打开状态。
+- 子组件不得复制 open 布尔量或通过递增 token 广播关闭；Esc 直接修改唯一状态源。
 - 搜索引擎 selected、active、hover 由 `useSearchState` 唯一持有；`HeaderBar` 只能受控渲染，不得拥有自己的 active 索引。
 - `!` 查询隐藏普通书签搜索结果，但保留书签部分背景和当前引擎入口。
 
@@ -135,9 +150,9 @@ app/
 
 ```ts
 type CanvasLayout = {
-  mount(container: HTMLElement): void;
-  update(input: LayoutInput): void;
-  destroy(): void;
+    mount(container: HTMLElement): void;
+    update(input: LayoutInput): void;
+    destroy(): void;
 };
 ```
 
@@ -190,3 +205,5 @@ Chrome bookmarks API 不提供跨书签与 storage 的原子事务。导入必�
 - 页面协调器不直接操作多个布局库实例。
 - 新增修复不得只增加条件分支；若职责不清，先移动职责再修行为。
 - 每个缺陷必须有回归测试或明确的人工验证步骤。
+- 全部正式文件使用项目根 `prettier.config.mjs`；格式化不得包含 `wxt.config.tmp.ts` 或任务临时文件。
+- `npm run lint` 必须通过严格 TypeScript 未使用声明检查，`npm run format:check` 必须通过格式门禁。

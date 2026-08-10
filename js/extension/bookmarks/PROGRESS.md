@@ -2,8 +2,8 @@
 
 ## 当前快照
 
-- 已提交基线：`0bd93e4 完善浏览器书签数据维护与恢复保护`。
-- 当前批次：修复 Review 确认的拖拽滚动落点、跨页面扩展数据同步和搜索模板校验一致性。
+- 已提交基线：`aee9ba2 完善书签拖拽及扩展状态一致性`。
+- 当前批次：按全插件代码风格 Review 统一状态所有权、领域规范化、拖拽适配边界、导入事务、测试组织和格式门禁。
 - 浏览模式：保持 Pages 单页面的 Macy 最短列布局、48px 内容网格和 24px 目录间距，是最高优先级回归边界。
 - 测试页面：WXT 唯一监听 `http://localhost:3000`，扩展页加载 25 个真实目录。
 - 用户验收：自动回归通过不代表视觉确认完成，最终仍由用户统一测试。
@@ -47,6 +47,9 @@
 - `useBookmarkWorkspace`：工作区数据、浏览偏好和外部书签事件。
 - `useBookmarkCrud`、`useImportExport`：表单与备份用例。
 - `useOrganizeMode`、`useOrganizeMove`、`useOrganizeDrag`：整理状态、写回和拖拽会话。
+- `organizeSortableAdapters`：分别封装目录与书签的 Sortable 配置，不拥有预测和写回状态。
+- `bookmarkExtraModel`：唯一 tag 与 extra 规范化规则。
+- `importDataModel`、`importRestoreExecutor`、`importRollback`：分别负责导入校验、恢复执行和补偿校验。
 - `App.vue` 只组合页面用例、计算当前画布投影并绑定组件事件，不直接调用书签仓储。
 
 ## 当前验证

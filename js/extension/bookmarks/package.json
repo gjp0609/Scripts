@@ -1,27 +1,30 @@
 {
-  "name": "markhub-bookmarks-extension",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "wxt",
-    "build": "wxt prepare && vue-tsc --noEmit && wxt build",
-    "test": "node --test \"tests/**/*.test.ts\"",
-    "typecheck": "wxt prepare && vue-tsc --noEmit",
-    "zip": "wxt zip"
-  },
-  "dependencies": {
-    "lucide-vue-next": "^0.468.0",
-    "macy": "^2.5.1",
-    "reka-ui": "^2.10.1",
-    "sortablejs": "^1.15.2",
-    "vue": "^3.5.0"
-  },
-  "devDependencies": {
-    "@types/sortablejs": "^1.15.8",
-    "@vitejs/plugin-vue": "^6.0.0",
-    "typescript": "^5.7.0",
-    "vue-tsc": "^2.1.10",
-    "wxt": "^0.20.0"
-  }
+    "name": "markhub-bookmarks-extension",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "wxt",
+        "build": "wxt prepare && vue-tsc --noEmit && wxt build",
+        "format": "prettier --config ../../../prettier.config.mjs --write \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"*.md\" package.json tsconfig.json wxt.config.ts",
+        "format:check": "prettier --config ../../../prettier.config.mjs --check \"src/**/*.{ts,vue,css,html}\" \"tests/**/*.ts\" \"*.md\" package.json tsconfig.json wxt.config.ts",
+        "lint": "wxt prepare && vue-tsc --noEmit --noUnusedLocals --noUnusedParameters",
+        "test": "node --test \"tests/**/*.test.ts\"",
+        "typecheck": "wxt prepare && vue-tsc --noEmit",
+        "zip": "wxt zip"
+    },
+    "dependencies": {
+        "lucide-vue-next": "^0.468.0",
+        "macy": "^2.5.1",
+        "reka-ui": "^2.10.1",
+        "sortablejs": "^1.15.2",
+        "vue": "^3.5.0"
+    },
+    "devDependencies": {
+        "@types/sortablejs": "^1.15.8",
+        "@vitejs/plugin-vue": "^6.0.0",
+        "typescript": "^5.7.0",
+        "vue-tsc": "^2.1.10",
+        "wxt": "^0.20.0"
+    }
 }

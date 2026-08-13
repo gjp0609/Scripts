@@ -7,7 +7,7 @@ function optionalTrimmedString(value: unknown): string | undefined {
 }
 
 export function normalizeTag(tag: string): string {
-    return tag.trim().toLocaleLowerCase();
+    return tag.trim().toLowerCase();
 }
 
 export function normalizeTags(values: readonly unknown[]): string[] {

@@ -25,7 +25,12 @@ test('导入校验使用统一 extra 规范化并拒绝无效搜索模板', () =
                     sourceId: 'bookmark-1',
                     title: '引擎',
                     url: 'https://example.com',
-                    extra: { tags: [' search ', 'SEARCH'], searchUrl: ' https://example.com?q={keyword} ' },
+                    extra: {
+                        bookmarkId: 'bookmark-1',
+                        tags: [' search ', 'SEARCH'],
+                        searchUrl: ' https://example.com?q={keyword} ',
+                        updatedAt: 1,
+                    },
                 },
             ],
         },
@@ -45,13 +50,45 @@ test('导入校验使用统一 extra 规范化并拒绝无效搜索模板', () =
                             sourceId: 'bookmark-1',
                             title: '引擎',
                             url: 'https://example.com',
-                            extra: { tags: ['search'], searchUrl: 'javascript:alert({keyword})' },
+                            extra: {
+                                bookmarkId: 'bookmark-1',
+                                tags: ['search'],
+                                searchUrl: 'javascript:alert({keyword})',
+                                updatedAt: 1,
+                            },
                         },
                     ],
                 },
                 preferences: { collapsedFolderIds: [], searchEngine: 'auto' },
             }),
         /HTTP\(S\)/,
+    );
+});
+
+test('导入严格拒绝损坏的 v3 extra schema', () => {
+    const createData = (extra: unknown) => ({
+        version: 3,
+        originId: 'origin',
+        root: {
+            children: [{ sourceId: 'bookmark-1', title: '书签', url: 'https://example.com', extra }],
+        },
+        preferences: { collapsedFolderIds: [], searchEngine: 'auto' },
+    });
+    assert.throws(
+        () => validateFullImportData(createData({ bookmarkId: 'bookmark-1', tags: 'work', updatedAt: 1 })),
+        /tag 格式无效/,
+    );
+    assert.throws(
+        () => validateFullImportData(createData({ bookmarkId: 'other', tags: [], updatedAt: 1 })),
+        /书签 ID 不匹配/,
+    );
+    assert.throws(
+        () => validateFullImportData(createData({ bookmarkId: 'bookmark-1', tags: [], updatedAt: -1 })),
+        /updatedAt 格式无效/,
+    );
+    assert.throws(
+        () => validateFullImportData(createData({ bookmarkId: 'bookmark-1', tags: [], description: 1, updatedAt: 1 })),
+        /description 格式无效/,
     );
 });
 

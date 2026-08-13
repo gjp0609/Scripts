@@ -4,15 +4,15 @@
 
 ## 落地状态
 
-| 范围         | 当前实现                                                                                 | 状态                                   |
-| ------------ | ---------------------------------------------------------------------------------------- | -------------------------------------- |
-| 页面组合     | `App.vue` 组合工作区、搜索、CRUD、整理与导入用例                                         | 已落地，尚未单独建立 `useBookmarkPage` |
-| 三种画布     | `BrowseCanvas`、`BookmarkOrganizeCanvas`、`FolderOrganizeCanvas`                         | 已落地                                 |
-| 搜索状态     | `useSearchState` + `useSearchCommands`，浮层由 App 受控                                  | 已落地                                 |
-| 整理领域     | `organizeMoveModel` + `organizeSortableAdapters` + `useOrganizeDrag` + `useOrganizeMove` | 已落地                                 |
-| 导入事务     | `importDataModel` + `importRestoreExecutor` + `importRollback` + `importExportService`   | 已落地                                 |
-| 领域目录重组 | `layout/`、`organize/`、`interaction/` 物理目录                                          | 目标结构，暂不为移动文件而移动文件     |
-| 页面目录重组 | `page/`、`browse/`、`search/`、`tags/` 等物理目录                                        | 目标结构，仅在职责继续增长时迁移       |
+| 范围         | 当前实现                                                                                                                | 状态                                   |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| 页面组合     | `App.vue` 组合工作区、搜索、CRUD、整理与导入用例                                                                        | 已落地，尚未单独建立 `useBookmarkPage` |
+| 三种画布     | `BrowseCanvas`、`BookmarkOrganizeCanvas`、`FolderOrganizeCanvas`                                                        | 已落地                                 |
+| 搜索状态     | `useSearchState` + `useSearchCommands`，浮层由 App 受控                                                                 | 已落地                                 |
+| 整理领域     | `organizeMoveModel` + 两种 drag session + scroll controller + Sortable adapters + `useOrganizeDrag` + `useOrganizeMove` | 已落地                                 |
+| 导入事务     | `importDataModel` + `importTransactionModel` + `importRestoreExecutor` + `importRollback` + `importExportService`       | 已落地                                 |
+| 领域目录重组 | `layout/`、`organize/`、`interaction/` 物理目录                                                                         | 目标结构，暂不为移动文件而移动文件     |
+| 页面目录重组 | `page/`、`browse/`、`search/`、`tags/` 等物理目录                                                                       | 目标结构，仅在职责继续增长时迁移       |
 
 以下章节同时包含已落地约束和目标边界；目标结构不得被描述为当前已有文件。
 
@@ -170,9 +170,15 @@ type CanvasLayout = {
 
 Chrome bookmarks API 不提供跨书签与 storage 的原子事务。导入必须保存原根子树快照，逐项记录补偿失败，并在补偿后重新读取根子树校验结构、标题、URL 和顺序；只有校验一致才能认为自动恢复完成。维护计划是幂等的扩展数据修复，不得借维护名义修改浏览器主数据；应用维护计划前必须重新读取 storage，只修改仍与计划快照一致的键，避免覆盖 Popup 或其他页面刚完成的写入。
 
+v3 导入文件属于当前版本的严格数据契约，不承担旧格式兼容。存在 extra 时必须完整满足 `BookmarkExtra` schema：`bookmarkId` 与 `sourceId` 一致，tags 为字符串数组，可选字段类型正确，`updatedAt` 为非负有限数。schema 校验通过后才允许执行 trim、tag 去重等规范化，禁止用默认值静默掩盖损坏备份。
+
+导入事务通过显式端口绑定 bookmarks API 与 storage。正式测试必须覆盖恢复执行、extra、映射、偏好四个失败阶段，验证 storage 尝试范围、created/changed journal、逆序补偿、二次补偿失败提示和最终树 fingerprint；只测试候选匹配不算事务覆盖。
+
 ## 6. 拖拽落点算法
 
 整理模式-书签只由窗口级鼠标/触摸移动事件维护最后有效指针坐标，Sortable 的 `onMove` 不得用缺失或伪造的 `(0,0)` 坐标覆盖它。滚轮期间暂停边缘自动滚动，鼠标再次移动后恢复，避免两个方向相反的滚动源竞争。插入线锚点和前后位置变化不改变目录几何，不得触发 Macy 重排；只有目标目录切换导致动态展开、折叠状态或数据结构变化时才重算布局。
+
+目录与书签拖拽必须使用独立 session：各自拥有 DOM 命中、projection 和 MoveRequest。指针、滚轮、边缘滚动和 RAF 由共享 scroll controller 管理；Sortable adapters 只管理库配置；`useOrganizeDrag` 只负责实例启停、顶层会话和写回调度。任何模块不得同时重新实现另一模式的落点规则。
 
 拖拽计算拆为纯函数：
 

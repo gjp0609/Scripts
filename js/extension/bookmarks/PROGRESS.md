@@ -2,8 +2,8 @@
 
 ## 当前快照
 
-- 已提交基线：`aee9ba2 完善书签拖拽及扩展状态一致性`。
-- 当前批次：按全插件代码风格 Review 统一状态所有权、领域规范化、拖拽适配边界、导入事务、测试组织和格式门禁。
+- 已提交基线：`c55a150 重构书签插件代码结构并统一格式`。
+- 当前批次：修复提交后独立 Review 的事务测试、严格导入 schema、拖拽会话边界和语义一致性问题。
 - 浏览模式：保持 Pages 单页面的 Macy 最短列布局、48px 内容网格和 24px 目录间距，是最高优先级回归边界。
 - 测试页面：WXT 唯一监听 `http://localhost:3000`，扩展页加载 25 个真实目录。
 - 用户验收：自动回归通过不代表视觉确认完成，最终仍由用户统一测试。
@@ -48,13 +48,15 @@
 - `useBookmarkCrud`、`useImportExport`：表单与备份用例。
 - `useOrganizeMode`、`useOrganizeMove`、`useOrganizeDrag`：整理状态、写回和拖拽会话。
 - `organizeSortableAdapters`：分别封装目录与书签的 Sortable 配置，不拥有预测和写回状态。
+- `folderDragSession`、`bookmarkDragSession`：分别拥有目录和书签的 DOM 命中、projection 与 MoveRequest。
+- `organizeDragScrollController`：只拥有拖拽期间的指针、滚轮、边缘滚动和 RAF 生命周期。
 - `bookmarkExtraModel`：唯一 tag 与 extra 规范化规则。
-- `importDataModel`、`importRestoreExecutor`、`importRollback`：分别负责导入校验、恢复执行和补偿校验。
+- `importDataModel`、`importTransactionModel`、`importRestoreExecutor`、`importRollback`：分别负责严格 schema、事务编排、恢复执行和补偿校验；浏览器 API/storage 通过显式端口注入。
 - `App.vue` 只组合页面用例、计算当前画布投影并绑定组件事件，不直接调用书签仓储。
 
 ## 当前验证
 
-- 28 项逻辑测试通过。
+- 35 项逻辑测试通过，包含导入四阶段失败、journal、逆序补偿、二次失败和最终树校验。
 - `npm run typecheck` 通过。
 - `npm run build` 通过。
 - 隔离 Chromium 主流程回归通过：浏览保护、普通/`#` 搜索、引擎、Esc、模态、两种整理画布、拖拽、编辑和删除，控制台错误为 0。

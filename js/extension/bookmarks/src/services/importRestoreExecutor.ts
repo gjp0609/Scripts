@@ -1,46 +1,26 @@
-import type { BookmarkExtra, BrowserBookmarkNode, ExportBookmarkNode, ExportFolderNode } from '../types/bookmark';
-import { createBookmark, moveNode, updateBookmark } from './bookmarkApi';
-import { isExportUrlNode, selectRestoreCandidate } from './backupModel';
+import type { BrowserBookmarkNode, ExportBookmarkNode, ExportFolderNode } from '../types/bookmark';
+import { isExportUrlNode, selectRestoreCandidate } from './backupModel.ts';
+import type { ImportJournal } from './importTransactionTypes.ts';
 
-export type CreatedImportNode = {
-    id: string;
-    folder: boolean;
+export type ImportRestoreApi = {
+    createBookmark: (input: {
+        parentId: string;
+        index?: number;
+        title: string;
+        url?: string;
+    }) => Promise<BrowserBookmarkNode>;
+    moveNode: (id: string, input: { parentId?: string; index?: number }) => Promise<BrowserBookmarkNode>;
+    updateBookmark: (id: string, input: { title?: string; url?: string }) => Promise<BrowserBookmarkNode>;
 };
 
-export type ChangedImportNode = {
-    id: string;
-    parentId?: string;
-    index?: number;
-    title: string;
-    url?: string;
+export type ImportRestoreOptions = {
+    tree: BrowserBookmarkNode[];
+    root: BrowserBookmarkNode;
+    sources: ExportBookmarkNode[];
+    sameOrigin: boolean;
+    originalNodeMappings: ReadonlyMap<string, string>;
+    journal: ImportJournal;
 };
-
-export type ImportJournal = {
-    idMap: Map<string, string>;
-    createdNodes: CreatedImportNode[];
-    changedNodes: Map<string, ChangedImportNode>;
-    extraChanges: Map<string, BookmarkExtra | undefined>;
-    mappingChanges: Map<string, string>;
-};
-
-export function createImportJournal(): ImportJournal {
-    return {
-        idMap: new Map(),
-        createdNodes: [],
-        changedNodes: new Map(),
-        extraChanges: new Map(),
-        mappingChanges: new Map(),
-    };
-}
-
-export function findBookmarkNodeById(nodes: BrowserBookmarkNode[], id: string): BrowserBookmarkNode | undefined {
-    for (const node of nodes) {
-        if (node.id === id) return node;
-        const found = node.children?.length ? findBookmarkNodeById(node.children, id) : undefined;
-        if (found) return found;
-    }
-    return undefined;
-}
 
 function indexNodes(
     nodes: BrowserBookmarkNode[],
@@ -63,14 +43,7 @@ function detachNode(nodes: BrowserBookmarkNode[], id: string): BrowserBookmarkNo
     return undefined;
 }
 
-export async function executeImportRestore(options: {
-    tree: BrowserBookmarkNode[];
-    root: BrowserBookmarkNode;
-    sources: ExportBookmarkNode[];
-    sameOrigin: boolean;
-    originalNodeMappings: ReadonlyMap<string, string>;
-    journal: ImportJournal;
-}): Promise<void> {
+export async function executeImportRestore(options: ImportRestoreOptions, api: ImportRestoreApi): Promise<void> {
     const nodesById = indexNodes(options.tree);
     const claimedTargetIds = new Set<string>();
 
@@ -90,7 +63,7 @@ export async function executeImportRestore(options: {
             );
 
             if (!target) {
-                target = await createBookmark({
+                target = await api.createBookmark({
                     parentId: targetParentId,
                     index: targetIndex,
                     title: source.title,
@@ -113,14 +86,17 @@ export async function executeImportRestore(options: {
 
                 const nextUrl = isExportUrlNode(source) ? source.url : undefined;
                 if (target.title !== source.title || target.url !== nextUrl) {
-                    await updateBookmark(target.id, { title: source.title, ...(nextUrl ? { url: nextUrl } : {}) });
+                    await api.updateBookmark(target.id, {
+                        title: source.title,
+                        ...(nextUrl ? { url: nextUrl } : {}),
+                    });
                     target.title = source.title;
                     target.url = nextUrl;
                 }
 
                 const needsMove = target.parentId !== targetParentId || targetChildren[targetIndex]?.id !== target.id;
                 if (needsMove) {
-                    await moveNode(target.id, { parentId: targetParentId, index: targetIndex });
+                    await api.moveNode(target.id, { parentId: targetParentId, index: targetIndex });
                     detachNode(options.tree, target.id);
                     targetChildren.splice(targetIndex, 0, target);
                 }

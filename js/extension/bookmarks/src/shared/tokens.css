@@ -31,6 +31,7 @@
     --color-text-primary: #171918;
     --color-text-secondary: #505652;
     --color-text-tertiary: var(--muted);
+    --color-text-on-primary: #ffffff;
     --color-border: var(--border-fixed);
     --state-error: var(--danger);
     --shadow-sm: none;

@@ -1071,7 +1071,7 @@ textarea:focus-visible,
 .button-primary {
     border-color: #3f675c;
     background: #3f675c;
-    color: var(--color-bg-elevated);
+    color: var(--color-text-on-primary);
 }
 .button-danger {
     border-color: #9c463e;

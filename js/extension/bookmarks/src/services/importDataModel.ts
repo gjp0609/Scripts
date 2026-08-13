@@ -12,6 +12,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
 }
 
+function validateOptionalString(value: unknown, field: string, path: string): void {
+    if (value !== undefined && typeof value !== 'string') throw new Error(`${path}的 ${field} 格式无效`);
+}
+
+function normalizeImportExtra(value: unknown, sourceId: string, path: string) {
+    if (value === undefined) return undefined;
+    if (!isRecord(value)) throw new Error(`${path}的附加数据格式无效`);
+    if (value.bookmarkId !== sourceId) throw new Error(`${path}的附加数据书签 ID 不匹配`);
+    if (!Array.isArray(value.tags) || !value.tags.every((tag) => typeof tag === 'string')) {
+        throw new Error(`${path}的 tag 格式无效`);
+    }
+    validateOptionalString(value.description, 'description', path);
+    validateOptionalString(value.searchUrl, 'searchUrl', path);
+    validateOptionalString(value.faviconOverride, 'faviconOverride', path);
+    if (typeof value.updatedAt !== 'number' || !Number.isFinite(value.updatedAt) || value.updatedAt < 0) {
+        throw new Error(`${path}的 updatedAt 格式无效`);
+    }
+    return normalizeBookmarkExtra(value, sourceId)!;
+}
+
 function normalizeImportNode(value: unknown, path: string, sourceIds: Set<string>): ExportBookmarkNode {
     if (!isRecord(value)) throw new Error(`${path}数据无效`);
     if (typeof value.sourceId !== 'string' || !value.sourceId.trim()) throw new Error(`${path}缺少源节点 ID`);
@@ -26,7 +46,7 @@ function normalizeImportNode(value: unknown, path: string, sourceIds: Set<string
         const url = value.url;
         if (!url) throw new Error(`${path}“${title}”缺少有效 URL`);
         if (value.children !== undefined) throw new Error(`${path}“${title}”不能同时包含 URL 和子节点`);
-        const extra = normalizeBookmarkExtra(value.extra, sourceId);
+        const extra = normalizeImportExtra(value.extra, sourceId, `${path}“${title}”`);
         const capabilityError = getSearchCapabilityValidationError({
             tags: extra?.tags ?? [],
             url,

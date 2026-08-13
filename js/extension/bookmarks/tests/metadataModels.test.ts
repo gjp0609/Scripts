@@ -8,10 +8,14 @@ import { getSearchCapabilityValidationError } from '../src/services/searchServic
 
 test('tag 和 extra 共用大小写无关的规范化规则', () => {
     assert.deepEqual(normalizeTags([' work ', 'WORK', '', 1]), ['work']);
-    const extra = normalizeBookmarkExtra({ tags: [' work ', 'WORK'], description: ' note ' }, 'bookmark-1');
+    const extra = normalizeBookmarkExtra(
+        { tags: [' work ', 'WORK'], description: ' note ', faviconOverride: ' zentao.net ' },
+        'bookmark-1',
+    );
     assert.equal(extra?.bookmarkId, 'bookmark-1');
     assert.deepEqual(extra?.tags, ['work']);
     assert.equal(extra?.description, 'note');
+    assert.equal(extra?.faviconOverride, 'https://zentao.net/');
     assert.equal(Number.isFinite(extra?.updatedAt), true);
 });
 
@@ -89,6 +93,18 @@ test('导入严格拒绝损坏的 v3 extra schema', () => {
     assert.throws(
         () => validateFullImportData(createData({ bookmarkId: 'bookmark-1', tags: [], description: 1, updatedAt: 1 })),
         /description 格式无效/,
+    );
+    assert.throws(
+        () =>
+            validateFullImportData(
+                createData({
+                    bookmarkId: 'bookmark-1',
+                    tags: [],
+                    faviconOverride: 'file:///favicon.ico',
+                    updatedAt: 1,
+                }),
+            ),
+        /图标地址必须是有效的 HTTP\(S\) 地址或域名/,
     );
 });
 

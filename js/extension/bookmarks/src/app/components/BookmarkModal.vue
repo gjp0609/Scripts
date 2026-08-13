@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, reactive, ref, watch } from 'vue';
+    import { computed, nextTick, reactive, ref, watch } from 'vue';
     import { Check, ChevronDown, Plus, X } from 'lucide-vue-next';
     import {
         ComboboxAnchor,
@@ -59,14 +59,24 @@
                 tags: string[];
                 description?: string;
                 searchUrl?: string;
+                faviconOverride?: string;
             },
         ];
     }>();
 
-    const form = reactive({ title: '', url: '', parentId: '', tags: [] as string[], description: '', searchUrl: '' });
+    const form = reactive({
+        title: '',
+        url: '',
+        parentId: '',
+        tags: [] as string[],
+        description: '',
+        searchUrl: '',
+        faviconOverride: '',
+    });
     const tagInput = ref('');
     const tagMenuOpen = ref(false);
     const validationError = ref('');
+    const titleInput = ref<HTMLInputElement>();
 
     const knownTags = computed(() => {
         const values = new Map(props.tags.map((tag) => [tag.normalizedName, tag.name]));
@@ -130,6 +140,7 @@
             form.tags = [...(props.bookmark?.extra.tags ?? [])];
             form.description = props.bookmark?.extra.description ?? '';
             form.searchUrl = props.bookmark?.extra.searchUrl ?? '';
+            form.faviconOverride = props.bookmark?.extra.faviconOverride ?? '';
             tagInput.value = '';
             validationError.value = '';
         },
@@ -138,6 +149,14 @@
 
     function updateOpen(value: boolean) {
         if (!value && !props.pending) emit('close');
+    }
+
+    function focusTitle(event: Event) {
+        event.preventDefault();
+        void nextTick(() => {
+            titleInput.value?.focus();
+            titleInput.value?.select();
+        });
     }
 
     function addTag(rawValue: string) {
@@ -217,6 +236,7 @@
             tags: form.tags,
             description: form.description.trim() || undefined,
             searchUrl: hasSearch.value ? form.searchUrl.trim() : undefined,
+            faviconOverride: form.faviconOverride.trim() || undefined,
         });
     }
 </script>
@@ -225,7 +245,11 @@
     <DialogRoot :open="open" @update:open="updateOpen">
         <DialogPortal>
             <DialogOverlay class="dialog-overlay" @pointerdown.self="!pending && emit('close')" />
-            <DialogContent class="dialog-content bookmark-dialog" @escape-key-down="pending && $event.preventDefault()">
+            <DialogContent
+                class="dialog-content bookmark-dialog"
+                @open-auto-focus="focusTitle"
+                @escape-key-down="pending && $event.preventDefault()"
+            >
                 <header class="dialog-head">
                     <div
                         ><DialogTitle>{{ bookmark ? '编辑书签' : '添加书签' }}</DialogTitle
@@ -239,9 +263,12 @@
                 <form class="editor-form" @submit.prevent="save">
                     <label
                         ><span>标题</span
-                        ><input v-model="form.title" :disabled="pending" required type="text" autofocus
+                        ><input ref="titleInput" v-model="form.title" :disabled="pending" required type="text"
                     /></label>
                     <label><span>URL</span><input v-model="form.url" :disabled="pending" required type="text" /></label>
+                    <label
+                        ><span>图标地址</span><input v-model="form.faviconOverride" :disabled="pending" type="text"
+                    /></label>
                     <label>
                         <span>目录</span>
                         <SelectRoot v-model="form.parentId" :disabled="pending">

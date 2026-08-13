@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { X } from 'lucide-vue-next';
-    import { ref, watch } from 'vue';
+    import { nextTick, ref, watch } from 'vue';
     import { DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui';
     import type { FolderView } from '../../types/bookmark';
 
@@ -17,6 +17,7 @@
     }>();
 
     const title = ref('');
+    const titleInput = ref<HTMLInputElement>();
 
     watch(
         () => [props.open, props.folder] as const,
@@ -29,13 +30,25 @@
     function updateOpen(value: boolean) {
         if (!value && !props.pending) emit('close');
     }
+
+    function focusTitle(event: Event) {
+        event.preventDefault();
+        void nextTick(() => {
+            titleInput.value?.focus();
+            titleInput.value?.select();
+        });
+    }
 </script>
 
 <template>
     <DialogRoot :open="open" @update:open="updateOpen">
         <DialogPortal>
             <DialogOverlay class="dialog-overlay" @pointerdown.self="!pending && emit('close')" />
-            <DialogContent class="dialog-content folder-dialog" @escape-key-down="pending && $event.preventDefault()">
+            <DialogContent
+                class="dialog-content folder-dialog"
+                @open-auto-focus="focusTitle"
+                @escape-key-down="pending && $event.preventDefault()"
+            >
                 <header class="dialog-head">
                     <div>
                         <DialogTitle>{{ folder ? '编辑目录' : '添加目录' }}</DialogTitle>
@@ -48,7 +61,7 @@
                 <form class="editor-form" @submit.prevent="emit('save', { id: folder?.id, title: title.trim() })">
                     <label>
                         <span>目录名称</span>
-                        <input v-model="title" :disabled="pending" required type="text" autofocus />
+                        <input ref="titleInput" v-model="title" :disabled="pending" required type="text" />
                     </label>
                     <p v-if="error" class="form-error" role="alert">{{ error }}</p>
                     <footer class="dialog-foot">

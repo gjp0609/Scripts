@@ -87,9 +87,9 @@
         <PopoverPortal>
             <PopoverContent
                 class="tag-panel"
-                side="right"
-                align="start"
-                :side-offset="0"
+                side="bottom"
+                align="end"
+                :side-offset="6"
                 @pointerenter="openPanel"
                 @pointerleave="scheduleClosePanel"
                 @focusin="openPanel"

@@ -1,15 +1,6 @@
 <script setup lang="ts">
     import { computed, ref } from 'vue';
-    import {
-        FolderPlus,
-        Maximize2,
-        Menu,
-        Minimize2,
-        Plus,
-        RefreshCw,
-        Settings,
-        SlidersHorizontal,
-    } from 'lucide-vue-next';
+    import { Maximize2, Menu, Minimize2, Pencil, RefreshCw, Settings } from 'lucide-vue-next';
     import { ScrollAreaRoot, ScrollAreaScrollbar, ScrollAreaThumb, ScrollAreaViewport } from 'reka-ui';
     import { filterFolders, filterFoldersByTitle } from '../services/searchService';
     import { useBookmarkWorkspace } from './useBookmarkWorkspace';
@@ -271,15 +262,63 @@
             @engine-keydown="searchCommands.handleEngineKeydown"
             @search-box-ready="overlayPosition.setSearchBoxElement"
             @search-input-ready="searchCommands.setSearchInputElement"
-        />
-
-        <TagPanel
-            :tags="tagSummaries"
-            :query="query"
-            :open="tagPanelActive"
-            @select="searchCommands.selectTag"
-            @update:open="setTagPanelOpen"
-        />
+        >
+            <template #tools>
+                <nav
+                    v-if="mode === 'browse'"
+                    class="utility-dock"
+                    :class="{ open: utilityDockOpen }"
+                    aria-label="书签工具"
+                    @pointerenter="setUtilityDockOpen(true)"
+                    @pointerleave="setUtilityDockOpen(false)"
+                    @focusin="setUtilityDockOpen(true)"
+                    @focusout="handleUtilityFocusOut"
+                >
+                    <div class="utility-dock-actions">
+                        <button type="button" aria-label="备份与设置" @click="runUtilityAction(openImportExport)"
+                            ><Settings :size="15"
+                        /></button>
+                        <button
+                            type="button"
+                            aria-label="刷新全部图标"
+                            :class="{ refreshing: faviconRefreshing }"
+                            @click="runUtilityAction(faviconRefresh.refreshAll)"
+                            ><RefreshCw :size="15"
+                        /></button>
+                        <button
+                            type="button"
+                            aria-label="全部展开"
+                            @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(false))"
+                            ><Maximize2 :size="15"
+                        /></button>
+                        <button
+                            type="button"
+                            aria-label="全部收缩"
+                            @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(true))"
+                            ><Minimize2 :size="15"
+                        /></button>
+                        <button type="button" aria-label="整理书签" @click="runUtilityAction(enterOrganize)"
+                            ><Pencil :size="15"
+                        /></button>
+                    </div>
+                    <button
+                        class="utility-dock-trigger"
+                        type="button"
+                        aria-label="书签工具"
+                        @click="setUtilityDockOpen(true)"
+                        ><Menu :size="15"
+                    /></button>
+                </nav>
+                <TagPanel
+                    v-if="mode === 'browse'"
+                    :tags="tagSummaries"
+                    :query="query"
+                    :open="tagPanelActive"
+                    @select="searchCommands.selectTag"
+                    @update:open="setTagPanelOpen"
+                />
+            </template>
+        </HeaderBar>
 
         <OrganizeToolbar
             v-if="mode === 'organize'"
@@ -291,54 +330,6 @@
             @collapse-all="setOrganizeFoldersCollapsed(true)"
             @exit="exitOrganize"
         />
-
-        <nav
-            v-if="mode === 'browse'"
-            class="utility-dock"
-            :class="{ 'open': utilityDockOpen, 'with-tags': tagSummaries.length > 0 }"
-            aria-label="书签工具"
-            @pointerenter="setUtilityDockOpen(true)"
-            @pointerleave="setUtilityDockOpen(false)"
-            @focusin="setUtilityDockOpen(true)"
-            @focusout="handleUtilityFocusOut"
-        >
-            <button class="utility-dock-trigger" type="button" aria-label="书签工具" @click="setUtilityDockOpen(true)"
-                ><Menu :size="15"
-            /></button>
-            <div class="utility-dock-actions">
-                <button type="button" aria-label="添加书签" @click="runUtilityAction(startAddBookmark)"
-                    ><Plus :size="15"
-                /></button>
-                <button type="button" aria-label="添加目录" @click="runUtilityAction(startAddFolder)"
-                    ><FolderPlus :size="15"
-                /></button>
-                <button type="button" aria-label="整理书签" @click="runUtilityAction(enterOrganize)"
-                    ><SlidersHorizontal :size="15"
-                /></button>
-                <button
-                    type="button"
-                    aria-label="全部展开"
-                    @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(false))"
-                    ><Maximize2 :size="15"
-                /></button>
-                <button
-                    type="button"
-                    aria-label="全部收缩"
-                    @click="runUtilityAction(() => workspace.setAllFoldersCollapsed(true))"
-                    ><Minimize2 :size="15"
-                /></button>
-                <button
-                    type="button"
-                    aria-label="刷新全部图标"
-                    :class="{ refreshing: faviconRefreshing }"
-                    @click="runUtilityAction(faviconRefresh.refreshAll)"
-                    ><RefreshCw :size="15"
-                /></button>
-                <button type="button" aria-label="备份与设置" @click="runUtilityAction(openImportExport)"
-                    ><Settings :size="15"
-                /></button>
-            </div>
-        </nav>
 
         <ScrollAreaRoot class="page-scroll-area" type="hover" :scroll-hide-delay="350">
             <ScrollAreaViewport class="page-scroll-viewport">

@@ -1,8 +1,29 @@
 type FaviconInput = {
     url?: string;
-    domain?: string;
     override?: string;
 };
+
+export function normalizeFaviconPageUrl(value?: string): string | undefined {
+    const input = value?.trim();
+    if (!input) return undefined;
+
+    try {
+        const hasHttpProtocol = /^https?:\/\//i.test(input);
+        const hasOtherProtocol =
+            !hasHttpProtocol && /^[a-z][a-z\d+.-]*:/i.test(input) && !/^[^/?#]+:\d+(?:[/?#]|$)/.test(input);
+        if (hasOtherProtocol) return undefined;
+
+        const url = new URL(hasHttpProtocol ? input : `https://${input}`);
+        if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) return undefined;
+        return url.toString();
+    } catch {
+        return undefined;
+    }
+}
+
+export function getFaviconPageUrlValidationError(value?: string): string | undefined {
+    return value?.trim() && !normalizeFaviconPageUrl(value) ? '图标地址必须是有效的 HTTP(S) 地址或域名' : undefined;
+}
 
 export function getFaviconPageUrls(pageUrl?: string): string[] {
     const value = pageUrl?.trim();
@@ -52,11 +73,8 @@ export function withFaviconRefreshToken(source: string, token: number): string {
 export function getFaviconSources(input: FaviconInput): string[] {
     const sources = new Set<string>();
 
-    if (input.override) {
-        sources.add(input.override);
-    }
-
-    for (const pageUrl of getFaviconPageUrls(input.url)) {
+    const pageUrls = [...getFaviconPageUrls(normalizeFaviconPageUrl(input.override)), ...getFaviconPageUrls(input.url)];
+    for (const pageUrl of pageUrls) {
         const nativeChromiumUrl = getNativeChromiumFaviconUrl(pageUrl);
         if (nativeChromiumUrl) {
             sources.add(nativeChromiumUrl);

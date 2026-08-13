@@ -87,7 +87,7 @@ textarea:focus-visible,
     display: flex;
     justify-content: center;
     flex: 0 0 auto;
-    padding: 2rem 0 1rem;
+    padding: 1rem 0 1rem;
     margin-bottom: 2rem;
     border-bottom: 0;
     background: var(--color-bg-elevated);
@@ -100,6 +100,16 @@ textarea:focus-visible,
     width: min-content;
     max-width: calc(100vw - 2rem);
     height: 48px;
+}
+.search-band-tools {
+    position: absolute;
+    right: 16px;
+    bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    max-width: calc(100vw - 32px);
 }
 .search-input-shell {
     flex: 0 1 30rem;
@@ -151,9 +161,6 @@ textarea:focus-visible,
 }
 .engine-select > svg {
     flex: 0 0 auto;
-}
-.engine-select > .site-favicon {
-    margin-right: 0.5rem;
 }
 .engine-menu,
 .field-select-menu,
@@ -510,11 +517,12 @@ textarea:focus-visible,
 }
 
 .utility-dock {
-    position: fixed;
-    left: 10px;
-    top: 154px;
-    z-index: 35;
-    display: grid;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
     padding: 0;
     border: 0;
     border-radius: var(--radius-float);
@@ -524,17 +532,19 @@ textarea:focus-visible,
         background-color 120ms ease,
         box-shadow 120ms ease;
 }
-.utility-dock.with-tags {
-    top: 196px;
-}
 .utility-dock-actions {
-    order: 2;
-    display: none;
+    display: flex;
+    width: 0;
+    overflow: hidden;
     gap: 3px;
+    opacity: 0;
+    transition:
+        width 140ms ease,
+        opacity 90ms ease;
 }
 .utility-dock.open .utility-dock-actions {
-    display: grid;
-    margin-top: 3px;
+    width: 195px;
+    opacity: 1;
 }
 .utility-dock button,
 .tag-panel-trigger {
@@ -551,9 +561,10 @@ textarea:focus-visible,
 }
 .utility-dock > .utility-dock-trigger,
 .tag-panel-trigger {
-    background: var(--surface-soft);
+    background: transparent;
 }
 .utility-dock.open {
+    padding-left: 3px;
     background: var(--color-bg-elevated);
     box-shadow: var(--shadow-active);
 }
@@ -568,7 +579,7 @@ textarea:focus-visible,
 .utility-dock-trigger {
     position: relative;
     z-index: 1;
-    order: 1;
+    flex: 0 0 36px;
     box-shadow: none;
 }
 .utility-dock button.refreshing svg {
@@ -576,12 +587,11 @@ textarea:focus-visible,
 }
 
 .tag-panel-trigger {
-    position: fixed;
-    left: 10px;
-    top: 154px;
-    z-index: 45;
+    position: relative;
+    z-index: 2;
+    flex: 0 0 36px;
     border: 0;
-    background: var(--surface-soft);
+    background: transparent;
     box-shadow: none;
 }
 .tag-panel {
@@ -604,6 +614,10 @@ textarea:focus-visible,
     border-radius: 6px;
     color: var(--muted);
 }
+.tag-panel-search:focus-within {
+    border-color: #738e85;
+    box-shadow: var(--focus-ring);
+}
 .tag-panel-search input {
     height: 32px;
     min-width: 0;
@@ -611,6 +625,9 @@ textarea:focus-visible,
     outline: 0;
     background: transparent;
     font-size: 12px;
+}
+.tag-panel-search input:focus-visible {
+    box-shadow: none;
 }
 .tag-panel-list {
     max-height: 400px;
@@ -1228,6 +1245,11 @@ textarea:focus-visible,
     .search-band {
         padding: 1rem 0 0.8rem;
     }
+    .search-band-tools {
+        right: 6px;
+        bottom: 10px;
+        max-width: calc(100vw - 12px);
+    }
     .search-composer {
         width: calc(100vw - 2rem);
         height: 2.2rem;
@@ -1254,22 +1276,14 @@ textarea:focus-visible,
     .bookmark-list {
         padding-inline: 18px;
     }
-    .tag-panel-trigger {
-        left: 6px;
-        top: 116px;
-    }
     .tag-panel {
         width: min(240px, calc(100vw - 24px));
     }
     .organize-toolbar {
         top: 6px;
     }
-    .utility-dock {
-        left: 6px;
-        top: 116px;
-    }
-    .utility-dock.with-tags {
-        top: 158px;
+    .utility-dock.open .utility-dock-actions {
+        width: min(195px, calc(100vw - 92px));
     }
     .bookmark-row.organizing {
         padding-right: 84px;

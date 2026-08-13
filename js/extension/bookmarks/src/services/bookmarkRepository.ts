@@ -11,7 +11,7 @@ import {
     updateBookmark,
 } from './bookmarkApi';
 import { getExtra, getExtras, removeExtra, removeExtras, restoreExtra, saveExtra } from './extraStore';
-import { getFaviconSources } from './favicon';
+import { getFaviconPageUrlValidationError, getFaviconSources } from './favicon';
 import { emptyBookmarkExtra, normalizeBookmarkExtra, normalizeTag, normalizeTags } from './bookmarkExtraModel';
 import { getSearchCapabilityValidationError, SEARCH_TAG } from './searchService';
 
@@ -100,11 +100,14 @@ export async function saveBookmarkDetails(input: {
     tags: string[];
     description?: string;
     searchUrl?: string;
+    faviconOverride?: string;
 }): Promise<BookmarkView> {
     const tags = normalizeTags(input.tags);
     const hasSearch = tags.some((tag) => normalizeTag(tag) === SEARCH_TAG);
     const capabilityError = getSearchCapabilityValidationError({ tags, url: input.url, searchUrl: input.searchUrl });
     if (capabilityError) throw new Error(capabilityError);
+    const faviconError = getFaviconPageUrlValidationError(input.faviconOverride);
+    if (faviconError) throw new Error(faviconError);
 
     const originalNode = input.id ? await getNode(input.id) : undefined;
     if (input.id && !originalNode) throw new Error('要编辑的书签已不存在');
@@ -116,7 +119,7 @@ export async function saveBookmarkDetails(input: {
             tags,
             description: input.description,
             searchUrl: hasSearch ? input.searchUrl : undefined,
-            faviconOverride: originalExtra?.faviconOverride,
+            faviconOverride: input.faviconOverride,
             updatedAt: Date.now(),
         },
         input.id ?? '',

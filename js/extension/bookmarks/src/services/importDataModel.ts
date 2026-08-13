@@ -1,6 +1,7 @@
 import type { ExportBookmarkNode, UiPreferences } from '../types/bookmark';
 import { normalizeBookmarkExtra } from './bookmarkExtraModel.ts';
 import { getSearchCapabilityValidationError } from './searchService.ts';
+import { getFaviconPageUrlValidationError } from './favicon.ts';
 
 export type ValidatedImportData = {
     children: ExportBookmarkNode[];
@@ -26,6 +27,10 @@ function normalizeImportExtra(value: unknown, sourceId: string, path: string) {
     validateOptionalString(value.description, 'description', path);
     validateOptionalString(value.searchUrl, 'searchUrl', path);
     validateOptionalString(value.faviconOverride, 'faviconOverride', path);
+    const faviconError = getFaviconPageUrlValidationError(
+        typeof value.faviconOverride === 'string' ? value.faviconOverride : undefined,
+    );
+    if (faviconError) throw new Error(`${path}：${faviconError}`);
     if (typeof value.updatedAt !== 'number' || !Number.isFinite(value.updatedAt) || value.updatedAt < 0) {
         throw new Error(`${path}的 updatedAt 格式无效`);
     }

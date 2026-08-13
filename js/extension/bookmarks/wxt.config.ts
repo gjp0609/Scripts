@@ -6,6 +6,9 @@ export default defineConfig({
     publicDir: 'public',
     vite: () => ({
         plugins: [vue()],
+        build: {
+            modulePreload: false,
+        },
     }),
     manifest: {
         name: 'MarkHub Bookmarks',

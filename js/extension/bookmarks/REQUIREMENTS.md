@@ -90,12 +90,14 @@ type BookmarkExtra = {
     tags: string[];
     description?: string;
     searchUrl?: string;
+    /** 用于查询浏览器缓存 favicon 的替代页面地址。 */
     faviconOverride?: string;
     updatedAt: number;
 };
 ```
 
 - extra 只保存浏览器书签没有的字段。
+- `faviconOverride` 接受 HTTP(S) 页面地址或域名；裸域名规范化为 HTTPS 地址，清空即恢复书签自身图标来源。
 - 缺少 extra 等价于空 extra，不能阻断显示。
 - 删除书签或目录后同步清理关联 extra。
 - 删除后的 extra 清理允许有限重试；最终失败必须记录明确错误，并可由手动维护重新清理。
@@ -122,7 +124,7 @@ type BookmarkExtra = {
 - 浏览模式 Macy 使用最短列优先，不按 DOM 顺序强制保序排布。
 - 搜索框是第一视觉和第一交互入口。
 - 页面主体是书签，不常驻侧栏、Logo、模式栏或管理工具栏。
-- tag按钮和功能按钮组成左侧短工具轨道；没有 tag 时不显示空 tag按钮。
+- 功能按钮和 tag按钮位于 `search-band` 最右侧的独立工具轨道，默认顺序为功能、tag；tag 固定在最右侧，没有 tag 时不显示空 tag按钮。
 
 ### 5.2 目录与书签
 
@@ -204,6 +206,7 @@ type BookmarkExtra = {
 ### 6.6 tag面板
 
 - tag面板只是 `#` 搜索的鼠标兼容层。
+- tag按钮不再占用页面左侧边缘，面板从 `search-band` 右侧按钮向左对齐展开，避免与系统或浏览器垂直标签栏争抢左边缘悬浮。
 - 点击 tag 等价于向搜索框输入并选择 `#tag`，随后关闭面板、聚焦搜索框。
 - tag面板不直接写入第二套过滤状态。
 
@@ -252,7 +255,7 @@ type BookmarkExtra = {
 
 ## 8. 编辑、删除和备份
 
-- 添加/编辑书签支持标题、URL、目录、tag、备注和搜索模板。
+- 添加/编辑书签支持标题、URL、目录、tag、备注、图标地址和搜索模板。
 - tag 输入使用成熟的 TagsInput + Combobox 行为：已有 tag 补全、新建 tag、去重、粘贴拆分和输入法安全。
 - `search` 与 `search_site` 互斥；前者要求包含 `{keyword}` 的有效 HTTP(S) 搜索模板，后者要求有效 HTTP(S) URL。
 - 当前页面必须监听工作区相关的 `storage.local` 变化；其他扩展页面修改 tag、备注、搜索模板或偏好后即时更新当前视图。已有 extra 的书签从非展示层级移回当前目录时必须重新读取 extra，不得临时退化为空数据。
@@ -266,6 +269,8 @@ type BookmarkExtra = {
 ## 9. favicon
 
 - 优先使用当前浏览器 profile 已缓存的 `/_favicon` 图片。
+- 自定义图标地址是替代页面地址，不是图片直链；其浏览器缓存 favicon 优先于书签自身 URL 的 favicon。
+- 自定义图标地址接受完整 HTTP(S) 地址或裸域名，不接受其他协议；加载失败依次回退书签自身图标和本地占位。
 - SPA 候选顺序为精确 URL、移除 fragment 的 URL、站点根地址。
 - 初始化和“刷新全部图标”都不得逐站联网访问书签 URL。
 - 页面启动使用新的读取版本，避免刷新后重新显示旧默认图。

@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { AlertTriangle, X } from 'lucide-vue-next';
+    import { nextTick, ref } from 'vue';
     import {
         AlertDialogCancel,
         AlertDialogContent,
@@ -28,6 +29,20 @@
     function updateOpen(value: boolean) {
         if (!value && !props.pending) emit('close');
     }
+
+    const confirmButton = ref<HTMLButtonElement>();
+
+    function focusConfirm(event: Event) {
+        event.preventDefault();
+        void nextTick(() => confirmButton.value?.focus());
+    }
+
+    function confirmOnEnter(event: KeyboardEvent) {
+        if (event.isComposing || props.pending) return;
+        event.preventDefault();
+        event.stopPropagation();
+        emit('confirm');
+    }
 </script>
 
 <template>
@@ -36,7 +51,9 @@
             <AlertDialogOverlay class="dialog-overlay" />
             <AlertDialogContent
                 class="dialog-content confirm-dialog"
+                @open-auto-focus="focusConfirm"
                 @escape-key-down="pending && $event.preventDefault()"
+                @keydown.enter="confirmOnEnter"
             >
                 <header class="dialog-head">
                     <div class="confirm-title">
@@ -60,6 +77,7 @@
                         >取消</AlertDialogCancel
                     >
                     <button
+                        ref="confirmButton"
                         type="button"
                         class="button-primary"
                         :class="{ 'button-danger': danger }"

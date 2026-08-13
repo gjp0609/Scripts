@@ -143,5 +143,8 @@
                 />
             </div>
         </div>
+        <div class="search-band-tools">
+            <slot name="tools" />
+        </div>
     </header>
 </template>

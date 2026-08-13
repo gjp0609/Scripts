@@ -35,6 +35,7 @@ UI 组件
 - `metadataMaintenance`：读取完整书签树并应用扩展数据维护计划，不删除或移动浏览器节点。
 - `extensionRuntime`：只处理 tabs、popup 和扩展运行时能力。
 - `favicon`：只负责浏览器缓存 URL、候选降级、去重和刷新 token。
+- Chrome 扩展页关闭 Vite `modulepreload`；共享 chunk 由 ESM import 正常加载，避免扩展 world 不匹配产生无效预加载警告。
 - `bookmarkRootModel`、`metadataMaintenanceModel`：纯函数选择新版 Chrome 根目录并生成可测试的维护计划。
 
 ### 1.2 数据层

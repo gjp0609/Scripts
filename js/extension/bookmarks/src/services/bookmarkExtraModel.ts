@@ -1,4 +1,5 @@
 import type { BookmarkExtra } from '../types/bookmark';
+import { normalizeFaviconPageUrl } from './favicon.ts';
 
 function optionalTrimmedString(value: unknown): string | undefined {
     if (typeof value !== 'string') return undefined;
@@ -28,7 +29,7 @@ export function normalizeBookmarkExtra(value: unknown, bookmarkId: string): Book
         tags: normalizeTags(Array.isArray(extra.tags) ? extra.tags : []),
         description: optionalTrimmedString(extra.description),
         searchUrl: optionalTrimmedString(extra.searchUrl),
-        faviconOverride: optionalTrimmedString(extra.faviconOverride),
+        faviconOverride: normalizeFaviconPageUrl(extra.faviconOverride),
         updatedAt:
             typeof extra.updatedAt === 'number' && Number.isFinite(extra.updatedAt) ? extra.updatedAt : Date.now(),
     };

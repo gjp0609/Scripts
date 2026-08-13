@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FolderView } from '../src/types/bookmark.ts';
 import { nextSelectedEngineIndex, normalizeSearchIndex } from '../src/app/searchStateModel.ts';
-import { getFaviconPageUrls, withFaviconRefreshToken } from '../src/services/favicon.ts';
+import {
+    getFaviconPageUrls,
+    getFaviconPageUrlValidationError,
+    normalizeFaviconPageUrl,
+    withFaviconRefreshToken,
+} from '../src/services/favicon.ts';
 import {
     buildQuickSearchUrl,
     filterFolders,
@@ -102,6 +107,16 @@ test('favicon 缓存候选优先精确地址并回退无 fragment 地址与站�
         'http://223.71.240.240:380/ui/',
         'http://223.71.240.240:380/',
     ]);
+});
+
+test('自定义图标地址按替代页面地址规范化并拒绝非 HTTP(S) 协议', () => {
+    assert.equal(normalizeFaviconPageUrl(' zentao.net '), 'https://zentao.net/');
+    assert.equal(normalizeFaviconPageUrl('intranet.example:8080/app'), 'https://intranet.example:8080/app');
+    assert.equal(normalizeFaviconPageUrl('10.8.8.1:88/zentao/'), 'https://10.8.8.1:88/zentao/');
+    assert.equal(normalizeFaviconPageUrl('http://10.8.8.1:88/zentao/#home'), 'http://10.8.8.1:88/zentao/#home');
+    assert.equal(normalizeFaviconPageUrl('javascript:alert(1)'), undefined);
+    assert.match(getFaviconPageUrlValidationError('file:///tmp/favicon.ico') ?? '', /HTTP\(S\)/);
+    assert.equal(getFaviconPageUrlValidationError(''), undefined);
 });
 
 test('全量 favicon 刷新只穿透扩展原生缓存地址', () => {

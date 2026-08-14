@@ -190,4 +190,3 @@ For Chrome and Firefox compatibility:
 - do not copy HTU's Chrome-only architecture blindly
 - verify Firefox support for SQLite WASM + OPFS + required worker mode before choosing SQLite as the storage engine
 - if Firefox cannot match HTU's storage stack cleanly, keep HTU-compatible TSV at the import/export boundary and use an alternate internal store
-

@@ -88,7 +88,7 @@ Implementation implication:
 
 Source file:
 
-- `R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv`
+- An external HTU TSV backup supplied through `HISTORIES_HTU_BACKUP`.
 
 Privacy handling:
 
@@ -369,7 +369,7 @@ Result:
 
 Command:
 
-- `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-import-full-browser.test.mjs`
+- `$env:HISTORIES_HTU_BACKUP='C:\path\to\htu_backup.tsv'; node --test js\extension\histories\tests\htu-import-full-browser.test.mjs`
 
 Result:
 
@@ -404,7 +404,7 @@ Commands:
 - `node --test js\extension\histories\tests\search-rebuild-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\storage-smoke.test.mjs`
 - `node --test js\extension\histories\tests\htu-import-full-browser.test.mjs` with `HISTORIES_HTU_BACKUP` set for the external full-backup run
-- `$env:HISTORIES_HTU_BACKUP='R:\Files\Data\BrowserHistories\htu_backup_20260705_134842.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
+- `$env:HISTORIES_HTU_BACKUP='C:\path\to\htu_backup.tsv'; node --test js\extension\histories\tests\htu-tsv.test.mjs`
 
 Result:
 
@@ -430,6 +430,71 @@ Result:
 - External full browser import: 1 passed, full backup imported in about 3.2 seconds browser-side after page load.
 - External full browser import latest run: `887,561` rows, `384,065` pages, `887,561` visits, `763 ms` fetch, `2,469 ms` import, `3,232 ms` total browser-side after page load.
 
+## Incremental SQLite FTS Benchmark
+
+Updated: 2026-08-14
+
+Command:
+
+- `$env:HISTORIES_HTU_BACKUP='C:\path\to\htu_backup.tsv'; $env:HISTORIES_INCREMENTAL_HOLDOUT_DAYS='7'; $env:HISTORIES_INCREMENTAL_UPDATE_FTS_METADATA='false'; node --test js\extension\histories\tests\search-incremental-full-browser.test.mjs`
+
+Method:
+
+- The source TSV is read-only and is streamed twice; no derived file containing private history is written.
+- The latest 7 days relative to the maximum valid visit time are held out.
+- Older rows build the baseline SQLite FTS5 trigram index.
+- Held-out visits are replayed once in chronological order and once as a single startup dirty batch after reloading the baseline snapshot.
+- Only aggregate counts and timings are returned. URL values, titles, and private query terms are not logged.
+- `data:image/...` rows are excluded before baseline or incremental indexing.
+
+Dataset:
+
+| metric | result |
+| --- | ---: |
+| valid source visits | 900,187 |
+| excluded `data:image/...` visits | 10 |
+| excluded `data:image/...` bytes | 288,264 |
+| retained visits | 900,177 |
+| baseline visits | 897,913 |
+| baseline pages | 387,370 |
+| held-out visits | 2,264 |
+| held-out distinct URLs | 1,504 |
+| existing-page visits | 1,001 |
+| new pages | 1,263 |
+
+Recommended-policy result:
+
+| stage | result |
+| --- | ---: |
+| baseline FTS build | 45,571.83 ms |
+| baseline snapshot size | 592,338,944 bytes |
+| baseline snapshot save | 3,113.69 ms |
+| chronological per-visit update P50 | 0.605 ms |
+| chronological per-visit update P95 | 1.120 ms |
+| chronological per-visit update P99 | 6.390 ms |
+| all 2,264 visits dirty replay | 406.51 ms |
+| dirty replay average per visit | 0.180 ms |
+| checkpoint size | 595,124,224 bytes |
+| checkpoint save | 2,499.07 ms |
+| checkpoint load | 2,639.45 ms |
+
+Search comparison used three fixed public high-hit terms and included both the first 50 sorted rows and an exact `COUNT(*)`:
+
+| state | mean | P50 | P95 |
+| --- | ---: | ---: | ---: |
+| baseline | 82.305 ms | 62.530 ms | 184.200 ms |
+| after chronological updates | 82.753 ms | 63.275 ms | 184.655 ms |
+| after checkpoint reload | 89.678 ms | 65.760 ms | 202.380 ms |
+
+Interpretation:
+
+- Incremental FTS mutation is viable at the tested scale and does not materially change query latency before checkpointing.
+- Existing pages whose title/search text did not change should not update FTS. Their visit count and latest visit time belong in IndexedDB.
+- Skipping 1,001 metadata-only FTS updates reduced full dirty replay from about `995 ms` to about `407 ms` compared with the control run.
+- A full snapshot save still costs about `2.5-3.1 s` and writes roughly `568 MiB`; it cannot run after every visit. Persist dirty page ids and checkpoint only on an idle/threshold policy.
+- The absolute search P95 above is dominated by high-hit exact count queries. It verifies before/after stability, not the final time-range pagination target; pagination needs a separate benchmark.
+- No real title changes occurred in this 7-day holdout. The automated small fixture covers the title-change update path, but a large real title-change sample remains useful.
+
 ## Next Verification Steps
 
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
@@ -437,3 +502,4 @@ Result:
 3. Verify extension-context IndexedDB quota with a real large snapshot.
 4. Move page-owned workers under background-controlled lifecycle if suspend/resume behavior requires it.
 5. Test combined searches such as keyword plus arbitrary time range.
+6. Benchmark stable time-descending pagination separately, including narrow/wide ranges and deep cursors.

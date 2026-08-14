@@ -2,6 +2,8 @@
 
 Updated: 2026-07-06
 
+> 本文是早期完整产品路线图，包含统计等第一阶段之后的能力。当前第一阶段范围以 `../requirements.md` 为准。
+
 ## Current Baseline
 
 Verified:

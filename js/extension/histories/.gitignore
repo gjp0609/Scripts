@@ -1,4 +1,7 @@
-research/
-probes/
 .output/
 .wxt/
+dev-browser-data/*
+!dev-browser-data/README.md
+probes/
+research/
+.codex-task-tmp-*.md

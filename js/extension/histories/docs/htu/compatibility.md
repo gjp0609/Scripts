@@ -31,7 +31,7 @@ This is useful evidence, but it is not a complete specification.
 
 History Trends Unlimited 1.8.9 source has been inspected from the Chrome Web Store CRX package.
 
-See `docs/htu-source-analysis.md` for the extracted behavior.
+See `source-analysis.md` for the extracted behavior.
 
 Compatibility work should still be fixture-driven:
 

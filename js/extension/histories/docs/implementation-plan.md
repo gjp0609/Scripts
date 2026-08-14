@@ -1,63 +1,86 @@
-# Implementation Plan
+# Histories 第一阶段实施计划
 
-## Phase 0: Compatibility Evidence
+更新日期：2026-08-14
 
-- Keep the inspected HTU 1.8.9 source notes in `docs/htu-source-analysis.md`.
-- Collect real History Trends Unlimited export files.
-- Record HTU version and browser version for each fixture.
-- Write parser/serializer tests before implementing runtime import/export.
+产品范围和验收口径以 [第一阶段需求基线](requirements.md) 为准。本计划只描述推荐开发顺序，不扩大第一阶段范围。
 
-## Phase 1: Project Skeleton
+## 阶段 0：锁定数据语义
 
-- Select build tool.
-- Create shared TypeScript source tree.
-- Generate Chrome and Firefox manifests.
-- Add basic extension shell with history-only pages.
-- Add automated lint/build commands.
+- 用真实 HTU 文件补充 3、4、8 列兼容样本。
+- 收集 Chrome 与 Firefox 中同一次访问被实时事件和 `getVisits` 返回时的字段样本。
+- 定义规范访问身份、来源关联和两层去重规则。
+- 为重复文件、重叠文件、不同导入顺序和频繁访问阈值建立测试矩阵。
 
-## Phase 2: Data Layer
+完成标准：不再依赖 `sourceIndex` 或单次任务 ID 判断跨任务重复。
 
-- Implement IndexedDB schema and migrations for `pages`, minimal `visits`, `jobs`, and `search_snapshot`.
-- Import all browser history with `startTime: 0`.
-- Add event listeners for new visits, title changes, and removals.
-- Add recovery and re-sync logic.
-- Keep the sync hot path small: write page metadata, minimal visit rows, and queued search snapshot updates only.
+## 阶段 1：可靠的主数据存储
 
-## Phase 3: HTU Import/Export
+- 将访问记录设计为唯一事实来源，搜索索引保持可删除、可重建。
+- 增加数据版本、迁移、导入批次、来源和完整性元数据。
+- 实现隔离写入、原子提交或等价的中断安全合并机制。
+- 实现任务恢复、失败重试和同步游标提交规则。
+- 禁止浏览器删除事件修改已经保存的访问数据。
 
-- Implement compatibility parser.
-- Implement compatibility serializer.
-- Add fixtures and round-trip tests.
-- Add import/export UI and progress reporting.
+完成标准：关键写入过程被强制中断后，旧数据仍完整且任务可安全重试。
 
-## Phase 4: Search
+## 阶段 2：多 HTU 文件合并导入
 
-- Implement SQLite WASM `:memory:` FTS5 trigram search over title and URL text.
-- Persist and restore the SQLite FTS database through an IndexedDB snapshot.
-- Implement keyword-only page-level search.
-- Implement keyword plus visit-time range search by intersecting FTS page ids with IndexedDB visit indexes.
-- Add performance tests using the external full HTU backup file.
+- 将当前覆盖式 chunk 导入改为合并导入。
+- 支持批量选择或依次加入多个 HTU 文件。
+- 全部解析校验后统一排序、幂等去重和提交。
+- 一次性重建页面聚合与搜索索引。
+- 输出每个文件及整体的新增、重复、忽略和错误统计。
 
-## Phase 5: Statistics
+完成标准：相同文件重复导入不新增数据；重叠文件按不同顺序导入得到相同结果。
 
-- Match History Trends Unlimited statistics views.
-- Generate statistics asynchronously on demand.
-- Back aggregates with staleable materialized stores.
-- Do not add day/month/hour fields to every visit on the sync hot path unless a later benchmark proves it is required.
-- Add validation tests against fixture data.
+## 阶段 3：完整历史采集
 
-## Phase 6: Browser Verification
+- 实现首次全量浏览器历史扫描。
+- 实现打开历史页时的增量补偿扫描。
+- 接入实时 `onVisited` 监听并与扫描结果幂等合并。
+- 应用独立的同 URL 频繁访问抑制设置，默认 `2.0` 秒。
+- 持久记录 dirty page；仅为新 URL 或标题变化更新 FTS，已有 URL 的访问元数据只更新 IndexedDB。
+- 启动时加载旧快照并批量重放 dirty page，按阈值或空闲策略生成完整 checkpoint，禁止每次访问保存完整快照。
+- 在 Chrome 和 Firefox 中测试后台休眠、浏览器重启及长时间未打开扩展后的补偿行为。
 
-- Build Chrome package.
-- Build Firefox package.
-- Manually load unpacked extensions.
-- Verify initial import, search, import/export, and stats on both browsers.
+完成标准：双通道不产生重复且补偿测试不漏记录；若不能稳定达到，记录证据并退回 HTU 式打开页面增量扫描。
 
-## Immediate Next Step
+## 阶段 4：搜索与时间倒序分页
 
-Start with the current verified route:
+- 保留 SQLite WASM FTS5 trigram 路线，最短关键词固定为 3 个字符。
+- 搜索标题、原始 URL 和解码 URL。
+- 实现关键词与访问时间范围交集。
+- 将结果语义和排序建立在匹配访问时间上。
+- 实现稳定游标分页，并测量第一页、连续分页和深分页。
+- 实现索引失效标记、后台更新和损坏后重建。
+- 保持 FTS 只负责搜索候选，访问次数、时间范围、时间排序和稳定分页由 IndexedDB 查询层负责。
 
-- build extension skeleton
-- implement IndexedDB `pages` and minimal `visits`
-- implement SQLite WASM FTS snapshot search module
-- implement visit-time range filtering before statistics UI
+完成标准：真实大备份规模下常见查询低于 `100 ms`，分页无重复、无跳项，性能数据写入验证记录。
+
+## 阶段 5：完整导出与恢复
+
+- 设计版本化原生备份格式、分块输出和 SHA-256 完整性校验。
+- 实现原生完整导出与空库恢复。
+- 保留 HTU 4 列归档兼容导出和字节级测试。
+- 避免在页面和 worker 间传输完整大字符串。
+
+完成标准：原生备份空库往返后，计数、关键字段、来源和校验值一致。
+
+## 阶段 6：第一阶段界面与双浏览器验收
+
+- 第一阶段已纳入功能的页面结构、控件位置和操作与 HTU 保持一致，不显示未实现功能的占位控件。
+- 默认启动历史页，时间默认 24 小时制。
+- 设置页只保留导入、导出、存储统计和频繁访问忽略秒数。
+- 完成 Chrome 与 Firefox 的真实扩展安装、导入、同步、搜索、分页、导出和故障恢复测试。
+
+完成标准：[第一阶段需求基线](requirements.md) 中的稳定性验收项全部通过。
+
+## 后续阶段
+
+第一阶段完成后再规划：
+
+- 统计分析和趋势视图
+- 定时自动备份
+- HTU 高级筛选器
+- 1～2 字符子串搜索
+- 更多导出格式和跨设备能力

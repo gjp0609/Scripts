@@ -2,6 +2,52 @@
 
 Updated: 2026-07-05
 
+## 2026-08-17 Frozen Phase-One Decisions
+
+### Extension storage and search
+
+- Chrome and Firefox extension origins both persisted the full `900,177`-visit dataset and a `602,546,176`-byte SQLite snapshot across browser restarts.
+- Chrome reported about 64 GiB quota with `persisted=false`; Firefox reported about 100 GiB with `persisted=true`. The current full dataset used about 428 MiB and 412 MiB respectively according to `navigator.storage.estimate()`.
+- Search snapshot loading validates schema version, byte length, and FTS page count. A missing or corrupt snapshot is an index failure, never a main-data failure.
+- MV3 extension pages require `script-src 'self' 'wasm-unsafe-eval'` for SQLite WASM.
+- FTS rebuild inserts run in one explicit SQLite transaction. Per-row auto-commit is not viable at full scale.
+
+### Stable time pagination
+
+- The stable order is `(matchedVisitTime DESC, pageId DESC)`.
+- The first query freezes an `endTime` watermark. Every following cursor carries the same watermark so newly arriving visits cannot shift an active result set.
+- Visit chunks are loaded once, sorted by `minVisitTime`, and retained as typed arrays while the search engine is active.
+- Each page scans visits backward until it finds `limit + 1` distinct candidate pages, including all candidates tied at the boundary timestamp. It then counts visits only for the selected page ids.
+- FTS returns page-id candidates only. Candidate membership is stored as a cached `Uint8Array` bitmap; page metadata is fetched from SQLite only for selected ids.
+- Full-data measurements: time-only first page `0.8-25.6 ms`, ordinary cold keyword pages `18.8-68 ms`, and ten sequential `github` pages P50 `16.3 ms`. The extreme high-hit cold `google` query was `120.5 ms`; subsequent pages use the cache and remain about `15-18 ms`.
+
+### Browser visit identity
+
+- `history.onVisited` emits a page summary, not a visit record. It exposes no `visitId` or transition in either verified browser.
+- After `onVisited`, the collector must call `history.getVisits({ url })` and ingest unseen visit records from a safe overlap window.
+- Browser-source identity is `(sourceInstanceId, visitId)` when `visitId` is present. Exact URL, visit time, and transition form a cross-channel compatibility fingerprint for scans, retries, and HTU rows.
+- Title, `typedCount`, `isLocal`, and `referringVisitId` are source metadata, not canonical identity fields.
+- Chrome exposed separate link and reload visits. Firefox coalesced the tested reload and did not expose a second reload visit. The collector must preserve what the browser API reports and must not synthesize unavailable visits.
+- Chromium exposed `typedCount` on history items and `isLocal` on visits; Firefox did not consistently expose those fields. Shared storage cannot require them.
+- Browser page identity keeps the exact browser URL (including hash) for collection/deduplication; HTU page normalization remains hash-free for archive compatibility. This prevents two exact browser fragment URLs from collapsing while preserving legacy HTU behavior.
+- Background collection serializes generation publication. `history.onVisited` is coalesced for 250 ms, then `getVisits` completion supplies visit records. Incremental scans use a 5-second overlap and activation uses parent-generation compare-and-swap, so stale concurrent jobs fail safely instead of overwriting newer data.
+
+### Unified durable layout
+
+- Main data uses versioned generations. An active-generation pointer is the atomic publication boundary.
+- Page and visit segments are immutable once published. Both HTU batches and browser increments use the same segment encoding.
+- Visits have a time-sorted segment representation for queries and a page/time/transition identity representation for merge deduplication.
+- Small real-time writes first enter durable delta segments. Import or compaction builds a new generation from the active generation plus staged input, then atomically switches the active pointer.
+- Search snapshots, page aggregates, candidate bitmaps, and statistics are derived data and never participate in the main-data commit decision.
+- Database v6 stores `historyGenerations`, `generationPageChunks`, and `generationVisitChunks`; legacy `pages`, `visits`, `pageChunks`, and `visitChunks` remain read-only compatibility fallbacks until the next successful generation publication.
+- Each activation assigns a monotonically increasing generation revision and atomically writes its dirty-page records. Internal `generationId` and segment ordinal fields never escape public chunk readers.
+- Failed staging writes abort their IndexedDB transaction. A generation that fails before activation remains invisible and can be removed by stale-generation cleanup without touching the active generation.
+- A browser profile owns a random persistent history source referenced by `historyMetadata.localBrowserSource`. Browser visit source keys are `sourceInstanceId:visitId`; missing native visit ids use the compatibility fingerprint fallback.
+- Resumable jobs use owner leases. Terminal jobs release owner and lease fields, and synchronization writes its committed `nextStartTime` only after active-generation publication.
+- HTU file sources use `source:htu:<sha256>` identities. Import batches retain per-file format, row/time-range, added, duplicate, ignored, and error counts.
+- Visit segments encode HTU provenance compactly: a per-segment source-id dictionary, one offset array, and a flat source-reference array. A duplicate visit can therefore retain all contributing files without repeating 64-character hashes on every row.
+- Empty-library multi-file imports sort a flat visit array and collapse adjacent fingerprints; non-empty imports merge against the active generation. Both paths choose deterministic titles/source ownership so reversing file order produces the same canonical history.
+
 ## Goal
 
 Build a Chrome and Firefox compatible history extension that can replace History Trends Unlimited.

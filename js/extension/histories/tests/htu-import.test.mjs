@@ -17,6 +17,7 @@ test('plans HTU rows into aggregated pages and visit drafts', async () => {
     'https://example.com/a\tU1000\t0\tOld title',
     'https://example.com/a\tU3000\t1\tNew title',
     'https://sub.example.org/path\tU2000\t8\tOther title',
+    'data:image/png;base64,private\tU4000\t0\tInline image',
     ''
   ].join('\r\n');
   const parsed = parseHtuTsv(source);
@@ -26,6 +27,7 @@ test('plans HTU rows into aggregated pages and visit drafts', async () => {
 
   assert.equal(plan.pages.length, 2);
   assert.equal(plan.visits.length, 3);
+  assert.equal(plan.ignoredDataImages, 1);
   assert.deepEqual(plan.pages[0], {
     url: 'https://example.com/a',
     normalizedUrl: 'https://example.com/a',

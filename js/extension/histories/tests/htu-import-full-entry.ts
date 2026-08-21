@@ -9,6 +9,7 @@ type FullImportResult = {
   rows: number;
   pages: number;
   visits: number;
+  ignoredDataImages: number;
   writtenPages: number;
   writtenVisits: number;
   summaryPages: number;
@@ -82,6 +83,7 @@ window.runHistoriesFullImport = async (options: FullImportOptions = {}) => {
     rows: result.rows,
     pages: result.pages,
     visits: result.visits,
+    ignoredDataImages: result.ignoredDataImages,
     writtenPages: result.writtenPages,
     writtenVisits: result.writtenVisits,
     summaryPages: summary.pages,

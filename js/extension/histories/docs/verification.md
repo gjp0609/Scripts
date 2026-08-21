@@ -112,18 +112,18 @@ Observed format:
 
 Transition distribution:
 
-| transition_id | rows |
-| --- | ---: |
-| 0 | 667,411 |
-| 1 | 27,220 |
-| 2 | 8,999 |
-| 3 | 92 |
-| 4 | 2,607 |
-| 5 | 15,748 |
-| 6 | 19,217 |
-| 7 | 59,070 |
-| 8 | 87,149 |
-| 9 | 48 |
+| transition_id |    rows |
+| ------------- | ------: |
+| 0             | 667,411 |
+| 1             |  27,220 |
+| 2             |   8,999 |
+| 3             |      92 |
+| 4             |   2,607 |
+| 5             |  15,748 |
+| 6             |  19,217 |
+| 7             |  59,070 |
+| 8             |  87,149 |
+| 9             |      48 |
 
 Round-trip check:
 
@@ -158,10 +158,10 @@ Initial import result:
 
 Search result after exact-token candidate lookup:
 
-| query | candidates | matches | returned | time |
-| --- | ---: | ---: | ---: | ---: |
-| `ruanyifeng` | 648 | 648 | 50 | 24.80 ms |
-| `ruan` | 9 | 9 | 9 | 2.80 ms |
+| query        | candidates | matches | returned |     time |
+| ------------ | ---------: | ------: | -------: | -------: |
+| `ruanyifeng` |        648 |     648 |       50 | 24.80 ms |
+| `ruan`       |          9 |       9 |        9 |  2.80 ms |
 
 Problem found:
 
@@ -170,11 +170,11 @@ Problem found:
 
 Search result after prefix-range lookup:
 
-| query | candidates | matches | returned | time |
-| --- | ---: | ---: | ---: | ---: |
-| `ruan` | 789 | 789 | 50 | 34.80 ms |
-| `ruanyifeng` | 648 | 648 | 50 | 14.60 ms |
-| `feng` | 72 | 72 | 50 | 10.60 ms |
+| query        | candidates | matches | returned |     time |
+| ------------ | ---------: | ------: | -------: | -------: |
+| `ruan`       |        789 |     789 |       50 | 34.80 ms |
+| `ruanyifeng` |        648 |     648 |       50 | 14.60 ms |
+| `feng`       |         72 |      72 |       50 | 10.60 ms |
 
 Implementation implication:
 
@@ -203,27 +203,27 @@ Search behavior verified:
 
 Chrome probe results:
 
-| stage | result |
-| --- | ---: |
-| visits parsed | 887,561 |
-| pages indexed | 384,065 |
-| initial 3-column FTS build | 139,527 ms |
-| optimized single-index-column FTS build | 79,528 ms |
-| snapshot size | 559.4 MB |
-| snapshot save | 2,299 ms |
-| snapshot load | 1,251 ms |
+| stage                                   |     result |
+| --------------------------------------- | ---------: |
+| visits parsed                           |    887,561 |
+| pages indexed                           |    384,065 |
+| initial 3-column FTS build              | 139,527 ms |
+| optimized single-index-column FTS build |  79,528 ms |
+| snapshot size                           |   559.4 MB |
+| snapshot save                           |   2,299 ms |
+| snapshot load                           |   1,251 ms |
 
 Firefox probe results:
 
-| stage | result |
-| --- | ---: |
-| visits parsed | 887,550 |
-| pages indexed | 384,055 |
+| stage                                   |    result |
+| --------------------------------------- | --------: |
+| visits parsed                           |   887,550 |
+| pages indexed                           |   384,055 |
 | optimized single-index-column FTS build | 33,789 ms |
-| FTS insert portion | 30,802 ms |
-| snapshot size | 558 MB |
-| snapshot save | 3,770 ms |
-| snapshot load | 2,638 ms |
+| FTS insert portion                      | 30,802 ms |
+| snapshot size                           |    558 MB |
+| snapshot save                           |  3,770 ms |
+| snapshot load                           |  2,638 ms |
 
 Import bottleneck:
 
@@ -449,42 +449,42 @@ Method:
 
 Dataset:
 
-| metric | result |
-| --- | ---: |
-| valid source visits | 900,187 |
-| excluded `data:image/...` visits | 10 |
-| excluded `data:image/...` bytes | 288,264 |
-| retained visits | 900,177 |
-| baseline visits | 897,913 |
-| baseline pages | 387,370 |
-| held-out visits | 2,264 |
-| held-out distinct URLs | 1,504 |
-| existing-page visits | 1,001 |
-| new pages | 1,263 |
+| metric                           |  result |
+| -------------------------------- | ------: |
+| valid source visits              | 900,187 |
+| excluded `data:image/...` visits |      10 |
+| excluded `data:image/...` bytes  | 288,264 |
+| retained visits                  | 900,177 |
+| baseline visits                  | 897,913 |
+| baseline pages                   | 387,370 |
+| held-out visits                  |   2,264 |
+| held-out distinct URLs           |   1,504 |
+| existing-page visits             |   1,001 |
+| new pages                        |   1,263 |
 
 Recommended-policy result:
 
-| stage | result |
-| --- | ---: |
-| baseline FTS build | 45,571.83 ms |
-| baseline snapshot size | 592,338,944 bytes |
-| baseline snapshot save | 3,113.69 ms |
-| chronological per-visit update P50 | 0.605 ms |
-| chronological per-visit update P95 | 1.120 ms |
-| chronological per-visit update P99 | 6.390 ms |
-| all 2,264 visits dirty replay | 406.51 ms |
-| dirty replay average per visit | 0.180 ms |
-| checkpoint size | 595,124,224 bytes |
-| checkpoint save | 2,499.07 ms |
-| checkpoint load | 2,639.45 ms |
+| stage                              |            result |
+| ---------------------------------- | ----------------: |
+| baseline FTS build                 |      45,571.83 ms |
+| baseline snapshot size             | 592,338,944 bytes |
+| baseline snapshot save             |       3,113.69 ms |
+| chronological per-visit update P50 |          0.605 ms |
+| chronological per-visit update P95 |          1.120 ms |
+| chronological per-visit update P99 |          6.390 ms |
+| all 2,264 visits dirty replay      |         406.51 ms |
+| dirty replay average per visit     |          0.180 ms |
+| checkpoint size                    | 595,124,224 bytes |
+| checkpoint save                    |       2,499.07 ms |
+| checkpoint load                    |       2,639.45 ms |
 
 Search comparison used three fixed public high-hit terms and included both the first 50 sorted rows and an exact `COUNT(*)`:
 
-| state | mean | P50 | P95 |
-| --- | ---: | ---: | ---: |
-| baseline | 82.305 ms | 62.530 ms | 184.200 ms |
+| state                       |      mean |       P50 |        P95 |
+| --------------------------- | --------: | --------: | ---------: |
+| baseline                    | 82.305 ms | 62.530 ms | 184.200 ms |
 | after chronological updates | 82.753 ms | 63.275 ms | 184.655 ms |
-| after checkpoint reload | 89.678 ms | 65.760 ms | 202.380 ms |
+| after checkpoint reload     | 89.678 ms | 65.760 ms | 202.380 ms |
 
 Interpretation:
 
@@ -503,3 +503,143 @@ Interpretation:
 4. Move page-owned workers under background-controlled lifecycle if suspend/resume behavior requires it.
 5. Test combined searches such as keyword plus arbitrary time range.
 6. Benchmark stable time-descending pagination separately, including narrow/wide ranges and deep cursors.
+
+## Extension-Origin Snapshot And Pagination Verification
+
+Updated: 2026-08-17
+
+The full external HTU backup was imported inside real temporary Chrome and Firefox extension origins. Both tests closed the browser, reopened the same profile, loaded the snapshot, replaced it with corrupt bytes, deleted it, verified that main-data counts remained unchanged, restored it, and loaded it again.
+
+Dataset:
+
+| metric                         |            result |
+| ------------------------------ | ----------------: |
+| valid input rows               |           900,187 |
+| excluded `data:image/...` rows |                10 |
+| retained visits                |           900,177 |
+| pages                          |           388,633 |
+| SQLite snapshot                | 602,546,176 bytes |
+
+Browser results:
+
+| metric                  |          Chromium |           Firefox |
+| ----------------------- | ----------------: | ----------------: |
+| reported quota          |      about 64 GiB |     about 100 GiB |
+| persistent-storage flag |             false |              true |
+| estimated usage         | 448,312,368 bytes | 431,784,966 bytes |
+| import                  |            7.91 s |            3.33 s |
+| FTS rebuild             |           42.47 s |           40.34 s |
+| restart load            |            1.21 s |            3.16 s |
+| restored load           |            1.06 s |            4.15 s |
+
+The first extension run exposed two production defects that are now covered by regression tests: MV3 CSP did not allow WebAssembly, and snapshot loading accepted a corrupt SQLite byte array as an empty database. The manifest now allows `wasm-unsafe-eval`; snapshot loading validates schema, byte length, and page count.
+
+The production FTS rebuild initially used per-row auto-commit and did not finish at full scale. Wrapping all inserts in one SQLite transaction reduced full rebuild to about 33-42 seconds.
+
+Stable pagination on the same Chromium dataset:
+
+| scenario                        | first page |
+| ------------------------------- | ---------: |
+| all-time, no keyword            |    25.6 ms |
+| last 7 days, no keyword         |     0.8 ms |
+| `github`, all time              |    68.0 ms |
+| `github`, last 7 days           |     0.7 ms |
+| `ruan`, all time                |    18.8 ms |
+| zero-match query                |     2.6 ms |
+| extreme high-hit `google`, cold |   120.5 ms |
+
+Ten sequential `github` pages returned 500 unique pages with no gaps or duplicates detected by the cursor invariant. Durations were P50 `16.3 ms`, P95 `18.2 ms`. The query uses `(matchedVisitTime DESC, pageId DESC)` plus a frozen end-time watermark. The extreme cold high-hit case remains a warm-up optimization target but does not require a storage-architecture change.
+
+## Browser History Field Matrix
+
+Updated: 2026-08-17
+
+Temporary Chrome and Firefox extensions visited only a local test server and compared `history.onVisited` with `history.getVisits`.
+
+- Both browsers emitted page-summary events with URL and `lastVisitTime`, but no event contained `visitId` or transition.
+- Both browsers returned `visitId`, `referringVisitId`, `visitTime`, and transition from `getVisits`.
+- Matching event and visit timestamps had a nearest difference of `0 ms` in the verified samples.
+- Chromium exposed `typedCount` on history items and `isLocal` on visits. Firefox did not consistently expose them.
+- Chromium reported separate `link` and `reload` visits for the tested same-URL reload. Firefox coalesced that reload and returned one `link` visit.
+
+Implementation consequence: `onVisited` is a wake-up signal. The collector must call `getVisits` for the exact URL and ingest unseen visit ids from an overlap window. It must not synthesize visits that Firefox does not expose.
+
+## Unified Main Data And Interruption Verification
+
+Updated: 2026-08-17
+
+Database v6 storage smoke now verifies:
+
+- manual v5 database upgrade with legacy chunks still readable;
+- staging data remains invisible until atomic activation;
+- generation revisions increase from 1 on each activation;
+- public chunk and record readers consistently use the active generation and hide internal generation fields;
+- a forced exception during segment staging aborts the whole transaction;
+- cancellation or failure immediately before activation preserves the previous active generation;
+- stale staging and retired generations can be deleted without deleting active segments;
+- browser sources and import batches round-trip and generations retain format/source metadata;
+- dirty pages are committed with the activating generation revision;
+- leases prevent concurrent ownership, permit expired takeover, and are removed on terminal jobs;
+- a sync interrupted after merge but before publication remains failed with no committed `nextStartTime`; retry publishes successfully and only then advances the cursor;
+- browser data-image URLs are rejected before `getVisits`, and source keys use persistent source instance plus native visit id.
+
+Regression commands and results:
+
+- Core HTU, sync, export, and search tests: 24 passed, 1 external-backup test skipped because the environment variable was not set.
+- IndexedDB generation/storage smoke: 1 passed in Chromium.
+- SQLite WASM, import worker, export worker, and search rebuild worker browser smoke: 4 passed when run serially.
+- Chrome MV3 and Firefox MV3 WXT production builds passed.
+
+The search rebuild worker initially hung after the v6 upgrade because its standalone script still opened database version 5 and only read the legacy `pageChunks` store. It now opens v6, reports initialization failures from inside the job boundary, and reads the active generation before falling back to legacy storage.
+
+## Multi-File HTU Merge Verification
+
+Updated: 2026-08-17
+
+Automated coverage verifies reversed file order, file-internal duplicates, cross-file overlaps, active-generation overlaps, second-import idempotence, mixed 3/4/8-column inputs, Unix and Windows timestamps, data-image filtering, bad-file whole-batch rejection, cancellation before publication, per-file reports, and multi-source visit provenance.
+
+The real `900,187`-row backup was split by `tests/create-incremental-fixture.mjs` into ignored local files under `dev-browser-data/test-files/`:
+
+| fixture                       |    rows | purpose                                            |
+| ----------------------------- | ------: | -------------------------------------------------- |
+| baseline before latest 7 days | 897,923 | includes 10 data-image rows to verify exclusion    |
+| latest 14 days                |   4,163 | first 7 days overlap baseline, last 7 days are new |
+
+Chromium result:
+
+| stage                       |   result |
+| --------------------------- | -------: |
+| baseline added              |  897,913 |
+| baseline import             | 3,971 ms |
+| incremental added           |    2,264 |
+| incremental duplicate       |    1,899 |
+| incremental import          | 3,042 ms |
+| repeated incremental added  |        0 |
+| repeated incremental import | 3,135 ms |
+| final pages                 |  388,633 |
+| final visits                |  900,177 |
+
+An initial implementation took about 329 seconds because it wrote all 388,633 first-generation pages into the dirty-page store one request at a time. A first generation cannot have an older index checkpoint to replay, so it now records no dirty pages and requires one full search rebuild; the same import then completed in about four seconds.
+
+Production build inspection also found that the old client emitted unresolved `./import-worker.ts` and `./export-worker.ts` URLs. Worker constructors now use Vite `?worker` factories; Chrome and Firefox outputs both contain hashed import/export worker assets, and independent browser worker tests still pass through injected factories.
+
+## Browser Collection Semantics
+
+Updated: 2026-08-21
+
+Core browser-sync tests verify that `history.onVisited` page summaries can be supplied directly to the common collector, `getVisits` remains the visit-record source, browser data-image pages are counted and skipped, browser fragment URLs retain exact identity, and a 5-second incremental overlap is used when resolving the last committed cursor. Merge tests verify duplicate source discovery, threshold suppression after identity deduplication, threshold `0`, HTU threshold bypass, and compare-and-swap rejection of stale sibling generations.
+
+The background registers `history.onVisited`, queues exact URLs for a 250ms coalescing window, performs `getVisits` completion, starts a full sync on install, and requests incremental compensation when the history page opens. Chrome and Firefox production builds include these paths and pass the existing browser smoke suite; long-lived service-worker and Firefox lifecycle evidence remains part of stage 8.
+
+## Browser Collection Pagination And Production Regression
+
+Updated: 2026-08-21
+
+- `node --test tests/history-sync.test.mjs`: 6 passed, including fixed-size browser-history search batches and equal-timestamp boundary pages.
+- `node --test tests/storage-smoke.test.mjs`: 1 passed.
+- `npx tsc --noEmit --pretty false --project .wxt/tsconfig.json`: passed.
+- `npx wxt build` and `npx wxt build -b firefox`: both passed; import/export workers, SQLite assets and search rebuild worker are present.
+- `node --test tests/extension-background-collection.test.mjs`: Chrome production background collected a real visit and retained it after same-profile restart.
+- `node --test tests/extension-background-firefox.test.mjs`: Firefox production background collected a real visit and retained it after same-profile restart.
+
+The options page now calls `SearchEngine.searchPage()` with a frozen watermark cursor, supports empty-keyword time-range queries and exposes a next-page action. Native backup core serialization is covered by `tests/native-backup.test.mjs`; browser download/restore wiring remains an outstanding stage 6 item.

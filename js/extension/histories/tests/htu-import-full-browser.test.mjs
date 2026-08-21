@@ -74,7 +74,7 @@ test(
             assert.equal(result.rows, maxRows);
           }
           assert.ok(result.pages > 0, 'pages should be imported');
-          assert.equal(result.visits, result.rows);
+          assert.equal(result.visits + result.ignoredDataImages, result.rows);
           assert.equal(result.writtenVisits, result.visits);
           assert.equal(result.writtenPages, result.pages);
           assert.equal(result.summaryPages, result.pages);
@@ -170,6 +170,7 @@ function summarizeResult(result) {
     rows: result.rows,
     pages: result.pages,
     visits: result.visits,
+    ignoredDataImages: result.ignoredDataImages,
     fetchMs: Math.round(result.fetchMs),
     importMs: Math.round(result.importMs),
     totalMs: Math.round(result.totalMs),

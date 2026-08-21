@@ -21,3 +21,4 @@
 # tampermonkey
 /js/tampermonkey/**/dist.js
 /js/tampermonkey/**/dist.css
+/.session-files/

@@ -1,5 +1,5 @@
 export type ExportWorkerClientOptions = {
-  workerFactory?: () => Worker;
+  workerFactory: () => Worker;
 };
 
 export type ExportWorkerJobUpdate = {
@@ -16,8 +16,8 @@ export class ExportWorkerClient {
   private readonly worker: Worker;
   private readonly listeners = new Set<(update: ExportWorkerJobUpdate) => void>();
 
-  constructor(options: ExportWorkerClientOptions = {}) {
-    this.worker = (options.workerFactory ?? defaultExportWorkerFactory)();
+  constructor(options: ExportWorkerClientOptions) {
+    this.worker = options.workerFactory();
     this.worker.addEventListener('message', (event: MessageEvent<ExportWorkerJobUpdate>) => {
       this.listeners.forEach((listener) => listener(event.data));
     });
@@ -48,10 +48,4 @@ export class ExportWorkerClient {
     this.listeners.clear();
     this.worker.terminate();
   }
-}
-
-function defaultExportWorkerFactory(): Worker {
-  return new Worker(new URL('./export-worker.ts', import.meta.url), {
-    type: 'module'
-  });
 }

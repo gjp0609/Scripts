@@ -212,6 +212,132 @@ test('intersects keyword matches with time-range visit stats', async () => {
   engine.close();
 });
 
+test('rejects snapshots whose metadata does not match the stored database', async () => {
+  const { SearchEngine } = await loadSearchModule();
+  const snapshotDatabase = new FakeDatabase({ pageCount: 2 });
+  const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+  const baseSnapshot = {
+    key: 'latest',
+    schemaVersion: 1,
+    sqliteVersion: '3.46.1',
+    createdAt: 1,
+    sourceRevision: 'test',
+    bytes: new Uint8Array([1, 2, 3]),
+    pageCount: 1,
+    snapshotSize: 3
+  };
+  let snapshot = baseSnapshot;
+  const storage = {
+    async getPageChunks() { return []; },
+    async getPageVisitStatsFromTimeRange() { return []; },
+    async putSearchSnapshot() {},
+    async getLatestSearchSnapshot() { return snapshot; }
+  };
+  const engine = new SearchEngine({ runtime, storage });
+
+  snapshot = { ...baseSnapshot, snapshotSize: 4 };
+  await assert.rejects(() => engine.loadSnapshot(), /snapshot size mismatch/i);
+
+  snapshot = baseSnapshot;
+  await assert.rejects(() => engine.loadSnapshot(), /page count mismatch/i);
+  assert.equal(snapshotDatabase.closed, true);
+});
+
+test('paginates time-filtered results with a stable watermark cursor', async () => {
+  const { SearchEngine } = await loadSearchModule();
+  const snapshotDatabase = new FakeDatabase({
+    selectRows: [
+      [1, 'https://example.com/a', 'A', 3, 9000],
+      [2, 'https://example.com/b', 'B', 2, 9000],
+      [3, 'https://example.com/c', 'C', 1, 8000]
+    ]
+  });
+  const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+  const storage = {
+    async getPageChunks() { return []; },
+    async getPageVisitStatsFromTimeRange(query, pageIds) {
+      assert.equal(query.endTime, 10_000);
+      assert.deepEqual([...pageIds], [1, 2, 3]);
+      return [
+        { pageId: 1, matchedVisitCount: 1, matchedVisitTime: 9000 },
+        { pageId: 2, matchedVisitCount: 1, matchedVisitTime: 9000 },
+        { pageId: 3, matchedVisitCount: 1, matchedVisitTime: 8000 }
+      ];
+    },
+    async putSearchSnapshot() {},
+    async getLatestSearchSnapshot() {
+      return {
+        key: 'latest', schemaVersion: 1, sqliteVersion: '3.46.1', createdAt: 1,
+        sourceRevision: 'test', bytes: new Uint8Array([1, 2, 3]), pageCount: 3, snapshotSize: 3
+      };
+    }
+  };
+  const engine = new SearchEngine({ runtime, storage, now: () => 10_000 });
+  await engine.loadSnapshot();
+
+  const first = await engine.searchPage({ keyword: 'example', limit: 2 });
+  assert.deepEqual(first.results.map((row) => row.pageId), [2, 1]);
+  assert.deepEqual(first.nextCursor, { matchedVisitTime: 9000, pageId: 1, watermark: 10_000 });
+
+  const second = await engine.searchPage({ keyword: 'example', limit: 2, cursor: first.nextCursor });
+  assert.deepEqual(second.results.map((row) => row.pageId), [3]);
+  assert.equal(second.nextCursor, undefined);
+  assert.equal(second.watermark, 10_000);
+  engine.close();
+});
+
+test('uses sorted visit chunks for fast cursor pagination with timestamp ties', async () => {
+  const { SearchEngine } = await loadSearchModule();
+  const metadataRows = [
+    [1, 'https://example.com/1', 'One', 2, 100],
+    [2, 'https://example.com/2', 'Two', 1, 100],
+    [3, 'https://example.com/3', 'Three', 1, 100],
+    [4, 'https://example.com/4', 'Four', 1, 90]
+  ];
+  const snapshotDatabase = new FakeDatabase({
+    selectRows: metadataRows,
+    metadataRows,
+    keywordPageIds: [1, 2, 3, 4]
+  });
+  const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+  const storage = {
+    async getPageChunks() { return []; },
+    async getVisitChunks() {
+      return [
+        {
+          id: 'later', minVisitTime: 100, maxVisitTime: 100, count: 3,
+          pageIds: new Uint32Array([1, 3, 2]), visitTimes: new Float64Array([100, 100, 100])
+        },
+        {
+          id: 'earlier', minVisitTime: 80, maxVisitTime: 90, count: 2,
+          pageIds: new Uint32Array([1, 4]), visitTimes: new Float64Array([80, 90])
+        }
+      ];
+    },
+    async getPageVisitStatsFromTimeRange() { assert.fail('fast path should not aggregate through storage'); },
+    async putSearchSnapshot() {},
+    async getLatestSearchSnapshot() {
+      return {
+        key: 'latest', schemaVersion: 1, sqliteVersion: '3.46.1', createdAt: 1,
+        sourceRevision: 'test', bytes: new Uint8Array([1, 2, 3]), pageCount: 4, snapshotSize: 3
+      };
+    }
+  };
+  const engine = new SearchEngine({ runtime, storage, now: () => 100 });
+  await engine.loadSnapshot();
+
+  const first = await engine.searchPage({ keyword: 'example', startTime: 0, endTime: 100, limit: 2 });
+  assert.deepEqual(first.results.map((row) => row.pageId), [3, 2]);
+  assert.deepEqual(first.results.map((row) => row.matchedVisitCount), [1, 1]);
+  const second = await engine.searchPage({
+    keyword: 'example', startTime: 0, endTime: 100, limit: 2, cursor: first.nextCursor
+  });
+  assert.deepEqual(second.results.map((row) => row.pageId), [1, 4]);
+  assert.deepEqual(second.results.map((row) => row.matchedVisitCount), [2, 1]);
+  assert.equal(second.nextCursor, undefined);
+  engine.close();
+});
+
 test('cancels snapshot rebuild when the abort signal is triggered', async () => {
   const { SearchEngine } = await loadSearchModule();
   const controller = new AbortController();
@@ -285,6 +411,9 @@ class FakeDatabase {
     this.execCalls = 0;
     this.insertedRows = [];
     this.selectRows = options.selectRows ?? [];
+    this.pageCount = options.pageCount ?? this.selectRows.length;
+    this.metadataRows = options.metadataRows ?? this.selectRows;
+    this.keywordPageIds = options.keywordPageIds ?? this.selectRows.map((row) => row[0]);
     this.selectBinds = [];
   }
 
@@ -296,12 +425,60 @@ class FakeDatabase {
     if (sql.includes('INSERT INTO pages_fts')) {
       return new FakeInsertStatement(this);
     }
+    if (sql.includes('COUNT(*) FROM pages_fts')) {
+      return new FakeCountStatement(this.pageCount);
+    }
+    if (sql.includes('SELECT rowid FROM pages_fts')) {
+      return new FakeRowsStatement(this.keywordPageIds.map((pageId) => [pageId]));
+    }
+    if (sql.includes('WHERE rowid IN')) {
+      return new FakeMetadataStatement(this.metadataRows);
+    }
 
     return new FakeSelectStatement(this);
   }
 
   close() {
     this.closed = true;
+  }
+}
+
+class FakeCountStatement {
+  constructor(pageCount) {
+    this.pageCount = pageCount;
+    this.pending = true;
+  }
+
+  bind() { return this; }
+  step() {
+    const result = this.pending;
+    this.pending = false;
+    return result;
+  }
+  get() { return [this.pageCount]; }
+  finalize() {}
+}
+
+class FakeRowsStatement {
+  constructor(rows) {
+    this.rows = rows;
+    this.index = -1;
+  }
+  bind() { return this; }
+  step() { this.index += 1; return this.index < this.rows.length; }
+  get() { return this.rows[this.index]; }
+  finalize() {}
+}
+
+class FakeMetadataStatement extends FakeRowsStatement {
+  constructor(rows) {
+    super([]);
+    this.allRows = rows;
+  }
+  bind(pageIds) {
+    const selected = new Set(pageIds);
+    this.rows = this.allRows.filter((row) => selected.has(row[0]));
+    return this;
   }
 }
 

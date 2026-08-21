@@ -25,6 +25,9 @@ export default defineConfig({
     description: 'Chrome and Firefox compatible history search and HTU import/export.',
     version: '0.1.0',
     permissions: ['history', 'storage', 'unlimitedStorage', 'downloads'],
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    },
     browser_specific_settings:
       browser === 'firefox'
         ? {

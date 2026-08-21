@@ -1,93 +1,97 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Histories</title>
-    <script type="module" src="./main.ts"></script>
-  </head>
-  <body>
-    <main id="app" class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <span class="brand-mark">H</span>
-          <div>
-            <h1>Histories</h1>
-            <p>History search workspace</p>
-          </div>
-        </div>
-        <nav class="nav">
-          <button class="nav-item active" type="button">Search</button>
-          <button class="nav-item" type="button" disabled>Import</button>
-          <button class="nav-item" type="button" disabled>Export</button>
-          <button class="nav-item" type="button" disabled>Stats</button>
-        </nav>
-      </aside>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Histories</title>
+        <script type="module" src="./main.ts"></script>
+    </head>
+    <body>
+        <main id="app" class="app-shell">
+            <aside class="sidebar">
+                <div class="brand">
+                    <span class="brand-mark">H</span>
+                    <div>
+                        <h1>Histories</h1>
+                        <p>History search workspace</p>
+                    </div>
+                </div>
+                <nav class="nav">
+                    <button class="nav-item active" type="button">Search</button>
+                    <button class="nav-item" type="button" disabled>Import</button>
+                    <button class="nav-item" type="button" disabled>Export</button>
+                    <button class="nav-item" type="button" disabled>Stats</button>
+                </nav>
+            </aside>
 
-      <section class="workspace">
-        <header class="toolbar">
-          <label class="search-box">
-            <span>Keyword</span>
-            <input id="keyword" type="search" placeholder="Search title or URL" autocomplete="off" />
-          </label>
-          <label>
-            <span>From</span>
-            <input id="fromTime" type="datetime-local" />
-          </label>
-          <label>
-            <span>To</span>
-            <input id="toTime" type="datetime-local" />
-          </label>
-          <button id="searchButton" type="button">Search</button>
-        </header>
+            <section class="workspace">
+                <header class="toolbar">
+                    <label class="search-box">
+                        <span>Keyword</span>
+                        <input id="keyword" type="search" placeholder="Search title or URL" autocomplete="off" />
+                    </label>
+                    <label>
+                        <span>From</span>
+                        <input id="fromTime" type="datetime-local" />
+                    </label>
+                    <label>
+                        <span>To</span>
+                        <input id="toTime" type="datetime-local" />
+                    </label>
+                    <button id="searchButton" type="button">Search</button>
+                    <button id="nextPageButton" type="button" disabled>Next page</button>
+                </header>
 
-        <section class="status-grid" aria-label="status">
-          <article>
-            <span>Runtime</span>
-            <strong id="runtimeStatus">Checking</strong>
-          </article>
-          <article>
-            <span>Storage</span>
-            <strong id="storageStatus">Checking</strong>
-          </article>
-          <article>
-            <span>Search Snapshot</span>
-            <strong id="snapshotStatus">Checking</strong>
-          </article>
-        </section>
+                <section class="status-grid" aria-label="status">
+                    <article>
+                        <span>Runtime</span>
+                        <strong id="runtimeStatus">Checking</strong>
+                    </article>
+                    <article>
+                        <span>Storage</span>
+                        <strong id="storageStatus">Checking</strong>
+                    </article>
+                    <article>
+                        <span>Search Snapshot</span>
+                        <strong id="snapshotStatus">Checking</strong>
+                    </article>
+                </section>
 
-        <section class="task-panel" aria-label="tasks">
-          <div class="panel-head">
-            <h2>Tasks</h2>
-            <span id="jobStatus">Idle</span>
-          </div>
-          <div class="task-controls">
-            <label class="file-box">
-              <span>HTU Backup</span>
-              <input id="importFile" type="file" accept=".tsv,text/tab-separated-values" />
-            </label>
-            <button id="importButton" type="button">Import TSV</button>
-            <button id="cancelImportButton" type="button" disabled>Cancel Import</button>
-            <button id="syncButton" type="button">Sync History</button>
-            <button id="cancelSyncButton" type="button" disabled>Cancel Sync</button>
-            <button id="exportButton" type="button">Export TSV</button>
-            <button id="cancelExportButton" type="button" disabled>Cancel Export</button>
-            <button id="rebuildButton" type="button">Rebuild Snapshot</button>
-            <button id="cancelRebuildButton" type="button" disabled>Cancel Rebuild</button>
-          </div>
-          <div id="jobsList" class="job-list empty-state">No jobs yet.</div>
-        </section>
+                <section class="task-panel" aria-label="tasks">
+                    <div class="panel-head">
+                        <h2>Tasks</h2>
+                        <span id="jobStatus">Idle</span>
+                    </div>
+                    <div class="task-controls">
+                        <label class="file-box">
+                            <span>HTU Backup</span>
+                            <input id="importFile" type="file" multiple accept=".tsv,text/tab-separated-values" />
+                        </label>
+                        <button id="importButton" type="button">Import TSV</button>
+                        <button id="cancelImportButton" type="button" disabled>Cancel Import</button>
+                        <button id="syncButton" type="button">Sync History</button>
+                        <button id="cancelSyncButton" type="button" disabled>Cancel Sync</button>
+                        <label>
+                            <span>Ignore same URL within seconds</span>
+                            <input id="frequentVisitThreshold" type="number" min="0" step="0.1" value="2" />
+                        </label>
+                        <button id="saveSyncSettingsButton" type="button">Save Sync Settings</button>
+                        <button id="exportButton" type="button">Export TSV</button>
+                        <button id="cancelExportButton" type="button" disabled>Cancel Export</button>
+                        <button id="rebuildButton" type="button">Rebuild Snapshot</button>
+                        <button id="cancelRebuildButton" type="button" disabled>Cancel Rebuild</button>
+                    </div>
+                    <div id="jobsList" class="job-list empty-state">No jobs yet.</div>
+                </section>
 
-        <section class="results-panel">
-          <div class="panel-head">
-            <h2>Results</h2>
-            <span id="resultSummary">Skeleton ready</span>
-          </div>
-          <div id="results" class="empty-state">
-            No query has been run.
-          </div>
-        </section>
-      </section>
-    </main>
-  </body>
+                <section class="results-panel">
+                    <div class="panel-head">
+                        <h2>Results</h2>
+                        <span id="resultSummary">Skeleton ready</span>
+                    </div>
+                    <div id="results" class="empty-state"> No query has been run. </div>
+                </section>
+            </section>
+        </main>
+    </body>
 </html>

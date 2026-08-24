@@ -9,13 +9,24 @@
     }>();
 
     const emit = defineEmits<{
-        open: [bookmark: BookmarkView];
-        edit: [bookmark: BookmarkView];
-        delete: [bookmark: BookmarkView];
+        'open': [bookmark: BookmarkView];
+        'open-background': [bookmark: BookmarkView];
+        'edit': [bookmark: BookmarkView];
+        'delete': [bookmark: BookmarkView];
     }>();
 
     function openBookmark() {
         if (!props.organize) emit('open', props.bookmark);
+    }
+
+    function preventMiddleMouseDefault(event: MouseEvent) {
+        if (!props.organize) event.preventDefault();
+    }
+
+    function openBookmarkInBackground(event: MouseEvent) {
+        if (props.organize) return;
+        event.preventDefault();
+        emit('open-background', props.bookmark);
     }
 </script>
 
@@ -27,6 +38,8 @@
         :tabindex="organize ? undefined : 0"
         :role="organize ? undefined : 'link'"
         @click="openBookmark"
+        @mousedown.middle="preventMiddleMouseDefault"
+        @auxclick.middle="openBookmarkInBackground"
         @keydown.enter="openBookmark"
     >
         <button v-if="organize" class="drag-handle" type="button" aria-label="拖拽书签" @click.stop>

@@ -11,10 +11,10 @@ export function useSearchCommands(options: { search: SearchState; mode: Ref<'bro
     const searchInputElement = ref<HTMLInputElement>();
     const error = ref('');
 
-    async function runOpenUrl(url: string) {
+    async function runOpenUrl(url: string, options?: { active?: boolean }) {
         error.value = '';
         try {
-            await openUrl(url);
+            await openUrl(url, options);
         } catch (cause) {
             error.value = cause instanceof Error ? cause.message : '打开页面失败';
         }
@@ -37,6 +37,10 @@ export function useSearchCommands(options: { search: SearchState; mode: Ref<'bro
 
     function openBookmark(bookmark: BookmarkView) {
         if (options.mode.value === 'browse' && bookmark.url) void runOpenUrl(bookmark.url);
+    }
+
+    function openBookmarkInBackground(bookmark: BookmarkView) {
+        if (options.mode.value === 'browse' && bookmark.url) void runOpenUrl(bookmark.url, { active: false });
     }
 
     function openQuickSearch(target: QuickSearchTarget) {
@@ -110,6 +114,7 @@ export function useSearchCommands(options: { search: SearchState; mode: Ref<'bro
         handleEngineKeydown,
         handleSearchKeydown,
         openBookmark,
+        openBookmarkInBackground,
         openQuickSearch,
         selectTag,
     };

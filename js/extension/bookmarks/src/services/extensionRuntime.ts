@@ -17,8 +17,8 @@ export async function openAppPage(): Promise<void> {
     await browser.tabs.create({ url });
 }
 
-export async function openUrl(url: string): Promise<void> {
-    await browser.tabs.create({ url });
+export async function openUrl(url: string, options: { active?: boolean } = {}): Promise<void> {
+    await browser.tabs.create({ url, active: options.active ?? true });
 }
 
 export function closePopup(): void {

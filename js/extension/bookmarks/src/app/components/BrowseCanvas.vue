@@ -9,6 +9,7 @@
     const emit = defineEmits<{
         'toggle-folder': [folderId: string];
         'open-bookmark': [bookmark: BookmarkView];
+        'open-bookmark-background': [bookmark: BookmarkView];
     }>();
 
     const boardEl = ref<HTMLElement>();
@@ -78,6 +79,7 @@
                     :bookmark="bookmark"
                     :organize="false"
                     @open="emit('open-bookmark', $event)"
+                    @open-background="emit('open-bookmark-background', $event)"
                 />
             </div>
             <button v-else class="folder-collapsed" type="button" @click="emit('toggle-folder', folder.id)">...</button>

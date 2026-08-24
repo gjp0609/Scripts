@@ -358,6 +358,7 @@
                         :force-expanded="Boolean(query)"
                         @toggle-folder="toggleFolderFromTitle"
                         @open-bookmark="searchCommands.openBookmark"
+                        @open-bookmark-background="searchCommands.openBookmarkInBackground"
                     />
 
                     <BookmarkOrganizeCanvas

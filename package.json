@@ -42,7 +42,7 @@
         "postcss-less": "6.0.0",
         "puppeteer-core": "25.1.0",
         "redis": "6.0.0",
-        "sharp": "0.34.5",
+        "sharp": "0.35.4",
         "simple-notify": "1.0.6",
         "sm-crypto-v2": "1.15.1",
         "vue": "3.5.35",

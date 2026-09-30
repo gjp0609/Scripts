@@ -10,6 +10,7 @@ export type ExportWorkerJobUpdate = {
     error?: string;
     filename?: string;
     text?: string;
+    blob?: Blob;
 };
 
 export class ExportWorkerClient {

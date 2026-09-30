@@ -60,6 +60,9 @@ test('merges the real baseline and overlapping incremental HTU fixtures', { time
                 assert.equal(result.visits, manifest.expectedFinalRows);
                 assert.equal(result.repeatedAdded, 0);
                 assert.equal(result.repeatedDuplicates, manifest.incrementalRows);
+                assert.equal(result.restoredPages, result.pages);
+                assert.equal(result.restoredVisits, result.visits);
+                assert.ok(result.nativeBackupBytes > 0);
                 t.diagnostic(
                     JSON.stringify({
                         pages: result.pages,
@@ -70,6 +73,9 @@ test('merges the real baseline and overlapping incremental HTU fixtures', { time
                         baselineMs: Math.round(result.baselineMs),
                         incrementalMs: Math.round(result.incrementalMs),
                         repeatedMs: Math.round(result.repeatedMs),
+                        nativeBackupBytes: result.nativeBackupBytes,
+                        nativeExportMs: Math.round(result.nativeExportMs),
+                        nativeRestoreMs: Math.round(result.nativeRestoreMs),
                     }),
                 );
             } finally {

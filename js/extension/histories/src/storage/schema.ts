@@ -111,6 +111,7 @@ export type SearchSnapshotRecord = {
     bytes: Uint8Array;
     pageCount: number;
     snapshotSize: number;
+    sha256?: string;
 };
 
 export type JobRecord = {

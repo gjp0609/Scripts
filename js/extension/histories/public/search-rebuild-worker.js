@@ -36,6 +36,7 @@ async function startJob(jobId) {
             id: jobId,
             type: 'search-rebuild',
             status: 'queued',
+            resumable: true,
             updatedAt: startedAt,
             progress: {
                 stage: 'queued',
@@ -49,6 +50,7 @@ async function startJob(jobId) {
             id: jobId,
             type: 'search-rebuild',
             status: 'running',
+            resumable: true,
             startedAt,
             updatedAt: startedAt,
             progress: {
@@ -148,6 +150,7 @@ async function startJob(jobId) {
                 bytes,
                 pageCount: totalPages,
                 snapshotSize: bytes.byteLength,
+                sha256: await sha256Hex(bytes),
             });
 
             const result = {
@@ -159,6 +162,7 @@ async function startJob(jobId) {
                 id: jobId,
                 type: 'search-rebuild',
                 status: 'complete',
+                resumable: true,
                 startedAt,
                 updatedAt: Date.now(),
                 progress: result,
@@ -174,6 +178,7 @@ async function startJob(jobId) {
             id: jobId,
             type: 'search-rebuild',
             status,
+            resumable: true,
             startedAt,
             updatedAt: Date.now(),
             progress: previous ? previous.progress : undefined,
@@ -196,6 +201,7 @@ async function updateProgress(jobId, startedAt, progress) {
         id: jobId,
         type: 'search-rebuild',
         status,
+        resumable: true,
         startedAt,
         updatedAt: Date.now(),
         progress,
@@ -246,6 +252,11 @@ function isCancelled(job, error) {
 
 function toErrorMessage(error) {
     return error instanceof Error ? error.message : String(error);
+}
+
+async function sha256Hex(bytes) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes.slice().buffer);
+    return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, '0')).join('');
 }
 
 async function openDatabase() {

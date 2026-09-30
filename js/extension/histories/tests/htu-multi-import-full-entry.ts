@@ -1,4 +1,5 @@
 import { importHtuFiles } from '../src/import/htu-multi-import';
+import { exportNativeHistoryBackup, restoreNativeHistoryBackup } from '../src/export/native-backup';
 import { getDatabaseSummary } from '../src/storage/database';
 import { DATABASE_NAME } from '../src/storage/schema';
 
@@ -32,6 +33,15 @@ window.runHistoriesMultiImportFull = async () => {
     ]);
     const repeatedMs = performance.now() - repeatedStartedAt;
     const summary = await getDatabaseSummary();
+    const nativeExportStartedAt = performance.now();
+    const nativeBackup = await exportNativeHistoryBackup();
+    const nativeExportMs = performance.now() - nativeExportStartedAt;
+    const nativeBackupBytes = nativeBackup.blob.size;
+    await deleteDatabase(DATABASE_NAME);
+    const nativeRestoreStartedAt = performance.now();
+    const nativeRestore = await restoreNativeHistoryBackup(nativeBackup.blob);
+    const nativeRestoreMs = performance.now() - nativeRestoreStartedAt;
+    const restoredSummary = await getDatabaseSummary();
 
     return {
         manifest,
@@ -46,6 +56,12 @@ window.runHistoriesMultiImportFull = async () => {
         baselineMs,
         incrementalMs,
         repeatedMs,
+        nativeBackupBytes,
+        nativeExportMs,
+        nativeRestoreMs,
+        restoredPages: restoredSummary.pages,
+        restoredVisits: restoredSummary.visits,
+        restored: nativeRestore,
     };
 };
 

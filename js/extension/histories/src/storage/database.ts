@@ -919,6 +919,19 @@ export async function getHistorySource(id: string): Promise<HistorySourceRecord 
     }
 }
 
+export async function listHistorySources(): Promise<HistorySourceRecord[]> {
+    const db = await openHistoriesDatabase();
+    try {
+        return await readCursor<HistorySourceRecord>(
+            db.transaction('historySources', 'readonly').objectStore('historySources'),
+            undefined,
+            { limit: Number.POSITIVE_INFINITY },
+        );
+    } finally {
+        db.close();
+    }
+}
+
 export async function getHistorySourceByFingerprint(fingerprint: string): Promise<HistorySourceRecord | undefined> {
     const db = await openHistoriesDatabase();
     try {
@@ -990,6 +1003,19 @@ export async function getImportBatch(id: string): Promise<ImportBatchRecord | un
         return (await requestToPromise(
             db.transaction('importBatches', 'readonly').objectStore('importBatches').get(id),
         )) as ImportBatchRecord | undefined;
+    } finally {
+        db.close();
+    }
+}
+
+export async function listImportBatches(): Promise<ImportBatchRecord[]> {
+    const db = await openHistoriesDatabase();
+    try {
+        return await readCursor<ImportBatchRecord>(
+            db.transaction('importBatches', 'readonly').objectStore('importBatches'),
+            undefined,
+            { limit: Number.POSITIVE_INFINITY },
+        );
     } finally {
         db.close();
     }

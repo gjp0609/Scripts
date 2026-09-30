@@ -43,6 +43,16 @@ export type SearchSnapshotInfo = {
     sqliteVersion: string;
 };
 
+export type SearchIncrementalInfo = SearchSnapshotInfo & {
+    updatedPages: number;
+    sourceRevision: string;
+    checkpointed: boolean;
+};
+
+export type SearchIncrementalOptions = {
+    checkpoint?: boolean;
+};
+
 export type SqliteSearchRuntime = {
     sqliteVersion: string;
     openMemoryDatabase: () => SqliteSearchDatabase;
@@ -95,6 +105,7 @@ export type SearchSnapshotRecord = {
     bytes: Uint8Array;
     pageCount: number;
     snapshotSize: number;
+    sha256?: string;
 };
 
 export type SearchStorage = {
@@ -106,6 +117,9 @@ export type SearchStorage = {
     ) => Promise<Array<{ pageId: number; matchedVisitCount: number; matchedVisitTime: number }>>;
     putSearchSnapshot: (snapshot: SearchSnapshotRecord) => Promise<void>;
     getLatestSearchSnapshot: () => Promise<SearchSnapshotRecord | undefined>;
+    listDirtyPages?: () => Promise<Array<{ pageId: number; reason: string; revision: number }>>;
+    clearDirtyPages?: (pageIds: number[]) => Promise<void>;
+    getSourceRevision?: () => Promise<string>;
 };
 
 export type SearchEngineOptions = {
@@ -196,10 +210,13 @@ export class SearchEngine {
             schemaVersion: SEARCH_SCHEMA_VERSION,
             sqliteVersion: this.runtime.sqliteVersion,
             createdAt: this.now(),
-            sourceRevision: makeSourceRevision(pageChunks),
+            sourceRevision: this.storage.getSourceRevision
+                ? await this.storage.getSourceRevision()
+                : makeSourceRevision(pageChunks),
             bytes,
             pageCount,
             snapshotSize: bytes.byteLength,
+            sha256: await sha256Hex(bytes),
         });
         await this.preloadVisitChunks();
         await this.emitProgress({ stage: 'done', pages: pageCount, writtenPages });
@@ -226,6 +243,9 @@ export class SearchEngine {
                 `Search snapshot size mismatch: metadata=${snapshot.snapshotSize}, bytes=${snapshot.bytes.byteLength}.`,
             );
         }
+        if (snapshot.sha256 && (await sha256Hex(snapshot.bytes)) !== snapshot.sha256) {
+            throw new Error('Search snapshot checksum mismatch.');
+        }
 
         const database = this.runtime.openSnapshotDatabase(snapshot.bytes);
         try {
@@ -244,9 +264,96 @@ export class SearchEngine {
         }
     }
 
+    async refreshSnapshotIncremental(options: SearchIncrementalOptions = {}): Promise<SearchIncrementalInfo> {
+        if (!this.storage.listDirtyPages || !this.storage.clearDirtyPages) {
+            throw new Error('Incremental search refresh is not supported by this storage adapter.');
+        }
+        if (!this.database) await this.loadSnapshot();
+        const dirty = await this.storage.listDirtyPages();
+        const sourceRevision = this.storage.getSourceRevision
+            ? await this.storage.getSourceRevision()
+            : `dirty:${dirty.at(-1)?.revision ?? 0}`;
+        if (dirty.length === 0) {
+            const snapshot = await this.storage.getLatestSearchSnapshot();
+            return {
+                pageCount: this.loadedPageCount,
+                snapshotSize: snapshot?.snapshotSize ?? 0,
+                sqliteVersion: this.runtime.sqliteVersion,
+                updatedPages: 0,
+                sourceRevision,
+                checkpointed: false,
+            };
+        }
+
+        const dirtyIds = new Set(dirty.map((record) => record.pageId));
+        const pageChunks = await this.storage.getPageChunks();
+        const rows = pageRowsForIds(pageChunks, dirtyIds);
+        this.loadedPageCount = pageChunks.reduce((total, chunk) => total + chunk.count, 0);
+        const database = this.requireDatabase();
+        const deleteStatement = database.prepare('DELETE FROM pages_fts WHERE rowid = ?');
+        const insertStatement = database.prepare(
+            'INSERT INTO pages_fts(rowid, search_text, url, title, visit_count, last_visit_time) VALUES(?, ?, ?, ?, ?, ?)',
+        );
+        let transactionOpen = false;
+        try {
+            database.exec('BEGIN');
+            transactionOpen = true;
+            for (const row of rows) {
+                executeInsert(deleteStatement.bind([row.pageId]));
+                executeInsert(
+                    insertStatement.bind([
+                        row.pageId,
+                        normalizeSearchText(row.url, row.title),
+                        row.url,
+                        row.title,
+                        row.visitCount,
+                        row.lastVisitTime,
+                    ]),
+                );
+            }
+            database.exec('COMMIT');
+            transactionOpen = false;
+        } catch (error) {
+            if (transactionOpen) database.exec('ROLLBACK');
+            throw error;
+        } finally {
+            deleteStatement.finalize();
+            insertStatement.finalize();
+        }
+
+        const previousSnapshot = await this.storage.getLatestSearchSnapshot();
+        let snapshotSize = previousSnapshot?.snapshotSize ?? 0;
+        if (options.checkpoint !== false) {
+            const bytes = this.runtime.exportDatabase(database);
+            snapshotSize = bytes.byteLength;
+            await this.storage.putSearchSnapshot({
+                key: 'latest',
+                schemaVersion: SEARCH_SCHEMA_VERSION,
+                sqliteVersion: this.runtime.sqliteVersion,
+                createdAt: this.now(),
+                sourceRevision,
+                bytes,
+                pageCount: this.loadedPageCount,
+                snapshotSize,
+                sha256: await sha256Hex(bytes),
+            });
+            await this.storage.clearDirtyPages([...dirtyIds]);
+        }
+        this.keywordCandidates.clear();
+        return {
+            pageCount: this.loadedPageCount,
+            snapshotSize,
+            sqliteVersion: this.runtime.sqliteVersion,
+            updatedPages: rows.length,
+            sourceRevision,
+            checkpointed: options.checkpoint !== false,
+        };
+    }
+
     async search(query: SearchQuery): Promise<SearchResult[]> {
         const keyword = normalizeKeyword(query.keyword);
         if (!keyword) return [];
+        if (keyword.length < 3) return [];
 
         const limit = normalizeLimit(query.limit);
         if (!hasVisitTimeFilter(query)) {
@@ -284,6 +391,7 @@ export class SearchEngine {
         if (query.cursor && query.endTime !== undefined && query.endTime !== query.cursor.watermark) {
             throw new Error('Search cursor watermark does not match the requested end time.');
         }
+        if (keyword && keyword.length < 3) return { results: [], watermark };
 
         if (this.storage.getVisitChunks) {
             return await this.searchPageFromVisitIndex(query, keyword, limit, watermark);
@@ -513,6 +621,39 @@ function searchResultFromRow(row: unknown[]): SearchResult {
     };
 }
 
+function pageRowsForIds(
+    chunks: SearchPageChunk[],
+    ids: Set<number>,
+): Array<{
+    pageId: number;
+    url: string;
+    title: string;
+    visitCount: number;
+    lastVisitTime: number;
+}> {
+    const rows: Array<{
+        pageId: number;
+        url: string;
+        title: string;
+        visitCount: number;
+        lastVisitTime: number;
+    }> = [];
+    for (const chunk of chunks) {
+        for (let index = 0; index < chunk.count; index += 1) {
+            const pageId = chunk.firstPageId + index;
+            if (!ids.has(pageId)) continue;
+            rows.push({
+                pageId,
+                url: chunk.urls[index] ?? '',
+                title: chunk.titles[index] ?? '',
+                visitCount: chunk.visitCounts[index] ?? 0,
+                lastVisitTime: chunk.lastVisitTimes[index] ?? 0,
+            });
+        }
+    }
+    return rows;
+}
+
 function executeInsert(statement: SqliteSearchStatement): void {
     if (statement.stepReset) {
         statement.stepReset();
@@ -554,6 +695,11 @@ function throwIfAborted(signal: AbortSignal | undefined): void {
     if (signal?.aborted) {
         throw new DOMException('The operation was aborted.', 'AbortError');
     }
+}
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+    const digest = await crypto.subtle.digest('SHA-256', bytes.slice().buffer);
+    return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, '0')).join('');
 }
 
 function hasVisitTimeFilter(query: SearchQuery): boolean {

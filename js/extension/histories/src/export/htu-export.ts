@@ -1,4 +1,4 @@
-import { serializeArchivedRows } from '../htu/tsv.js';
+import { convertTextToTransition, serializeArchivedRows } from '../htu/tsv.js';
 import { decodePageChunkRows, getPageChunks, getVisitChunks } from '../storage/database';
 import type { PageChunkRecord, VisitChunkRecord } from '../storage/schema';
 
@@ -22,6 +22,11 @@ export type HtuExportProgress = {
 export type ExportHtuArchivedOptions = {
     signal?: AbortSignal;
     onProgress?: (progress: HtuExportProgress) => void | Promise<void>;
+};
+
+export type HtuBlobExportResult = {
+    blob: Blob;
+    progress: HtuExportProgress;
 };
 
 export async function exportHtuArchivedTsv(
@@ -56,6 +61,56 @@ export async function exportHtuArchivedTsv(
     throwIfAborted(options.signal);
     await emitProgress(options, progress);
     return { text, progress };
+}
+
+export async function exportHtuArchivedBlob(options: ExportHtuArchivedOptions = {}): Promise<HtuBlobExportResult> {
+    throwIfAborted(options.signal);
+    const [pageChunks, visitChunks] = await Promise.all([getPageChunks(), getVisitChunks()]);
+    const pages = pageChunks.reduce((total, chunk) => total + chunk.count, 0);
+    const visits = visitChunks.reduce((total, chunk) => total + chunk.count, 0);
+    await emitProgress(options, { stage: 'loading', pages, visits, writtenRows: 0, bytes: 0 });
+
+    const pageById = new Map<number, { url: string; title: string }>();
+    for (const chunk of pageChunks) {
+        for (const row of decodePageChunkRows(chunk)) pageById.set(row.id, { url: row.url, title: row.title });
+    }
+    const refs: Array<{ chunk: VisitChunkRecord; index: number; sourceIndex: number }> = [];
+    for (const chunk of visitChunks) {
+        for (let index = 0; index < chunk.count; index += 1) {
+            refs.push({ chunk, index, sourceIndex: chunk.sourceIndexes[index] ?? refs.length });
+        }
+    }
+    refs.sort((left, right) => left.sourceIndex - right.sourceIndex);
+    const parts: BlobPart[] = [];
+    let bytes = 0;
+    for (let start = 0; start < refs.length; start += 10_000) {
+        throwIfAborted(options.signal);
+        let text = '';
+        for (const ref of refs.slice(start, start + 10_000)) {
+            const page = pageById.get(ref.chunk.pageIds[ref.index]);
+            if (!page) throw new Error(`Missing page metadata for pageId ${ref.chunk.pageIds[ref.index]}`);
+            text += serializeArchivedRows([
+                {
+                    url: page.url,
+                    visitTime: ref.chunk.visitTimes[ref.index] ?? 0,
+                    transition: decodeTransition(ref.chunk.transitionCodes[ref.index] ?? 255),
+                    title: ref.chunk.titles?.[ref.index] ?? page.title,
+                },
+            ]);
+        }
+        parts.push(text);
+        bytes += text.length;
+        await emitProgress(options, {
+            stage: 'serializing',
+            pages,
+            visits,
+            writtenRows: Math.min(start + 10_000, visits),
+            bytes,
+        });
+    }
+    const progress = { stage: 'done' as const, pages, visits, writtenRows: visits, bytes };
+    await emitProgress(options, progress);
+    return { blob: new Blob(parts, { type: 'text/tab-separated-values;charset=utf-8' }), progress };
 }
 
 export function serializeHtuArchivedRows(pageChunks: PageChunkRecord[], visitChunks: VisitChunkRecord[]): string {

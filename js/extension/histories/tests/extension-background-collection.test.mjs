@@ -16,7 +16,11 @@ test('production Chrome extension records onVisited history and survives restart
         t.skip('Build js/extension/histories before running production extension collection test');
         return;
     }
-    const profile = await mkdtemp(path.join(tmpdir(), 'histories-production-profile-'));
+    const configuredProfile = process.env.HISTORIES_CHROME_PROFILE;
+    const profile = configuredProfile
+        ? path.resolve(configuredProfile)
+        : await mkdtemp(path.join(tmpdir(), 'histories-production-profile-'));
+    const ownsProfile = !configuredProfile;
     const server = await serveFixture();
     try {
         const first = await chromium.launchPersistentContext(profile, {
@@ -34,6 +38,14 @@ test('production Chrome extension records onVisited history and survives restart
             await target.close();
             const firstCount = await waitForVisitCount(options, 1);
             assert.ok(firstCount >= 1, 'formal background should persist a visit generation');
+            await options.evaluate(async (url) => {
+                await chrome.history.deleteUrl({ url });
+            }, `${server.url}/visit?case=production`);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+            assert.ok(
+                (await waitForVisitCount(options, firstCount)) >= firstCount,
+                'deleting browser history must not delete Histories visits',
+            );
             await first.close();
 
             const second = await chromium.launchPersistentContext(profile, {
@@ -55,7 +67,7 @@ test('production Chrome extension records onVisited history and survives restart
         }
     } finally {
         await server.close();
-        await rm(profile, { recursive: true, force: true });
+        if (ownsProfile) await rm(profile, { recursive: true, force: true });
     }
 });
 

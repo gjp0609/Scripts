@@ -141,6 +141,131 @@ test('loads a snapshot and searches with keyword, time range, and limit', async 
     engine.close();
 });
 
+test('replays dirty pages into an existing snapshot and clears them only after save', async () => {
+    const { SearchEngine } = await loadSearchModule();
+    const snapshotDatabase = new FakeDatabase({ pageCount: 2 });
+    const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+    const snapshots = [
+        {
+            key: 'latest',
+            schemaVersion: 1,
+            sqliteVersion: '3.46.1',
+            createdAt: 1,
+            sourceRevision: 'generation:1',
+            bytes: new Uint8Array([1, 2, 3]),
+            pageCount: 2,
+            snapshotSize: 3,
+        },
+    ];
+    const dirty = [{ pageId: 2, reason: 'search-text-changed', revision: 2 }];
+    let cleared;
+    const storage = {
+        async getPageChunks() {
+            return [
+                {
+                    id: 'p',
+                    firstPageId: 1,
+                    count: 2,
+                    urls: ['https://a', 'https://b-new'],
+                    normalizedUrls: ['https://a', 'https://b-new'],
+                    titles: ['A', 'B new'],
+                    visitCounts: new Uint32Array([1, 3]),
+                    lastVisitTimes: new Float64Array([10, 30]),
+                },
+            ];
+        },
+        async getPageVisitStatsFromTimeRange() {
+            return [];
+        },
+        async putSearchSnapshot(snapshot) {
+            snapshots.push(snapshot);
+        },
+        async getLatestSearchSnapshot() {
+            return snapshots.at(-1);
+        },
+        async listDirtyPages() {
+            return dirty;
+        },
+        async clearDirtyPages(ids) {
+            cleared = ids;
+            dirty.length = 0;
+        },
+        async getSourceRevision() {
+            return 'generation:2';
+        },
+    };
+    const engine = new SearchEngine({ runtime, storage, now: () => 50 });
+    await engine.loadSnapshot();
+    const result = await engine.refreshSnapshotIncremental();
+    assert.equal(result.updatedPages, 1);
+    assert.deepEqual(cleared, [2]);
+    assert.equal(snapshots.at(-1).sourceRevision, 'generation:2');
+    assert.deepEqual(snapshotDatabase.insertedRows.at(-1), [
+        2,
+        'https://b-new https://b-new b new',
+        'https://b-new',
+        'B new',
+        3,
+        30,
+    ]);
+    engine.close();
+});
+
+test('keeps dirty pages when incremental checkpoint persistence fails', async () => {
+    const { SearchEngine } = await loadSearchModule();
+    const snapshotDatabase = new FakeDatabase({ pageCount: 1 });
+    const runtime = new FakeRuntime(new FakeDatabase(), snapshotDatabase);
+    let cleared = false;
+    const storage = {
+        async getPageChunks() {
+            return [
+                {
+                    id: 'p',
+                    firstPageId: 1,
+                    count: 1,
+                    urls: ['https://a'],
+                    normalizedUrls: ['https://a'],
+                    titles: ['A'],
+                    visitCounts: new Uint32Array([1]),
+                    lastVisitTimes: new Float64Array([1]),
+                },
+            ];
+        },
+        async getPageVisitStatsFromTimeRange() {
+            return [];
+        },
+        async getLatestSearchSnapshot() {
+            return {
+                key: 'latest',
+                schemaVersion: 1,
+                sqliteVersion: '3.46.1',
+                createdAt: 1,
+                sourceRevision: 'generation:1',
+                bytes: new Uint8Array([1]),
+                pageCount: 1,
+                snapshotSize: 1,
+            };
+        },
+        async listDirtyPages() {
+            return [{ pageId: 1, reason: 'search-text-changed', revision: 2 }];
+        },
+        async clearDirtyPages() {
+            cleared = true;
+        },
+        async putSearchSnapshot() {
+            throw new Error('quota exceeded');
+        },
+        async getSourceRevision() {
+            return 'generation:2';
+        },
+    };
+    const engine = new SearchEngine({ runtime, storage });
+    await engine.loadSnapshot();
+    await assert.rejects(() => engine.refreshSnapshotIncremental({ checkpoint: true }), /quota exceeded/);
+    assert.equal(cleared, false);
+    engine.close();
+});
+
 test('intersects keyword matches with time-range visit stats', async () => {
     const { SearchEngine } = await loadSearchModule();
     const snapshotDatabase = new FakeDatabase({
@@ -247,6 +372,35 @@ test('rejects snapshots whose metadata does not match the stored database', asyn
     snapshot = baseSnapshot;
     await assert.rejects(() => engine.loadSnapshot(), /page count mismatch/i);
     assert.equal(snapshotDatabase.closed, true);
+});
+
+test('rejects snapshots whose sha256 checksum does not match', async () => {
+    const { SearchEngine } = await loadSearchModule();
+    const runtime = new FakeRuntime(new FakeDatabase(), new FakeDatabase({ pageCount: 1 }));
+    const storage = {
+        async getPageChunks() {
+            return [];
+        },
+        async getPageVisitStatsFromTimeRange() {
+            return [];
+        },
+        async putSearchSnapshot() {},
+        async getLatestSearchSnapshot() {
+            return {
+                key: 'latest',
+                schemaVersion: 1,
+                sqliteVersion: '3.46.1',
+                createdAt: 1,
+                sourceRevision: 'x',
+                bytes: new Uint8Array([1, 2, 3]),
+                pageCount: 1,
+                snapshotSize: 3,
+                sha256: 'bad',
+            };
+        },
+    };
+    const engine = new SearchEngine({ runtime, storage });
+    await assert.rejects(() => engine.loadSnapshot(), /checksum mismatch/i);
 });
 
 test('paginates time-filtered results with a stable watermark cursor', async () => {
@@ -476,6 +630,9 @@ class FakeDatabase {
     }
 
     prepare(sql) {
+        if (sql.includes('DELETE FROM pages_fts')) {
+            return new FakeInsertStatement(this);
+        }
         if (sql.includes('INSERT INTO pages_fts')) {
             return new FakeInsertStatement(this);
         }

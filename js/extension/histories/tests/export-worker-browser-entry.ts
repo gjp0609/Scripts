@@ -38,7 +38,7 @@ window.runHistoriesExportWorkerBrowserSmoke = async () => {
     const updates: string[] = [];
 
     try {
-        const complete = new Promise<{ status: string; text: string }>((resolve, reject) => {
+        const complete = new Promise<{ status: string; text: string; blob?: Blob }>((resolve, reject) => {
             const unsubscribe = client.subscribe((update) => {
                 updates.push(update.status);
                 if (update.status === 'complete') {
@@ -46,6 +46,7 @@ window.runHistoriesExportWorkerBrowserSmoke = async () => {
                     resolve({
                         status: update.status,
                         text: update.text ?? '',
+                        blob: update.blob,
                     });
                 } else if (update.status === 'cancelled') {
                     unsubscribe();
@@ -64,16 +65,17 @@ window.runHistoriesExportWorkerBrowserSmoke = async () => {
         const finalUpdate = await complete;
         const job = await getJob(jobId);
         const direct = await exportHtuArchivedTsv();
+        const workerText = finalUpdate.blob ? await finalUpdate.blob.text() : finalUpdate.text;
 
         ensure(job?.status === 'complete', 'job record should be marked complete');
         ensure(finalUpdate.status === 'complete', 'worker should report completion');
-        ensure(finalUpdate.text === source, 'worker export should preserve archived HTU bytes');
+        ensure(workerText === source, 'worker export should preserve archived HTU bytes');
         ensure(direct.text === source, 'direct export should match worker export');
 
         return {
             jobStatus: job.status,
             updates,
-            bytes: finalUpdate.text.length,
+            bytes: workerText.length,
         };
     } finally {
         client.terminate();

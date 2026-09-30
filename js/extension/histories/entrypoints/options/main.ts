@@ -1,6 +1,6 @@
 import './styles.css';
 import { createRuntimeAdapter } from '../../src/runtime/browser-adapter';
-import { getDatabaseSummary, listJobs } from '../../src/storage/database';
+import { getDatabaseSummary, listJobs, putJob } from '../../src/storage/database';
 import { ImportWorkerClient, type ImportWorkerJobUpdate } from '../../src/jobs/import-worker-client';
 import { ExportWorkerClient, type ExportWorkerJobUpdate } from '../../src/jobs/export-worker-client';
 import { createExportWorker, createImportWorker } from '../../src/jobs/worker-factories';
@@ -12,6 +12,7 @@ import { SearchEngine, type SearchResult } from '../../src/search/search-engine'
 import { createIndexedDbSearchStorage } from '../../src/search/storage-adapter';
 import { loadSqliteWasmSearchRuntime } from '../../src/search/sqlite-wasm-runtime';
 import type { JobRecord } from '../../src/storage/schema';
+import { exportNativeHistoryBackup, restoreNativeHistoryBackup } from '../../src/export/native-backup';
 
 const runtime = createRuntimeAdapter();
 const importClient = new ImportWorkerClient({ workerFactory: createImportWorker });
@@ -21,6 +22,7 @@ const searchRebuildClient = new SearchRebuildWorkerClient();
 const runtimeStatus = document.querySelector<HTMLElement>('#runtimeStatus');
 const storageStatus = document.querySelector<HTMLElement>('#storageStatus');
 const snapshotStatus = document.querySelector<HTMLElement>('#snapshotStatus');
+const quotaStatus = document.querySelector<HTMLElement>('#quotaStatus');
 const resultSummary = document.querySelector<HTMLElement>('#resultSummary');
 const jobStatus = document.querySelector<HTMLElement>('#jobStatus');
 const jobsList = document.querySelector<HTMLElement>('#jobsList');
@@ -37,6 +39,10 @@ const rebuildButton = document.querySelector<HTMLButtonElement>('#rebuildButton'
 const cancelRebuildButton = document.querySelector<HTMLButtonElement>('#cancelRebuildButton');
 const searchButton = document.querySelector<HTMLButtonElement>('#searchButton');
 const nextPageButton = document.querySelector<HTMLButtonElement>('#nextPageButton');
+const searchForm = document.querySelector<HTMLFormElement>('#searchForm');
+const nativeExportButton = document.querySelector<HTMLButtonElement>('#nativeExportButton');
+const nativeRestoreButton = document.querySelector<HTMLButtonElement>('#nativeRestoreButton');
+const nativeRestoreFile = document.querySelector<HTMLInputElement>('#nativeRestoreFile');
 const keywordInput = document.querySelector<HTMLInputElement>('#keyword');
 const fromTimeInput = document.querySelector<HTMLInputElement>('#fromTime');
 const toTimeInput = document.querySelector<HTMLInputElement>('#toTime');
@@ -51,8 +57,11 @@ let pollHandle: number | undefined;
 let searchRuntimePromise: ReturnType<typeof loadSqliteWasmSearchRuntime> | undefined;
 let searchReader: SearchEngine | null = null;
 let searchCursor: Awaited<ReturnType<SearchEngine['searchPage']>>['nextCursor'];
+let searchCheckpointTimer: number | undefined;
+let nativeOperationRunning = false;
 
 async function boot() {
+    await recoverInterruptedPageJobs();
     try {
         const response = await runtime.sendMessage<{ version?: string }>({ type: 'histories:ping' });
         if (runtimeStatus) {
@@ -71,6 +80,8 @@ async function boot() {
         if (snapshotStatus) {
             snapshotStatus.textContent = summary.hasSearchSnapshot ? 'Ready' : 'Missing';
         }
+        const estimate = await navigator.storage?.estimate?.();
+        if (quotaStatus) quotaStatus.textContent = formatStorageEstimate(estimate);
     } catch (error) {
         if (storageStatus) storageStatus.textContent = 'Unavailable';
         if (snapshotStatus) snapshotStatus.textContent = 'Unknown';
@@ -83,6 +94,30 @@ async function boot() {
         frequentVisitThresholdInput.value = String(await runtime.getFrequentVisitThresholdSeconds());
     }
     void startHistoryCompensation();
+}
+
+async function recoverInterruptedPageJobs(): Promise<void> {
+    const now = Date.now();
+    const jobs = await listJobs(50);
+    const pageTaskTypes = new Set<JobRecord['type']>(['htu-import', 'htu-export', 'search-rebuild']);
+    await Promise.all(
+        jobs
+            .filter(
+                (job) =>
+                    job.status === 'running' &&
+                    job.resumable === true &&
+                    pageTaskTypes.has(job.type) &&
+                    job.updatedAt < now - 30_000,
+            )
+            .map((job) =>
+                putJob({
+                    ...job,
+                    status: 'failed',
+                    updatedAt: now,
+                    error: '页面任务已中断，已提交主数据未受影响，可安全重试。',
+                }),
+            ),
+    );
 }
 
 saveSyncSettingsButton?.addEventListener('click', () => {
@@ -113,7 +148,8 @@ async function startHistoryCompensation(): Promise<void> {
     }
 }
 
-searchButton?.addEventListener('click', () => {
+searchForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
     searchCursor = undefined;
     void runSearch();
 });
@@ -121,6 +157,9 @@ searchButton?.addEventListener('click', () => {
 nextPageButton?.addEventListener('click', () => {
     void runSearch();
 });
+
+nativeExportButton?.addEventListener('click', () => void startNativeExport());
+nativeRestoreButton?.addEventListener('click', () => void startNativeRestore());
 
 importButton?.addEventListener('click', () => {
     void startImport();
@@ -175,6 +214,7 @@ pollHandle = window.setInterval(() => {
 window.addEventListener('beforeunload', () => {
     if (pollHandle !== undefined) window.clearInterval(pollHandle);
     searchReader?.close();
+    if (searchCheckpointTimer !== undefined) window.clearTimeout(searchCheckpointTimer);
     importClient.terminate();
     exportClient.terminate();
     searchRebuildClient.terminate();
@@ -243,6 +283,55 @@ async function startExport(): Promise<void> {
     await refreshJobs();
 }
 
+async function startNativeExport(): Promise<void> {
+    if (nativeOperationRunning || importJobId || exportJobId || syncJobId || rebuildJobId) return;
+    nativeOperationRunning = true;
+    syncControls();
+    setJobStatus('正在导出完整备份');
+    setResultSummary('正在校验并导出完整主数据...');
+    try {
+        const exported = await exportNativeHistoryBackup();
+        downloadBlobFile(exported.filename, exported.blob);
+        setResultSummary(
+            `完整备份已导出：${exported.manifest.pageCount.toLocaleString('zh-CN')} 个页面，${exported.manifest.visitCount.toLocaleString('zh-CN')} 次访问。`,
+        );
+    } catch (error) {
+        setResultSummary(error instanceof Error ? error.message : String(error));
+    } finally {
+        nativeOperationRunning = false;
+        setJobStatus('空闲');
+        syncControls();
+    }
+}
+
+async function startNativeRestore(): Promise<void> {
+    const file = nativeRestoreFile?.files?.[0];
+    if (!file) {
+        setResultSummary('请先选择 Histories 原生备份文件。');
+        return;
+    }
+    if (nativeOperationRunning || importJobId || exportJobId || syncJobId || rebuildJobId) return;
+    nativeOperationRunning = true;
+    syncControls();
+    setJobStatus('正在校验完整备份');
+    try {
+        const restored = await restoreNativeHistoryBackup(file);
+        searchReader?.close();
+        searchReader = null;
+        if (nativeRestoreFile) nativeRestoreFile.value = '';
+        setResultSummary(
+            `恢复完成：${restored.pages.toLocaleString('zh-CN')} 个页面，${restored.visits.toLocaleString('zh-CN')} 次访问。请重建搜索索引。`,
+        );
+        await refreshStatus();
+    } catch (error) {
+        setResultSummary(error instanceof Error ? error.message : String(error));
+    } finally {
+        nativeOperationRunning = false;
+        setJobStatus('空闲');
+        syncControls();
+    }
+}
+
 async function runSearch(): Promise<void> {
     const keyword = keywordInput?.value ?? '';
     try {
@@ -272,8 +361,30 @@ async function ensureSearchReader(): Promise<SearchEngine> {
         runtime,
         storage: searchStorage,
     });
-    await searchReader.loadSnapshot();
+    try {
+        await searchReader.loadSnapshot();
+        const incremental = await searchReader.refreshSnapshotIncremental({ checkpoint: false });
+        if (incremental.updatedPages > 0) scheduleSearchCheckpoint();
+    } catch (error) {
+        if (
+            !(error instanceof Error) ||
+            !/No latest search snapshot|Unsupported search snapshot|mismatch|not loaded/i.test(error.message)
+        ) {
+            throw error;
+        }
+        await searchReader.rebuildSnapshot();
+    }
     return searchReader;
+}
+
+function scheduleSearchCheckpoint(): void {
+    if (searchCheckpointTimer !== undefined) return;
+    searchCheckpointTimer = window.setTimeout(() => {
+        searchCheckpointTimer = undefined;
+        void searchReader?.refreshSnapshotIncremental({ checkpoint: true }).catch((error) => {
+            console.warn('[histories] deferred search checkpoint failed', error);
+        });
+    }, 30_000);
 }
 
 function handleImportWorkerUpdate(update: ImportWorkerJobUpdate): void {
@@ -323,9 +434,10 @@ function handleExportWorkerUpdate(update: ExportWorkerJobUpdate): void {
 
     if (update.status === 'complete') {
         exportJobId = null;
-        if (update.filename && update.text !== undefined) {
-            downloadTextFile(update.filename, update.text);
-            setResultSummary(`Exported ${update.text.length.toLocaleString('en-US')} bytes.`);
+        if (update.filename && (update.blob || update.text !== undefined)) {
+            if (update.blob) downloadBlobFile(update.filename, update.blob);
+            else downloadTextFile(update.filename, update.text ?? '');
+            setResultSummary(`HTU 导出完成。`);
         } else {
             setResultSummary('HTU export completed.');
         }
@@ -355,6 +467,8 @@ async function refreshStatus(): Promise<void> {
         if (snapshotStatus) snapshotStatus.textContent = 'Unknown';
         console.error('[histories] refreshStatus failed', error);
     }
+    const estimate = await navigator.storage?.estimate?.();
+    if (quotaStatus) quotaStatus.textContent = formatStorageEstimate(estimate);
 }
 
 async function refreshJobs(): Promise<void> {
@@ -443,6 +557,10 @@ function syncControls(): void {
     if (rebuildButton) rebuildButton.disabled = importing || syncing || rebuilding || exporting;
     if (cancelRebuildButton) cancelRebuildButton.disabled = !rebuilding;
     if (searchButton) searchButton.disabled = syncing || rebuilding || exporting;
+    if (nativeExportButton)
+        nativeExportButton.disabled = nativeOperationRunning || importing || syncing || rebuilding || exporting;
+    if (nativeRestoreButton)
+        nativeRestoreButton.disabled = nativeOperationRunning || importing || syncing || rebuilding || exporting;
 }
 
 function activeJobLabel(latestJob?: JobRecord): string {
@@ -554,6 +672,27 @@ function downloadTextFile(filename: string, text: string): void {
     link.download = filename;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function downloadBlobFile(filename: string, blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function formatStorageEstimate(estimate: StorageEstimate | undefined): string {
+    if (!estimate?.usage || !estimate.quota) return '不可用';
+    return `${formatBytes(estimate.usage)} / ${formatBytes(estimate.quota)}`;
+}
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KiB`;
+    if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MiB`;
+    return `${(bytes / 1024 ** 3).toFixed(1)} GiB`;
 }
 
 function reconcileActiveJobs(jobs: JobRecord[]): void {

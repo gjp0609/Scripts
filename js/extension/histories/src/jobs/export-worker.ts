@@ -1,4 +1,4 @@
-import { exportHtuArchivedTsv, makeHtuBackupFilename, type HtuExportProgress } from '../export/htu-export';
+import { exportHtuArchivedBlob, makeHtuBackupFilename, type HtuExportProgress } from '../export/htu-export';
 import { getJob, putJob } from '../storage/database';
 import type { JobRecord } from '../storage/schema';
 
@@ -42,6 +42,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
         id: message.jobId,
         type: 'htu-export',
         status: 'queued',
+        resumable: true,
         updatedAt: startedAt,
         progress: {
             stage: 'queued',
@@ -62,6 +63,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
             id: message.jobId,
             type: 'htu-export',
             status: 'running',
+            resumable: true,
             startedAt,
             updatedAt: startedAt,
             progress: {
@@ -73,7 +75,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
             },
         });
 
-        const { text, progress } = await exportHtuArchivedTsv({
+        const { blob, progress } = await exportHtuArchivedBlob({
             signal: controller.signal,
             onProgress(nextProgress) {
                 return updateProgress(message.jobId, startedAt, nextProgress);
@@ -86,6 +88,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
             id: message.jobId,
             type: 'htu-export',
             status: 'complete',
+            resumable: true,
             startedAt,
             updatedAt: completedAt,
             progress: {
@@ -102,7 +105,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
                 stage: 'done',
             },
             filename,
-            text,
+            blob,
         });
     } catch (error) {
         const updatedAt = Date.now();
@@ -112,6 +115,7 @@ async function startExportJob(message: StartExportMessage): Promise<void> {
             id: message.jobId,
             type: 'htu-export',
             status,
+            resumable: true,
             startedAt,
             updatedAt,
             progress,
@@ -133,6 +137,7 @@ async function updateProgress(jobId: string, startedAt: number, progress: HtuExp
         id: jobId,
         type: 'htu-export',
         status: 'running',
+        resumable: true,
         startedAt,
         updatedAt: Date.now(),
         progress,

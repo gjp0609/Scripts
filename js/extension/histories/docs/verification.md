@@ -642,4 +642,48 @@ Updated: 2026-08-21
 - `node --test tests/extension-background-collection.test.mjs`: Chrome production background collected a real visit and retained it after same-profile restart.
 - `node --test tests/extension-background-firefox.test.mjs`: Firefox production background collected a real visit and retained it after same-profile restart.
 
-The options page now calls `SearchEngine.searchPage()` with a frozen watermark cursor, supports empty-keyword time-range queries and exposes a next-page action. Native backup core serialization is covered by `tests/native-backup.test.mjs`; browser download/restore wiring remains an outstanding stage 6 item.
+The options page now calls `SearchEngine.searchPage()` with a frozen watermark cursor, supports empty-keyword time-range queries and exposes a next-page action. Native backup serialization, browser download, empty-database restore and tamper rejection are covered by core and browser tests.
+
+## 第一阶段最终验收
+
+更新时间：2026-08-21
+
+### 增量索引与快照可靠性
+
+- 历史页启动会加载最近完整 SQLite checkpoint，再按主库 revision 批量 replay dirty page。
+- `checkpoint: false` 的 replay 不保存快照、不清 dirty；checkpoint 保存成功后才清除 dirty，保存失败时 dirty 保留，因此下次可以安全重试。
+- 仅新增同一页面访问、搜索文本未变化时不更新 FTS；新增页面或标题/URL 搜索文本变化时才进入 dirty 集合。
+- 搜索快照保存 SHA-256；加载前校验，字节损坏、格式不兼容、SQLite schema 异常均拒绝使用，不影响 IndexedDB 主数据和全量重建。
+- 真实最近 7 天 `2,264` 条新增访问的 dirty replay 约 `407 ms`，没有触发全量 FTS 重建。
+
+### 原生备份与恢复
+
+真实 `900,177` 访问、`388,633` 页面数据库的 Chromium 回归结果：
+
+| 指标         |                结果 |
+| ------------ | ------------------: |
+| 原生备份大小 | `231,434,025 bytes` |
+| 导出耗时     |       约 `3,533 ms` |
+| 空库恢复耗时 |       约 `4,798 ms` |
+| 恢复后访问   |           `900,177` |
+| 恢复后页面   |           `388,633` |
+
+- `.hbk` 包含版本化 manifest、page/visit chunk、来源、导入批次及逐 chunk SHA-256。
+- 导出和 HTU TSV 均使用 Blob 分片，避免再构造一个完整总字符串；读取主库时仍需持有现有 chunk 数组，这是当前数据模型的可接受开销。
+- 恢复在发布前完整校验格式、字节数、chunk 数量、SHA-256 和总计数；任一分块篡改都会拒绝，旧主数据不变。
+- 第一阶段只允许恢复到空库。非空库在任何恢复写入前明确拒绝，避免把“恢复”误用为覆盖或隐式合并；多浏览器数据合并应使用 HTU 多文件导入。
+
+### 界面验收
+
+- 历史页默认启动，使用 24 小时时间输入，支持三字符子串、起止时间和稳定下一页。
+- 数据管理只保留多 HTU 导入、HTU/原生导出、空库恢复、存储统计、立即补全、索引重建和频繁访问阈值。
+- `1440px` 桌面与 `390px` 移动视口截图检查通过，没有横向溢出；长 URL 和任务信息可收缩显示。
+- 页面重开读取持久任务状态；超过租约的旧页面任务标记为失败并提示安全重试。导入、HTU 导出和索引重建由 worker 执行；原生备份在页面中按分块执行，实测约 3.5～4.8 秒，失败或关闭页面不会修改已提交主数据，可重新执行。
+
+### 正式扩展和回归汇总
+
+- 串行执行第一阶段完整自动化：`40 passed, 1 skipped`。唯一跳过项要求显式设置 `HISTORIES_HTU_BACKUP`，用于不纳入仓库的私有真实备份。
+- TypeScript 检查、Chrome MV3 构建和 Firefox MV3 构建通过。
+- Chrome 与 Firefox 正式扩展均采集真实访问，并在同一 profile 重启后保留；Chrome 验证浏览器历史删除后 Histories 访问仍然保留。
+- 多个真实浏览器测试并发运行时曾因主机浏览器资源竞争失败，改为串行后稳定通过，因此发布检查固定使用 `--test-concurrency=1`。
+- Firefox 的自动化启动工具接管 `dev-browser-data/firefox/` 外部 profile 会超时；生命周期自动化改用测试创建并重复使用的临时 profile。开发目录仍保留给人工确认，这一工具限制不影响 Firefox 正式扩展采集和重启证据。

@@ -1,8 +1,9 @@
 import { importHtuText } from '../src/import/htu-import';
+import { importHtuFiles } from '../src/import/htu-multi-import';
 import { SearchEngine } from '../src/search/search-engine';
 import { createIndexedDbSearchStorage } from '../src/search/storage-adapter';
 import { loadSqliteWasmSearchRuntime } from '../src/search/sqlite-wasm-runtime';
-import { getLatestSearchSnapshot } from '../src/storage/database';
+import { getLatestSearchSnapshot, listDirtyPages } from '../src/storage/database';
 import { DATABASE_NAME } from '../src/storage/schema';
 
 type BrowserSearchResult = {
@@ -11,6 +12,8 @@ type BrowserSearchResult = {
     snapshotSize: number;
     searchPageIds: number[];
     timeFilteredPageIds: number[];
+    incrementallyUpdatedPages: number;
+    dirtyPagesAfterRefresh: number;
 };
 
 declare global {
@@ -46,6 +49,26 @@ window.runHistoriesSearchSqliteBrowserSmoke = async () => {
     ensure(snapshot?.sqliteVersion === rebuilt.sqliteVersion, 'snapshot sqlite version should match runtime');
     ensure(snapshot?.pageCount === 3, 'snapshot should store imported page count');
 
+    await importHtuFiles(
+        [
+            {
+                name: 'incremental.tsv',
+                bytes: new TextEncoder().encode(
+                    'https://example.net/incremental\tU1781000000000\t0\tIncremental Needle\r\n',
+                ),
+            },
+        ],
+        { pageChunkSize: 2, visitChunkSize: 2 },
+    );
+    ensure((await listDirtyPages()).length === 1, 'incremental import should mark one dirty page');
+    const refresher = new SearchEngine({ runtime, storage });
+    await refresher.loadSnapshot();
+    const incremental = await refresher.refreshSnapshotIncremental();
+    const incrementalRows = await refresher.search({ keyword: 'needle', limit: 10 });
+    refresher.close();
+    ensure(incremental.updatedPages === 1, 'incremental refresh should update one page');
+    ensure(incrementalRows.length === 1, 'incremental page should be searchable without full rebuild');
+
     const reader = new SearchEngine({ runtime, storage });
     await reader.loadSnapshot();
     const searchRows = await reader.search({ keyword: 'ifen', limit: 10 });
@@ -66,6 +89,8 @@ window.runHistoriesSearchSqliteBrowserSmoke = async () => {
         snapshotSize: rebuilt.snapshotSize,
         searchPageIds: searchRows.map((row) => row.pageId),
         timeFilteredPageIds: timeFilteredRows.map((row) => row.pageId),
+        incrementallyUpdatedPages: incremental.updatedPages,
+        dirtyPagesAfterRefresh: (await listDirtyPages()).length,
     };
 };
 

@@ -22,7 +22,7 @@ test('production Firefox extension collects a visit and keeps it across restart'
     try {
         await mkdir(profileDir, { recursive: true });
         await cp(OUTPUT, extensionDir, { recursive: true });
-        const verifierPath = path.join(extensionDir, 'collection-test.js');
+        const verifierPath = path.join(extensionDir, 'collection-verifier.js');
         await runCommand(
             process.execPath,
             [
@@ -38,38 +38,38 @@ test('production Firefox extension collects a visit and keeps it across restart'
         );
 
         const firstResult = server.nextResult('first', 90_000);
-        const firstStarted = server.nextResult('first-started', 20_000);
+        const firstStarted = server.nextResult('first-started', 30_000);
         await configureExtension(extensionDir, await readFile(verifierPath, 'utf8'), {
             mode: 'collect',
             visitUrl: `${server.origin}/visit?case=firefox`,
             resultUrl: `${server.origin}/result/first`,
             minimum: 1,
         });
-        const firstRunner = await runFirefox(extensionDir, profileDir);
+        const firstRunner = await runFirefox(extensionDir, profileDir, `${server.origin}/wake?run=first`);
         let first;
         try {
             await firstStarted;
             first = unwrap(await firstResult);
         } finally {
-            await firstRunner.exit();
+            await stopFirefox(firstRunner);
         }
         assert.ok(first.count >= 1);
 
         const secondResult = server.nextResult('second', 90_000);
-        const secondStarted = server.nextResult('second-started', 20_000);
+        const secondStarted = server.nextResult('second-started', 30_000);
         await configureExtension(extensionDir, await readFile(verifierPath, 'utf8'), {
             mode: 'verify',
             visitUrl: `${server.origin}/unused`,
             resultUrl: `${server.origin}/result/second`,
             minimum: first.count,
         });
-        const secondRunner = await runFirefox(extensionDir, profileDir);
+        const secondRunner = await runFirefox(extensionDir, profileDir, `${server.origin}/wake?run=second`);
         try {
             await secondStarted;
             const second = unwrap(await secondResult);
             assert.ok(second.count >= first.count);
         } finally {
-            await secondRunner.exit();
+            await stopFirefox(secondRunner);
         }
     } finally {
         await server.close();
@@ -84,26 +84,42 @@ async function configureExtension(extensionDir, verifier, config) {
     manifest.host_permissions = [
         ...new Set([...(manifest.host_permissions ?? []), `${new URL(config.visitUrl).origin}/*`]),
     ];
+    manifest.content_scripts = [
+        ...(manifest.content_scripts ?? []).filter((script) => !script.js?.includes('collection-wake.js')),
+        {
+            matches: [`${new URL(config.visitUrl).origin}/*`],
+            js: ['collection-wake.js'],
+            run_at: 'document_start',
+        },
+    ];
+    manifest.background = {
+        ...manifest.background,
+        scripts: [
+            'collection-test.js',
+            ...(manifest.background?.scripts ?? []).filter((script) => script !== 'collection-test.js'),
+        ],
+    };
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    const backgroundPath = path.join(extensionDir, 'background.js');
-    const marker = '\n/* histories-collection-test */\n';
-    const current = await readFile(backgroundPath, 'utf8');
-    const formal = current.split(marker)[0];
     await writeFile(
-        backgroundPath,
-        `${formal}${marker}globalThis.__HISTORIES_COLLECTION_TEST__=${JSON.stringify(config)};\n${verifier}\n`,
+        path.join(extensionDir, 'collection-wake.js'),
+        "void browser.runtime.sendMessage({ type: 'histories:collection-test-wake' }).catch(() => {});\n",
+    );
+    await writeFile(
+        path.join(extensionDir, 'collection-test.js'),
+        `globalThis.__HISTORIES_COLLECTION_TEST__=${JSON.stringify(config)};\n${verifier}\n`,
     );
 }
 
-async function runFirefox(extensionDir, profileDir) {
+async function runFirefox(extensionDir, profileDir, startUrl) {
     const webExt = (await import('web-ext-run')).default;
-    return await webExt.cmd.run(
+    const runner = await webExt.cmd.run(
         {
             target: 'firefox-desktop',
             sourceDir: extensionDir,
             firefox: FIREFOX,
             firefoxProfile: profileDir,
             keepProfileChanges: true,
+            startUrl,
             args: ['-headless'],
             noInput: true,
             noReload: true,
@@ -111,6 +127,32 @@ async function runFirefox(extensionDir, profileDir) {
         },
         { shouldExitProgram: false },
     );
+    const firefoxRunner = runner.extensionRunners[0];
+    const addon = await firefoxRunner.remoteFirefox.getInstalledAddon('histories@example.local');
+    assert.equal(addon.backgroundScriptStatus, 'RUNNING');
+    assert.deepEqual(addon.warnings, []);
+    return runner;
+}
+
+async function stopFirefox(runner) {
+    const firefoxProcess = runner.extensionRunners[0]?.runningInfo?.firefox;
+    if (process.platform === 'win32' && firefoxProcess?.pid) {
+        await runCommand('taskkill.exe', ['/PID', String(firefoxProcess.pid), '/T', '/F'], PROJECT);
+        return;
+    }
+    const closed = new Promise((resolve) => runner.registerCleanup(resolve));
+    await runner.exit();
+    let timeout;
+    try {
+        await Promise.race([
+            closed,
+            new Promise((_, reject) => {
+                timeout = setTimeout(() => reject(new Error('Firefox did not exit cleanly.')), 30_000);
+            }),
+        ]);
+    } finally {
+        clearTimeout(timeout);
+    }
 }
 
 function unwrap(result) {
@@ -140,7 +182,11 @@ function serveFixture() {
             return;
         }
         response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.end('<!doctype html><title>Firefox Histories collection</title>');
+        response.end(
+            url.pathname === '/wake'
+                ? '<!doctype html><meta http-equiv="refresh" content="1"><title>Firefox Histories wake</title>'
+                : '<!doctype html><title>Firefox Histories collection</title>',
+        );
     });
     return new Promise((resolve, reject) => {
         server.once('error', reject);

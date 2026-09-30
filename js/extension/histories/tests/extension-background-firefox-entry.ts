@@ -8,7 +8,7 @@ type CollectionTestConfig = {
 };
 
 declare global {
-  var __HISTORIES_COLLECTION_TEST__: CollectionTestConfig;
+    var __HISTORIES_COLLECTION_TEST__: CollectionTestConfig;
 }
 
 void runCollectionTest(globalThis.__HISTORIES_COLLECTION_TEST__);

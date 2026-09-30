@@ -1,6 +1,8 @@
 # Histories Architecture Design
 
-Updated: 2026-07-05
+Updated: 2026-09-30
+
+> 本文件的「Frozen Phase-One Decisions」小节是 2026-08-17 冻结的第一阶段架构结论。其余小节为设计意图与背景，产品范围和验收口径以 [第一阶段需求基线](requirements.md) 为准。
 
 ## 2026-08-17 Frozen Phase-One Decisions
 
@@ -121,91 +123,25 @@ Shared source should not depend directly on `chrome.*` or `browser.*`. Use a sma
 
 ## Data Model
 
-### `pages`
+数据库为 IndexedDB `histories`，版本 `6`。主数据以不可变 generation 存储，active generation 指针是原子发布边界。字段定义见 `src/storage/schema.ts`。
 
-Durable URL-level metadata.
+### 主数据（权威，不可丢失）
 
-Required fields:
+- `historyGenerations`：generation 记录（`staging`/`active`/`retired`），含 `revision`、`reason`、`dataFormatVersion`、来源与计数。
+- `generationPageChunks`、`generationVisitChunks`：按 generation 分段的页面与访问数据；页面段用列式字符串数组，访问段用 `Uint32Array`/`Float64Array`/`Uint8Array` 存 pageId、访问时间与 transition 码。
+- `historyMetadata`：`activeGeneration` 与 `localBrowserSource` 两个键。
+- `historySources`：HTU 文件、浏览器历史、原生备份的来源实例。
+- `importBatches`：每次导入的批次与逐文件报告（行数、新增、重复、忽略、错误、时间范围）。
 
-- `id`
-- `url`
-- `normalized_url`
-- `title`
-- `host`
-- `domain`
-- `visit_count`
-- `last_visit_time`
-- `created_at`
-- `updated_at`
+### 派生数据（可重建，不参与主数据提交）
 
-Indexes:
+- `searchSnapshot`：序列化的 SQLite FTS 库，含 `schemaVersion`、`sqliteVersion`、`sourceRevision`、`pageCount`、`snapshotSize`、`sha256`。
+- `dirtyPages`：按 `revision` 索引的待回放页面，记录 `new-page`、`search-text-changed` 或 `deleted-from-generation`。
+- `jobs`：可恢复任务，含 `ownerId`、`leaseUntil`、`retryCount`、`resumable`、`cursor`、`progress`、`error`。
 
-- `normalized_url`, unique
-- `host`
-- `domain`
-- `last_visit_time`
+### 旧版兼容（只读回退）
 
-### `visits`
-
-Minimal visit records. Keep the sync hot path small.
-
-Required fields:
-
-- `id`
-- `page_id`
-- `visit_time`
-- `transition`
-
-Indexes:
-
-- `visit_time`
-- `[page_id, visit_time]`
-- `[transition, visit_time]`
-
-Do not store `day`, `month`, `weekday`, or `hour` on every visit by default. Those values are low-frequency statistics derivatives.
-
-### `search_snapshot`
-
-Stores the serialized SQLite FTS database.
-
-Required fields:
-
-- `key`
-- `schema_version`
-- `sqlite_version`
-- `created_at`
-- `source_revision`
-- `bytes`
-- `page_count`
-- `snapshot_size`
-
-### `jobs`
-
-Tracks resumable imports, exports, sync jobs, FTS rebuilds, and statistics builds.
-
-Required fields:
-
-- `id`
-- `type`
-- `status`
-- `started_at`
-- `updated_at`
-- `cursor`
-- `progress`
-- `error`
-
-### `stats_*`
-
-Statistics are generated on demand and cached.
-
-Examples:
-
-- `stats_daily`
-- `stats_domain`
-- `stats_hourly`
-- `stats_weekday`
-
-Statistics stores are staleable. History mutations should mark relevant stats stale instead of recomputing them synchronously.
+`pages`、`visits`、`pageChunks`、`visitChunks` 为 v5 结构，保留供旧库升级读取，不再作为写入目标。统计数据（原 `stats_*`）不属于第一阶段，尚未实现。
 
 ## Search Design
 
@@ -214,34 +150,30 @@ SQLite FTS table:
 ```sql
 CREATE VIRTUAL TABLE pages_fts USING fts5(
   search_text,
-  page_id UNINDEXED,
+  url UNINDEXED,
+  title UNINDEXED,
   visit_count UNINDEXED,
   last_visit_time UNINDEXED,
-  tokenize = 'trigram'
+  tokenize='trigram'
 );
 ```
 
-`search_text` contains normalized title and URL text:
-
-- title
-- original URL
-- decoded URL
-- host/domain/path/query text
-
-The exact fields should be tuned to reduce snapshot size while preserving match quality.
+`search_text` 为原始 URL、安全解码 URL 与标题拼接后小写并做 NFKC 规范化的结果，见 `normalizeSearchText()`。三字符是子串查询下限：规范化后少于 3 个字符不执行子串查询。
 
 Search modes:
 
-- Keyword-only: SQLite FTS returns page-level results.
-- Time-only: IndexedDB `visits.visit_time` returns visit-level results.
-- Keyword plus time range: intersect SQLite FTS page ids with IndexedDB visit-time range results.
-- Keyword plus transition: intersect SQLite FTS page ids with IndexedDB transition/time indexes.
+- Keyword-only: SQLite FTS returns page-level candidate ids.
+- Time-only: the sorted visit-time index returns results directly, without FTS.
+- Keyword plus time range: intersect FTS page-id candidates with visit-time range counts from the main data.
 
 Query planning:
 
-- Narrow time range: scan IndexedDB visit-time range first, then intersect with FTS page ids.
-- Broad time range or no range: run FTS first, then filter visits.
-- Result rows should be visit-level when a visit filter is active; otherwise page-level results are acceptable.
+- The first query freezes an `endTime` watermark; every following cursor carries the same watermark so newly arriving visits cannot shift an active result set.
+- The stable order is `(matchedVisitTime DESC, pageId DESC)`.
+- Each page scans visits backward until it finds `limit + 1` distinct candidate pages, including all candidates tied at the boundary timestamp, then counts visits only for the selected page ids.
+- FTS returns page-id candidates only; candidate membership is cached as a `Uint8Array` bitmap, and page metadata is fetched from SQLite only for the selected ids.
+
+Transition filters and domain/host filters are not part of phase one.
 
 ## Synchronization Design
 
@@ -257,17 +189,16 @@ history.search({ text: "", startTime: 0, maxResults: large })
 
 Continuous sync:
 
-- New visit: upsert page, insert visit, update in-memory FTS, mark snapshot dirty.
-- Title change: update page title, update FTS row, mark snapshot dirty.
-- Delete URL: delete page/visits/FTS row or mark tombstone depending on browser event detail.
-- Delete range/all: remove affected visits, update page aggregates, update FTS if page no longer has visits.
+- New visit: upsert page, insert visit; FTS is touched only when the page is new or its title/search text changed, otherwise only the dirty page is recorded.
+- Title change: update page title, update the FTS row, mark the page dirty.
+- Browser history deletion is not observed and not mirrored. Histories keeps every visit it has already recorded; there is no tombstone or delete-range path.
 
 Snapshot policy:
 
 - Save immediately after initial import.
 - Save after HTU import.
 - Save on idle after batches of incremental changes.
-- Avoid writing a 500MB snapshot for every single visit.
+- Avoid writing a roughly 568 MB snapshot for every single visit.
 
 ## HTU Compatibility Design
 
@@ -289,39 +220,32 @@ Export requirements:
 
 ## UI Design
 
-Primary screens:
+第一阶段界面以 [需求基线](requirements.md) 的「第一阶段界面」为准：默认启动到历史页，提供关键词、起止时间、搜索与稳定翻页，设置页只保留导入、导出、存储统计、默认启动页、时间显示和频繁访问忽略秒数。
 
-- Search/list view.
-- Visit detail/page timeline.
-- Import/export.
-- Sync/status/settings.
-- Statistics/trends.
+以下为后续阶段的设计意图，不属于第一阶段：
 
-Search screen must prioritize:
-
-- keyword input
-- time range filter
-- transition filter
-- domain/host filter
-- result type: page-level or visit-level
-
-Statistics screen is lower priority than search and synchronization.
+- 访问详情或页面时间线。
+- 统计与趋势视图。
+- 关键词与时间范围之外的筛选器（transition、域名/主机、结果粒度）。
 
 ## Reliability
 
 Required recovery points:
 
-- Initial browser-history import cursor.
-- HTU import cursor.
-- FTS rebuild status.
-- Snapshot dirty flag.
-- Last successful snapshot metadata.
+- Browser-history sync cursor, retained with a 5-second overlap window.
+- HTU import batch status and per-file reports.
+- FTS rebuild job status.
+- Dirty pages, cleared only after a checkpoint is saved successfully.
+- Last successful snapshot metadata, including its `sha256`.
 
-If FTS snapshot is missing or corrupt:
+If the FTS snapshot is missing or corrupt:
 
-- keep IndexedDB source data intact
-- rebuild FTS from `pages`
-- save a new snapshot
+- keep IndexedDB main data intact
+- mark the index unavailable while main data stays readable
+- rebuild FTS from the active generation in a worker
+- save a new snapshot and verify its `sha256`
+
+Native `.hbk` restore verifies format version, byte counts, chunk counts, per-chunk SHA-256 and totals before publishing a new generation, and phase one only restores into an empty database.
 
 ## Performance Targets
 
@@ -334,10 +258,19 @@ Targets based on the external full HTU backup:
 - Keyword plus time-range search under 200 ms for typical filters.
 - Sync single new visit without UI-visible delay.
 
+截至 2026-09-30 的实测对照（数据与口径见 [验证记录](verification.md)，复现方式见 [测试说明](../tests/README.md)）：
+
+- 首次 FTS 建立约 `45.6 s`，满足「2 分钟内」。
+- 快照 checkpoint 保存约 `2.50 s`、加载约 `2.64 s`，满足「5 秒内」。
+- 时间范围首页 `0.8–25.6 ms`；常规冷启动关键词页 `18.8–68 ms`；连续十页 `github` 查询 P50 `16.3 ms`；极端高命中冷启动 `google` 查询 `120.5 ms`，其后续页走缓存约 `15–18 ms`。
+- 真实约 90 万访问的多文件导入单次约 `3.0–4.0 s`。
+
 ## Open Risks
 
-- Extension-context quota for a roughly 558 MB search snapshot must be verified.
-- Snapshot size needs reduction.
-- Visit-level keyword plus time-range intersection must be benchmarked.
-- Firefox and Chrome background lifecycle differences can affect long imports and snapshot saves.
-- FTS snapshot updates must avoid excessive writes.
+截至 2026-09-30，第一阶段原列风险的处理结果：
+
+- 扩展上下文快照配额已验证：Chrome 约 64 GiB（`persisted=false`）、Firefox 约 100 GiB（`persisted=true`），完整 `900,177` 访问数据集加 `602,546,176` 字节快照可跨浏览器重启持久保存。结论与数据见 [验证记录](verification.md)。
+- 关键词加时间范围的访问级交集已完成基准：真实约 90 万访问下常见首页为毫秒到几十毫秒，连续十页无重复或漏项。见 [验证记录](verification.md)。
+- 快照更新频率已按低频 checkpoint 策略落地：仅新页面或搜索文本变化进入 dirty 集合，checkpoint 保存成功后才清除 dirty。
+- 快照体积仍未缩减（约 568 MiB），属已知取舍：第一阶段以可重建的完整 FTS 快照换取查询性能，体积优化留待后续阶段。
+- Chrome 与 Firefox 的后台生命周期差异仍存在：Firefox 自动化无法接管外部开发 profile，生命周期证据改用测试创建的临时 profile。见 [验证记录](verification.md)。

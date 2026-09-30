@@ -497,6 +497,8 @@ Interpretation:
 
 ## Next Verification Steps
 
+> 以下为 2026-08-17 当时列出的待办。截至 2026-09-30 六项均已完成，结论见本文件后续章节与「第一阶段最终验收」；此处保留原文以记录当时的验证计划。
+
 1. Manually load the generated Chrome and Firefox unpacked extension outputs.
 2. Verify extension-context IndexedDB quota for the roughly 558 MB SQLite FTS snapshot.
 3. Verify extension-context IndexedDB quota with a real large snapshot.

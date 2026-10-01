@@ -4,94 +4,166 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="manifest.open_in_tab" content="true" />
-        <title>Histories</title>
+        <title>Histories 设置</title>
         <script type="module" src="./main.ts"></script>
     </head>
     <body>
-        <header class="topbar">
-            <div class="brand"><span class="brand-mark">H</span><strong>Histories</strong></div>
-            <nav aria-label="页面导航">
-                <a href="#history">历史</a><a href="#data">数据管理</a><a href="#tasks">任务</a>
-            </nav>
-            <span id="runtimeStatus" class="runtime-badge">连接中</span>
-        </header>
+        <div id="container">
+            <div id="sidebar"></div>
+            <div id="header">
+                <span id="runtimeStatus" class="runtime-note">连接中</span>
+                <h2>Histories 设置</h2>
+            </div>
 
-        <main>
-            <section id="history" class="history-band">
-                <form id="searchForm" class="search-toolbar">
-                    <label class="keyword-field"
-                        ><span>关键词</span
-                        ><input id="keyword" type="search" placeholder="标题或 URL，至少 3 个字符" autocomplete="off"
-                    /></label>
-                    <label><span>开始时间</span><input id="fromTime" type="datetime-local" /></label>
-                    <label><span>结束时间</span><input id="toTime" type="datetime-local" /></label>
-                    <button id="searchButton" class="primary" type="submit">搜索</button>
-                    <button id="nextPageButton" type="button" disabled>下一页</button>
-                </form>
+            <div class="section">
+                <table id="general_settings">
+                    <tr>
+                        <td class="label">默认启动页</td>
+                        <td>
+                            <select id="start_page">
+                                <option value="history">历史页</option>
+                                <option value="options">设置页</option>
+                            </select>
+                            <span class="smaller">第一阶段固定进入历史页。</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">时间显示</td>
+                        <td>
+                            <select id="time_display">
+                                <option value="24">24 小时制</option>
+                                <option value="12">12 小时制</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="label">同步历史</td>
+                        <td>
+                            <span>忽略同一页面在此秒数内的重复访问</span>
+                            <input type="text" id="ignore_visits_duration" maxlength="5" size="3" value="2.0" />
+                            <span>秒</span>
+                            <button type="button" id="saveSyncSettingsButton">保存</button>
+                            <br />
+                            <span class="smaller">默认 2.0 秒；调小会保留更多短时间内的重复访问。</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
 
-                <div class="summary-strip" aria-label="存储状态">
-                    <div><span>主数据</span><strong id="storageStatus">读取中</strong></div>
-                    <div><span>搜索索引</span><strong id="snapshotStatus">读取中</strong></div>
-                    <div><span>浏览器存储</span><strong id="quotaStatus">读取中</strong></div>
-                    <div><span>当前任务</span><strong id="jobStatus">空闲</strong></div>
+            <div class="section">
+                <div class="label">历史页</div>
+                <div class="option">
+                    <input type="checkbox" id="open_links_new_tab" checked />
+                    <label for="open_links_new_tab">在新标签页中打开记录链接</label>
                 </div>
+            </div>
 
-                <section class="results-panel" aria-labelledby="resultsTitle">
-                    <div class="section-head"
-                        ><h1 id="resultsTitle">历史记录</h1><span id="resultSummary">尚未查询</span></div
-                    >
-                    <div id="results" class="empty-state">输入关键词或选择时间范围开始查询。</div>
-                </section>
-            </section>
-
-            <section id="data" class="management-band">
-                <div class="section-head"><h2>数据管理</h2><span>导入不会覆盖已有记录</span></div>
-                <div class="management-grid">
-                    <div class="control-group">
-                        <h3>HTU 数据</h3>
-                        <label class="file-box"
-                            ><span>选择一个或多个 TSV</span
-                            ><input id="importFile" type="file" multiple accept=".tsv,text/tab-separated-values"
-                        /></label>
-                        <div class="button-row"
-                            ><button id="importButton" class="primary" type="button">导入 HTU</button
-                            ><button id="cancelImportButton" type="button" disabled>取消</button
-                            ><button id="exportButton" type="button">导出 HTU</button
-                            ><button id="cancelExportButton" type="button" disabled>取消</button></div
-                        >
+            <div class="section">
+                <div class="label">同步与索引</div>
+                <div class="option">
+                    <div>
+                        <button type="button" id="syncButton">立即补全浏览器历史</button>
+                        <button type="button" id="cancelSyncButton" disabled>取消</button>
                     </div>
-                    <div class="control-group">
-                        <h3>完整备份</h3>
-                        <label class="file-box"
-                            ><span>Histories 原生备份</span
-                            ><input id="nativeRestoreFile" type="file" accept=".hbk,application/x-histories-backup"
-                        /></label>
-                        <div class="button-row"
-                            ><button id="nativeExportButton" class="primary" type="button">导出完整备份</button
-                            ><button id="nativeRestoreButton" type="button">恢复到空库</button></div
-                        >
-                    </div>
-                    <div class="control-group">
-                        <h3>采集与索引</h3>
-                        <label
-                            ><span>同一 URL 忽略秒数</span
-                            ><input id="frequentVisitThreshold" type="number" min="0" step="0.1" value="2"
-                        /></label>
-                        <div class="button-row"
-                            ><button id="saveSyncSettingsButton" type="button">保存</button
-                            ><button id="syncButton" class="primary" type="button">立即补全</button
-                            ><button id="cancelSyncButton" type="button" disabled>取消</button
-                            ><button id="rebuildButton" type="button">重建索引</button
-                            ><button id="cancelRebuildButton" type="button" disabled>取消</button></div
-                        >
+                    <div class="smaller top10">
+                        立即补全会把浏览器中已有的历史记录并入 Histories；扩展会持续自动同步。
                     </div>
                 </div>
-            </section>
+                <div class="option top10">
+                    <div>
+                        <button type="button" id="rebuildButton">重建搜索索引</button>
+                        <button type="button" id="cancelRebuildButton" disabled>取消</button>
+                    </div>
+                    <div class="smaller top10"> 搜索索引可由主数据重建。索引缺失或损坏时，重建即可恢复搜索。 </div>
+                </div>
+            </div>
 
-            <section id="tasks" class="tasks-band">
-                <div class="section-head"><h2>最近任务</h2><span>页面重开后仍可查看</span></div>
+            <div class="section">
+                <div class="label">导出历史</div>
+                <p class="smaller"> 导出为 HTU 兼容的 TSV 文件，可用于备份或迁移到 History Trends Unlimited。 </p>
+                <ol>
+                    <li>
+                        点击导出
+                        <button type="button" id="exportButton">导出 HTU 数据</button>
+                        <button type="button" id="cancelExportButton" disabled>取消</button>
+                    </li>
+                    <li>浏览器会下载生成的 TSV 文件。</li>
+                    <li>把该文件保存到安全位置即可完成备份。</li>
+                </ol>
+            </div>
+
+            <div class="section">
+                <div class="label">导入历史</div>
+                <div id="import_container">
+                    <p class="smaller"> 选择 HTU 导出的 TSV 文件导入。导入会与现有记录合并，不会覆盖已有数据。 </p>
+                    <div>
+                        <input id="importFile" type="file" multiple accept=".tsv,text/tab-separated-values" />
+                    </div>
+                    <div>
+                        <button type="button" id="importButton">导入</button>
+                        <button type="button" id="cancelImportButton" disabled>取消</button>
+                    </div>
+                    <div id="import_progress"></div>
+                    <div id="import_complete">
+                        <div id="import_success_stats"></div>
+                        <div id="import_error_stats"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="label">完整备份</div>
+                <p class="smaller">
+                    完整备份包含全部主数据与来源信息，只用于 Histories 自身；恢复仅允许在空库上执行。
+                </p>
+                <div>
+                    <button type="button" id="nativeExportButton">导出完整备份</button>
+                    <input id="nativeRestoreFile" type="file" accept=".hbk,application/x-histories-backup" />
+                    <button type="button" id="nativeRestoreButton">恢复到空库</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="label">存储统计</div>
+                <table id="storage_stats" class="stats">
+                    <tr>
+                        <td>页面数</td>
+                        <td id="pageCount">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>访问数</td>
+                        <td id="visitCount">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>数据占用</td>
+                        <td id="storageStatus">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>搜索索引占用</td>
+                        <td id="snapshotStatus">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>索引状态</td>
+                        <td id="indexStatus">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>最近同步</td>
+                        <td id="lastSyncStatus">读取中</td>
+                    </tr>
+                    <tr>
+                        <td>任务状态</td>
+                        <td id="jobStatus">空闲</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="label">最近任务</div>
+                <div id="resultSummary" class="smaller top10"></div>
                 <div id="jobsList" class="job-list empty-state">暂无任务。</div>
-            </section>
-        </main>
+            </div>
+
+            <div class="margin_top_40"></div>
+        </div>
     </body>
 </html>

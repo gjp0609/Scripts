@@ -87,7 +87,11 @@ export default defineBackground(() => {
     });
 
     runtime.onActionClicked(() => {
-        runtime.openOptionsPage();
+        // 与 HTU 一致：点工具栏图标打开独立的页面标签页，默认进入历史页。
+        void runtime
+            .getStartPage()
+            .then((startPage) => runtime.openExtensionPage(startPage === 'options' ? 'options.html' : 'browse.html'))
+            .catch((error) => console.error('[histories] failed to open page', error));
     });
 
     runtime.onMessage(async (message) => {

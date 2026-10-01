@@ -220,7 +220,17 @@ Export requirements:
 
 ## UI Design
 
-第一阶段界面以 [需求基线](requirements.md) 的「第一阶段界面」为准：默认启动到历史页，提供关键词、起止时间、搜索与稳定翻页，设置页只保留导入、导出、存储统计、默认启动页、时间显示和频繁访问忽略秒数。
+第一阶段界面以 [需求基线](requirements.md) 的「第一阶段界面」为准：默认启动到历史页，提供关键词、起止时间、搜索与稳定翻页，设置页只保留导入、导出、存储统计、默认启动页、时间显示和频繁访问忽略秒数。页面结构、控件位置与交互对齐 HTU，不做独立视觉重设计。
+
+页面与入口：
+
+- `entrypoints/browse/index.html`（输出 `browse.html`）：历史页，扩展的默认启动页。结果表列序与 HTU 一致：时间、站点图标、标题/域名，日期变化处插入可点击的日期分隔行，上下各有一组翻页控件。
+- `entrypoints/options/index.html`（输出 `options.html`）：设置页，用 `table#general_settings` 承载启动页、时间显示与频繁访问忽略秒数，用 `table#storage_stats` 承载页面数、访问数、数据占用、搜索索引占用、索引状态、最近同步与任务状态。
+- `src/ui/base.css`：两个页面共用的基础样式；`src/ui/navigation.ts` 渲染 HTU 形式的侧边导航；`src/ui/result-row.ts` 是结果行的纯渲染函数，便于测试。
+
+历史页入口刻意不命名为 `history.html`：WXT 会把该文件名映射为 `chrome_url_overrides.history`，从而接管浏览器自带的 `chrome://history`。HTU 自身也不声明该覆盖项。
+
+分页沿用搜索索引的稳定水位游标。历史页以「页游标数组 + 页码」记录翻页位置，因此「上一页」只是回退下标；首屏查询会冻结水位（结束时间或当前时刻），翻页期间新增的访问不会改变结果集。站点图标走 Chromium 的本地 `_favicon` 接口，仅在清单声明 `favicon` 权限时启用，避免把浏览记录外泄给第三方；Firefox 不声明该权限，图标列留空。
 
 以下为后续阶段的设计意图，不属于第一阶段：
 

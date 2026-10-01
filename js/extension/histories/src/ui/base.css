@@ -1,0 +1,321 @@
+/*
+ * Histories 共享基础样式。
+ *
+ * 视觉基准：HTU（History Trends Unlimited）的简洁表格风格 —— 无卡片、无圆角大色块，
+ * 以细线分隔、紧凑行距、居中定宽容器为主。历史页与设置页共用本文件。
+ */
+
+:root {
+    color-scheme: light dark;
+
+    --background-color: #fff;
+    --major-text-color: #000;
+    --medium-text-color: #6b6b6b;
+    --minor-text-color: #979ca0;
+
+    --major-divider-color: #000;
+    --minor-divider-color: lightgray;
+
+    --success-color: green;
+    --error-color: #c00;
+    --link-color: #0645ad;
+    --row-hover-color: #f6f6f6;
+
+    --button-face: #f5f5f5;
+    --button-border: #c5c5c5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #222;
+        --major-text-color: #ddd;
+        --medium-text-color: #909090;
+        --minor-text-color: #6a6a6a;
+
+        --major-divider-color: #ddd;
+        --minor-divider-color: #555;
+
+        --link-color: #4da3ff;
+        --row-hover-color: #2c2c2c;
+
+        --button-face: #3a3a3a;
+        --button-border: #555;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: var(--background-color);
+    color: var(--major-text-color);
+    font-family: arial, 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+    font-size: 14px;
+    overflow-y: scroll;
+}
+
+/* 居中定宽容器；侧边栏以负外边距挂在左侧留白处 */
+#container {
+    width: 802px;
+    max-width: calc(100% - 140px);
+    margin: 0 auto 30px;
+}
+/* 标题行：标题左对齐、运行状态右对齐，分隔线由容器整行铺满 */
+#header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 18px 0 14px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--major-divider-color);
+}
+
+#header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+
+#sidebar {
+    float: left;
+    width: 105px;
+    margin-left: -120px;
+}
+
+ul#navigation {
+    margin: 26px 0 0;
+    padding: 0;
+    list-style-type: none;
+}
+
+ul#navigation li {
+    margin: 14px 0;
+    color: var(--medium-text-color);
+    cursor: pointer;
+}
+
+ul#navigation li a {
+    color: inherit;
+    text-decoration: none;
+}
+
+ul#navigation li a:hover {
+    text-decoration: underline;
+}
+
+ul#navigation li.selected {
+    color: var(--major-text-color);
+    font-weight: bold;
+    cursor: auto;
+}
+
+.runtime-note {
+    color: var(--minor-text-color);
+    font-size: 85%;
+    white-space: nowrap;
+}
+
+/* 分区：以细线分隔，不用卡片 */
+.section {
+    padding: 15px 0;
+    border-bottom: 1px solid var(--minor-divider-color);
+}
+
+.section > .label,
+.label {
+    font-weight: bold;
+    font-size: 105%;
+}
+
+.section .option {
+    padding-top: 5px;
+}
+
+.margin_top_40 {
+    margin-top: 40px;
+}
+
+.top10 {
+    padding-top: 10px;
+}
+
+.right {
+    float: right;
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+.smaller {
+    font-size: 90%;
+}
+
+.tip {
+    font-style: italic;
+}
+
+.error {
+    color: var(--error-color);
+}
+
+.success {
+    color: var(--success-color);
+}
+
+.underline {
+    text-decoration: underline;
+}
+
+a {
+    color: var(--link-color);
+}
+
+/* 表单控件：接近 jQuery UI 的朴素外观 */
+button,
+input[type='submit'],
+input[type='button'] {
+    padding: 3px 10px;
+    border: 1px solid var(--button-border);
+    border-radius: 3px;
+    background: var(--button-face);
+    color: var(--major-text-color);
+    font: inherit;
+    font-size: 90%;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled),
+input[type='submit']:hover:not(:disabled) {
+    border-color: var(--medium-text-color);
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+input[type='text'],
+input[type='search'],
+input[type='number'],
+input[type='datetime-local'],
+select {
+    padding: 2px 4px;
+    border: 1px solid var(--button-border);
+    border-radius: 2px;
+    background: var(--background-color);
+    color: var(--major-text-color);
+    font: inherit;
+    font-size: 95%;
+}
+
+input:focus,
+select:focus {
+    outline: 1px solid var(--link-color);
+}
+
+/* 统计表格：左列标签、右列值 */
+table.stats {
+    margin-top: 10px;
+    border-collapse: collapse;
+}
+
+table.stats td {
+    padding: 3px 0;
+    vertical-align: top;
+}
+
+table.stats td:first-child {
+    padding-right: 18px;
+    color: var(--medium-text-color);
+}
+
+/* 任务列表：不用卡片，按行排布 */
+.job-list {
+    margin-top: 8px;
+}
+
+.job-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 150px;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--minor-divider-color);
+    align-items: baseline;
+}
+
+.job-row:last-child {
+    border-bottom: 0;
+}
+
+.job-status {
+    font-weight: bold;
+}
+
+.job-status.status-complete {
+    color: var(--success-color);
+}
+
+.job-status.status-failed {
+    color: var(--error-color);
+}
+
+.job-status.status-cancelled {
+    color: var(--medium-text-color);
+}
+
+.job-detail {
+    color: var(--major-text-color);
+    word-break: break-word;
+}
+
+.job-time {
+    color: var(--medium-text-color);
+    text-align: right;
+    font-size: 90%;
+}
+
+.empty-state {
+    padding: 10px 0;
+    color: var(--medium-text-color);
+}
+
+/* 视口不足以容纳 802px 容器加左侧 120px 侧边栏时改为上下排列，
+   避免侧边栏被挤出可视区（HTU 原版在窄窗口下会裁掉导航）。 */
+@media (max-width: 1080px) {
+    #container {
+        width: auto;
+        max-width: 802px;
+        margin: 0 14px 30px;
+    }
+
+    #sidebar {
+        float: none;
+        width: auto;
+        margin-left: 0;
+    }
+
+    ul#navigation {
+        margin-top: 14px;
+    }
+
+    ul#navigation li {
+        display: inline-block;
+        margin: 0 16px 0 0;
+    }
+
+    .runtime-note {
+        float: none;
+    }
+
+    .job-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+
+    .job-time {
+        text-align: left;
+    }
+}

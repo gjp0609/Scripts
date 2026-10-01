@@ -7,6 +7,7 @@ type MessageHandler = (message: RuntimeMessage, sender?: unknown) => unknown | P
 
 type ManifestLike = {
     version?: string;
+    permissions?: string[];
 };
 
 type HistorySearchQuery = {
@@ -37,6 +38,7 @@ type BrowserHistoryVisit = {
 type BrowserLike = {
     runtime: {
         getManifest(): ManifestLike;
+        getURL(path: string): string;
         openOptionsPage(callback?: () => void): void;
         onInstalled: {
             addListener(callback: () => void): void;
@@ -67,6 +69,9 @@ type BrowserLike = {
             get(keys: string | string[]): Promise<Record<string, unknown>>;
             set(values: Record<string, unknown>): Promise<void>;
         };
+    };
+    tabs?: {
+        create(properties: { url: string }): Promise<unknown>;
     };
     action?: {
         onClicked: {
@@ -103,6 +108,37 @@ export function createRuntimeAdapter() {
 
         openOptionsPage() {
             runtime.runtime.openOptionsPage();
+        },
+
+        getExtensionUrl(path: string) {
+            return runtime.runtime.getURL(path);
+        },
+
+        /** 在扩展自己的标签页中打开页面；Firefox 无 tabs 权限时退化为当前标签页跳转。 */
+        async openExtensionPage(path: string): Promise<void> {
+            const url = runtime.runtime.getURL(path);
+            if (runtime.tabs) {
+                await runtime.tabs.create({ url });
+                return;
+            }
+            location.assign(url);
+        },
+
+        /**
+         * favicon 依赖 Chromium 的 `_favicon` 内部接口，且需要 `favicon` 权限。
+         * Firefox 两者都没有，返回 undefined 让调用方不渲染图标，避免退化成
+         * 向第三方站点发请求而泄露浏览记录。
+         */
+        faviconUrl(pageUrl: string): string | undefined {
+            if (!runtime.runtime.getManifest().permissions?.includes('favicon')) return undefined;
+            try {
+                const url = new URL(runtime.runtime.getURL('/_favicon/'));
+                url.searchParams.set('pageUrl', pageUrl);
+                url.searchParams.set('size', '16');
+                return url.toString();
+            } catch {
+                return undefined;
+            }
         },
 
         onMessage(handler: MessageHandler) {
@@ -154,6 +190,35 @@ export function createRuntimeAdapter() {
         async setFrequentVisitThresholdSeconds(value: number): Promise<void> {
             const normalized = Number.isFinite(value) && value >= 0 ? value : 2;
             await runtime.storage?.local.set({ frequentVisitThresholdSeconds: normalized });
+        },
+
+        /** 默认启动页：第一阶段固定为历史页，仅展示与保存该值。 */
+        async getStartPage(): Promise<string> {
+            const values = await runtime.storage?.local.get('startPage');
+            return typeof values?.startPage === 'string' ? values.startPage : 'history';
+        },
+
+        async setStartPage(value: string): Promise<void> {
+            await runtime.storage?.local.set({ startPage: value === 'options' ? 'options' : 'history' });
+        },
+
+        /** 时间显示制式，默认 24 小时制。 */
+        async getTimeDisplay(): Promise<'24' | '12'> {
+            const values = await runtime.storage?.local.get('timeDisplay');
+            return values?.timeDisplay === '12' ? '12' : '24';
+        },
+
+        async setTimeDisplay(value: '24' | '12'): Promise<void> {
+            await runtime.storage?.local.set({ timeDisplay: value === '12' ? '12' : '24' });
+        },
+
+        async getOpenLinksInNewTab(): Promise<boolean> {
+            const values = await runtime.storage?.local.get('openLinksInNewTab');
+            return values?.openLinksInNewTab !== false;
+        },
+
+        async setOpenLinksInNewTab(value: boolean): Promise<void> {
+            await runtime.storage?.local.set({ openLinksInNewTab: value });
         },
     };
 }

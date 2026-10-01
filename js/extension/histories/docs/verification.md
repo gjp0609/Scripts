@@ -398,6 +398,7 @@ Commands:
 - `node --test js\extension\histories\tests\htu-export.test.mjs`
 - `node --test js\extension\histories\tests\history-sync.test.mjs`
 - `node --test js\extension\histories\tests\search-engine.test.mjs`
+- `node --test js\extension\histories\tests\ui-result-row.test.mjs`
 - `node --test js\extension\histories\tests\search-sqlite-browser.test.mjs`
 - `node --test js\extension\histories\tests\import-worker-browser.test.mjs`
 - `node --test js\extension\histories\tests\export-worker-browser.test.mjs`
@@ -677,10 +678,37 @@ The options page now calls `SearchEngine.searchPage()` with a frozen watermark c
 
 ### 界面验收
 
-- 历史页默认启动，使用 24 小时时间输入，支持三字符子串、起止时间和稳定下一页。
+- 历史页默认启动，使用 24 小时时间输入，支持三字符子串、起止时间和稳定翻页。
 - 数据管理只保留多 HTU 导入、HTU/原生导出、空库恢复、存储统计、立即补全、索引重建和频繁访问阈值。
-- `1440px` 桌面与 `390px` 移动视口截图检查通过，没有横向溢出；长 URL 和任务信息可收缩显示。
 - 页面重开读取持久任务状态；超过租约的旧页面任务标记为失败并提示安全重试。导入、HTU 导出和索引重建由 worker 执行；原生备份在页面中按分块执行，实测约 3.5～4.8 秒，失败或关闭页面不会修改已提交主数据，可重新执行。
+
+## HTU 界面结构对齐
+
+更新时间：2026-10-01
+
+按 [需求基线](requirements.md) 第 121 行，第一阶段页面结构、控件位置与交互对齐 HTU，不做独立视觉重设计。此前从零设计的单页卡片式界面已整体替换。
+
+改动范围：
+
+- 新增 `entrypoints/browse/`（`browse.html`）：历史页成为独立页面与默认启动页，结果表按「时间 / 站点图标 / 标题·域名」三列渲染，日期变化处插入可点击分隔行，上下各一组翻页控件。旧的顶栏单页界面与其绿色卡片主题（`entrypoints/options/styles.css`）已删除。
+- 设置页改为 HTU 形式的分区布局：`table#general_settings`（启动页、时间显示、频繁访问忽略秒数）与 `table#storage_stats`（页面数、访问数、数据占用、搜索索引占用、索引状态、最近同步、任务状态）。
+- 两个页面共用 `src/ui/base.css`，侧边导航由 `src/ui/navigation.ts` 渲染。
+- 结果行的纯渲染逻辑抽到 `src/ui/result-row.ts`，与 DOM 无关，因此可以直接做单元测试。
+- 工具栏图标改为打开页面标签页，并按启动页设置进入历史页或设置页。
+
+HTU 的复选框列对应删除功能，需求第 4 节明确不做删除同步，第 121 行也禁止保留无效占位，因此不保留该列。站点图标列按用户要求保留，走 Chromium 本地 `_favicon` 接口；`favicon` 权限只在 Chromium 目标声明，Firefox 不声明且图标列留空，避免把浏览记录外泄给第三方。
+
+分页沿用稳定水位游标。历史页以「页游标数组 + 页码」记录位置，「上一页」只是回退下标；首屏查询冻结水位，翻页期间新增访问不会改变结果集。
+
+验证结果：
+
+- `node --test tests/ui-result-row.test.mjs`：13 passed，覆盖列序、日期分组、24/12 小时制、新标签开关、HTML 转义、favicon 权限开关与「不保留复选框列」。
+- `node --test` 运行 `htu-tsv`、`htu-import`、`htu-export`、`htu-multi-import`、`native-backup`、`search-engine`、`ui-result-row`：40 passed, 1 skipped，与第一阶段基线一致。
+- `tsc --noEmit --pretty false --project .wxt/tsconfig.json`：通过。
+- Chrome MV3 与 Firefox MV3 生产构建通过；Chrome 权限含 `favicon`，Firefox 不含；两者都没有 `chrome_url_overrides.history`。
+- 两个页面按真实构建产物的 CSS 生成静态预览并截图核对，确认页头、侧边导航、结果表与设置分区渲染符合预期。
+
+本机限制：Chrome 153 已移除 `--load-extension`，Playwright 自带浏览器未安装，因此真实浏览器内的端到端自动化（`tests/extension-background-collection.test.mjs` 等）无法在本机复跑，本轮的浏览器侧证据来自构建产物检查与静态预览截图。历史页入口刻意命名为 `browse.html`，避免 WXT 把 `history.html` 映射为 `chrome_url_overrides.history` 而接管浏览器自带的 `chrome://history`。
 
 ### 正式扩展和回归汇总
 

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Histories</title>
+        <script type="module" src="./main.ts"></script>
+    </head>
+    <body>
+        <div id="container">
+            <div id="sidebar"></div>
+            <div id="header">
+                <span id="runtimeStatus" class="runtime-note">连接中</span>
+                <h2>Histories</h2>
+            </div>
+
+            <div id="search_container">
+                <form id="search_controls">
+                    <span>搜索：</span>
+                    <input type="text" id="keywords" size="30" maxlength="100" autocomplete="off" />
+                    <input type="submit" id="search" value="Go" />
+                    <input type="button" id="clear_search" value="清除" class="invisible" />
+                    <div class="time-range">
+                        <label>起始时间 <input type="datetime-local" id="from_time" /></label>
+                        <label>结束时间 <input type="datetime-local" id="to_time" /></label>
+                        <span class="smaller">留空表示不限；关键词少于 3 个字符时不参与匹配。</span>
+                    </div>
+                </form>
+
+                <div id="alerts"></div>
+
+                <div id="search_result_controls_top" style="display: none">
+                    <div class="results_mode_cell">
+                        <span class="pagination"></span>
+                    </div>
+                    <div id="pager_top">
+                        <button type="button" id="previous_top" class="invisible">上一页</button>
+                        <button type="button" id="next_top" class="invisible">下一页</button>
+                    </div>
+                </div>
+
+                <table id="results" style="display: none"></table>
+
+                <div id="search_result_controls_bottom" style="display: none">
+                    <div class="results_mode_cell">
+                        <span class="pagination"></span>
+                    </div>
+                    <div id="pager_bottom">
+                        <button type="button" id="previous_bottom" class="invisible">上一页</button>
+                        <button type="button" id="next_bottom" class="invisible">下一页</button>
+                    </div>
+                </div>
+
+                <div id="waiting_container" style="display: none">
+                    <span id="waiting_progress">正在准备搜索索引…</span>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

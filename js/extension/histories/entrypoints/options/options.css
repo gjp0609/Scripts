@@ -1,0 +1,66 @@
+/* 设置页样式，对应 HTU 的 css/options.css。 */
+
+#general_settings td {
+    padding: 3px;
+    vertical-align: top;
+}
+
+#general_settings td.label {
+    padding-right: 14px;
+    color: var(--medium-text-color);
+}
+
+#ignore_visits_duration {
+    width: 4em;
+    font-weight: bold;
+    text-align: center;
+}
+
+#import_file {
+    margin-left: 0;
+}
+
+.option {
+    margin-left: 20px;
+}
+
+.section ol,
+.section ul {
+    padding-left: 22px;
+}
+
+.section li {
+    margin-bottom: 5px;
+}
+
+#storage_stats {
+    margin-top: 10px;
+}
+
+#import_progress,
+#import_complete {
+    display: none;
+    margin-top: 10px;
+}
+
+#import_progress {
+    color: var(--medium-text-color);
+}
+
+#import_success_stats {
+    color: var(--success-color);
+}
+
+#import_error_stats,
+.error {
+    color: var(--error-color);
+}
+
+#job_status_line {
+    margin-top: 10px;
+    color: var(--medium-text-color);
+}
+
+input[type='checkbox'] {
+    vertical-align: middle;
+}

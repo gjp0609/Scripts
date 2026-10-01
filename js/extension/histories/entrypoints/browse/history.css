@@ -1,0 +1,146 @@
+/* 历史页样式，对应 HTU 的 css/history.css。 */
+
+#container {
+    margin-bottom: 30px;
+}
+
+#search_controls {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--minor-divider-color);
+}
+
+#search_controls .time-range {
+    padding-top: 8px;
+    color: var(--medium-text-color);
+}
+
+#search_controls .time-range input {
+    margin-right: 6px;
+}
+
+#search_controls .time-range label {
+    margin-right: 14px;
+}
+
+#alerts {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--minor-divider-color);
+    font-weight: bold;
+}
+
+#alerts:empty {
+    display: none;
+}
+
+#alerts.alerts-error {
+    color: var(--error-color);
+}
+
+#alerts.alerts-success {
+    color: var(--success-color);
+}
+
+#search_result_controls_top,
+#search_result_controls_bottom {
+    display: table;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--minor-divider-color);
+}
+
+#search_result_controls_bottom {
+    border-bottom: 0;
+}
+
+.results_mode_cell {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.pagination {
+    color: var(--major-text-color);
+}
+
+#pager_top,
+#pager_bottom {
+    display: table-cell;
+    text-align: right;
+    white-space: nowrap;
+}
+
+#next_top,
+#next_bottom {
+    margin-left: 8px;
+}
+
+#previous_top,
+#previous_bottom {
+    margin-left: 8px;
+}
+
+#results {
+    width: 100%;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--minor-divider-color);
+    border-collapse: collapse;
+}
+
+.timeColumn {
+    width: 15%;
+    padding-top: 7px;
+    padding-bottom: 1px;
+    vertical-align: top;
+}
+
+.timeColumn label {
+    font-size: 85%;
+    vertical-align: top;
+}
+
+.faviconColumn {
+    width: 16px;
+    padding-top: 5px;
+    padding-right: 5px;
+    padding-bottom: 1px;
+    vertical-align: top;
+}
+
+.faviconColumn img {
+    width: 16px;
+    height: 16px;
+}
+
+.urlColumn {
+    width: 85%;
+    padding-top: 5px;
+    padding-bottom: 1px;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.new_day {
+    padding-top: 15px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+
+.new_day a {
+    color: var(--major-text-color);
+}
+
+.histdomain {
+    margin-left: 10px;
+    color: var(--minor-text-color);
+}
+
+#no_results_text {
+    padding-top: 10px;
+    color: var(--medium-text-color);
+}
+
+#waiting_container {
+    padding-top: 10px;
+    color: var(--medium-text-color);
+}

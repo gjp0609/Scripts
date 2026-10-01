@@ -6,8 +6,10 @@
 
 ```powershell
 npx tsc --noEmit --pretty false --project js\extension\histories\.wxt\tsconfig.json
-node --test js\extension\histories\tests\htu-tsv.test.mjs js\extension\histories\tests\htu-import.test.mjs js\extension\histories\tests\htu-export.test.mjs js\extension\histories\tests\search-engine.test.mjs js\extension\histories\tests\history-sync.test.mjs
+node --test js\extension\histories\tests\htu-tsv.test.mjs js\extension\histories\tests\htu-import.test.mjs js\extension\histories\tests\htu-export.test.mjs js\extension\histories\tests\search-engine.test.mjs js\extension\histories\tests\history-sync.test.mjs js\extension\histories\tests\ui-result-row.test.mjs
 ```
+
+`ui-result-row.test.mjs` 覆盖历史页结果表的纯渲染逻辑：列序、日期分隔、24/12 小时制、新标签开关、HTML 转义、favicon 权限开关，以及「不保留 HTU 删除用复选框列」这一范围约束。它不启动浏览器。
 
 ## 浏览器烟测
 
